@@ -8,6 +8,7 @@ import app.wheregrows.exploration.ExplorationService;
 import app.wheregrows.garden.GardenService;
 import app.wheregrows.habit.HabitService;
 import app.wheregrows.magic.MagicService;
+import app.wheregrows.mentor.MentorService;
 import app.wheregrows.player.GameCalendar;
 import app.wheregrows.player.PlayerProfile;
 import app.wheregrows.player.PlayerProfileRepository;
@@ -24,10 +25,12 @@ class GameStateService {
     private final MagicService magic;
     private final ExplorationService exploration;
     private final ProfileService profileService;
+    private final MentorService mentor;
 
     GameStateService(PlayerProfileRepository profiles, InventoryItemRepository inventory, HabitService habits,
                      GameCalendar calendar, GardenService garden, MagicService magic,
-                     ExplorationService exploration, ProfileService profileService) {
+                     ExplorationService exploration, ProfileService profileService, MentorService mentor) {
+        this.mentor = mentor;
         this.profileService = profileService;
         this.magic = magic;
         this.exploration = exploration;
@@ -59,6 +62,7 @@ class GameStateService {
                 exploration.collection(playerId).stream()
                         .map(a -> new GameStateResponse.CollectedArtifact(a.getArtifactKey(), a.getFoundAt(),
                                 a.getFoundWhere()))
-                        .toList());
+                        .toList(),
+                mentor.progress(playerId));
     }
 }

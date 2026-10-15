@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ApiError } from '../../api/client'
 import { plantSeed } from '../../api/game'
 import type { Catalog, GameState } from '../../api/types'
-import { loadAtlas, type Atlas } from '../../game/atlas'
+import { frameImage, loadAtlas, type Atlas } from '../../game/atlas'
 import { composeCharacter } from '../../game/character'
 import { GardenCanvas } from '../../game/GardenCanvas'
 import type { Scene } from '../../game/renderer'
 import {
   describeCell,
+  MENTOR_SPOT,
   minutesUntilNextStage,
   nextGrowthRefresh,
   objectAt,
@@ -17,6 +18,7 @@ import {
 } from '../../game/layout'
 import { Button } from '../../ui/Button'
 import { SeedPacketIcon } from '../../ui/icons/SeedPacketIcon'
+import { DialogueBox } from '../mentor/DialogueBox'
 import { useToast } from '../notifications/Toasts'
 import styles from './GardenView.module.css'
 import { RecipeBlock } from './RecipeBlock'
@@ -70,6 +72,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter }: Props
   // Всё, что меняется у игрока, собирается в «сцену» для рендера
   const scene = useMemo((): Scene | null => {
     if (atlas.status !== 'ready') return null
+    const mentorImage = frameImage(atlas.atlas, 'npc_vereshk')
     const searched = new Set(state.searchedSpots)
     return {
       objects: state.garden.objects,
@@ -77,9 +80,26 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter }: Props
       sparkles: new Set(catalog.spots.filter((spot) => !searched.has(spot.key)).map((spot) => spot.propKey)),
       characters: [
         { ...PLAYER_SPOT, image: composeCharacter(atlas.atlas, state.player.appearance, catalog.appearance) },
+        ...(mentorImage ? [{ ...MENTOR_SPOT, image: mentorImage }] : []),
       ],
+      bubbles: state.mentor.hasNews ? [MENTOR_SPOT] : [],
     }
-  }, [atlas, state.garden.objects, state.worldObjects, state.searchedSpots, state.player.appearance, catalog])
+  }, [atlas, state, catalog])
+
+  const [dialogue, setDialogue] = useState<string | null>(null)
+  const talk = () => {
+    const idle = catalog.mentor.idle
+    setDialogue(state.mentor.nextDialogue ?? idle[Math.floor(Math.random() * idle.length)])
+  }
+
+  // Знакомство начинается само — один раз, сразу после создания персонажа
+  const introOpened = useRef(false)
+  useEffect(() => {
+    if (atlas.status === 'ready' && state.player.onboarded && state.mentor.nextDialogue === catalog.mentor.intro && !introOpened.current) {
+      introOpened.current = true
+      setDialogue(catalog.mentor.intro)
+    }
+  }, [atlas.status, state.player.onboarded, state.mentor.nextDialogue, catalog.mentor.intro])
 
   const select = (cell: Cell | null) => {
     setSelected(cell)
@@ -115,7 +135,16 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter }: Props
       )}
 
       <div className={styles.info} aria-live="polite">
-        {selected && sameCell(selected, PLAYER_SPOT) ? (
+        {selected && sameCell(selected, MENTOR_SPOT) ? (
+          <div className={styles.cell}>
+            <p className={styles.text}>
+              <strong>{catalog.mentor.speaker.name}.</strong> Опирается на посох и делает вид, что не ждёт, когда с ним заговорят.
+            </p>
+            <div>
+              <Button onClick={talk}>Поговорить</Button>
+            </div>
+          </div>
+        ) : selected && sameCell(selected, PLAYER_SPOT) ? (
           <div className={styles.cell}>
             <p className={styles.text}>
               <strong>{state.player.displayName}.</strong> Это вы. Сад, кажется, уже привык к вашим шагам.
@@ -138,6 +167,17 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter }: Props
           <span className={styles.hint}>Нажмите на клетку сада, чтобы рассмотреть её поближе.</span>
         )}
       </div>
+
+      {dialogue && atlas.status === 'ready' && (
+        <DialogueBox
+          key={dialogue}
+          dialogueKey={dialogue}
+          catalog={catalog}
+          atlas={atlas.atlas}
+          onClose={() => setDialogue(null)}
+          onChanged={onChanged}
+        />
+      )}
     </section>
   )
 }

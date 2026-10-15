@@ -29,3 +29,19 @@ async function fetchAtlas(): Promise<Atlas> {
   await image.decode()
   return { image, frames: manifest.frames }
 }
+
+const frameCache = new Map<string, HTMLCanvasElement>()
+
+/** Отдельный кадр атласа как картинка (для портретов и персонажей вне общей сцены). */
+export function frameImage(atlas: Atlas, name: string): HTMLCanvasElement | null {
+  const cached = frameCache.get(name)
+  if (cached) return cached
+  const f = atlas.frames[name]
+  if (!f) return null
+  const canvas = document.createElement('canvas')
+  canvas.width = f.w
+  canvas.height = f.h
+  canvas.getContext('2d')!.drawImage(atlas.image, f.x, f.y, f.w, f.h, 0, 0, f.w, f.h)
+  frameCache.set(name, canvas)
+  return canvas
+}

@@ -15,6 +15,8 @@ export type Scene = {
   awakened: ReadonlySet<string>
   sparkles: ReadonlySet<string>
   characters: CharacterSprite[]
+  /** Клетки, над чьими персонажами горит «!» */
+  bubbles: Cell[]
 }
 
 /**
@@ -29,7 +31,7 @@ export function drawGarden(
   scene: Scene,
   highlights: Highlights,
 ) {
-  const { objects, awakened, sparkles, characters } = scene
+  const { objects, awakened, sparkles, characters, bubbles } = scene
   ctx.imageSmoothingEnabled = false
   ctx.clearRect(0, 0, map.width * TILE, map.height * TILE)
 
@@ -68,6 +70,11 @@ export function drawGarden(
   }
 
   drawEveningLight(ctx, map)
+
+  // «!» рисуем после света, чтобы облачко не тонуло в вечерних тенях
+  for (const cell of bubbles) {
+    drawFrame(ctx, atlas, 'fx_bubble', cell.x * TILE + 18, cell.y * TILE - (CHARACTER_HEIGHT - TILE) + 2)
+  }
 
   if (highlights.hover) drawCorners(ctx, highlights.hover, 'rgba(242, 227, 194, 0.85)')
   if (highlights.selected) drawSelection(ctx, highlights.selected)

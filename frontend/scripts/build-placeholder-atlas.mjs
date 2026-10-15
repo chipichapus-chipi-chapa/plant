@@ -261,6 +261,19 @@ function gateOpen(seed) {
   return s
 }
 
+/** Облачко «!» над наставником, когда ему есть что сказать. */
+function bubble() {
+  const s = new Sprite(11, 13)
+  s.rect(0, 0, 11, 10, P.ink)
+  s.rect(1, 1, 9, 8, P.petal)
+  s.rect(3, 10, 3, 1, P.ink)
+  s.rect(4, 11, 2, 1, P.ink)
+  s.rect(4, 10, 1, 1, P.petal)
+  s.rect(5, 2, 1, 4, P.berry)
+  s.rect(5, 7, 1, 1, P.berry)
+  return s
+}
+
 /** Мерцание над местом, где что-то спрятано: крошечная четырёхлучевая искра. */
 function sparkle() {
   const s = new Sprite(9, 9)
@@ -795,6 +808,7 @@ const frames = {
   prop_gate: gate(700),
   prop_gate_awakened: gateOpen(701),
   fx_sparkle: sparkle(),
+  fx_bubble: bubble(),
   char_body: charBody(),
   ...Object.fromEntries(['overalls', 'sweater', 'dress'].map((k) => [`char_outfit_${k}`, charOutfit(k)])),
   ...Object.fromEntries(['short', 'bob', 'long', 'braid', 'bun', 'curly'].map((k) => [`char_hair_${k}`, charHair(k)])),

@@ -67,7 +67,21 @@ export type AppearanceSlot = {
   options: { key: string; name: string; color: string | null }[]
 }
 
+/** Реплика: либо next (null — конец разговора), либо варианты ответа */
+export type DialogueNode = { text: string; next: string | null; choices: { text: string; next: string }[] | null }
+
+export type Dialogue = { start: string; onEnd: string | null; gift: ItemGrant[] | null; nodes: Record<string, DialogueNode> }
+
+/** Реплики наставника и обучение — контент с сервера */
+export type MentorContent = {
+  speaker: { key: string; name: string }
+  intro: string
+  idle: string[]
+  dialogues: Record<string, Dialogue>
+}
+
 export type Catalog = {
+  mentor: MentorContent
   appearance: AppearanceSlot[]
   crystals: CrystalCategory[]
   species: { key: string; name: string; stageMinutes: number[] }[]
@@ -118,7 +132,16 @@ export type GameState = {
   searchedSpots: string[]
   /** Коллекция: когда и где найден каждый артефакт */
   artifacts: { key: string; foundAt: string; foundWhere: string }[]
+  /** Что наставник скажет при следующем разговоре; null — только случайные фразы */
+  mentor: {
+    nextDialogue: string | null
+    /** над наставником горит «!» — знакомство или выполненный шаг */
+    hasNews: boolean
+    steps: { key: string; done: boolean; acknowledged: boolean }[]
+  }
 }
+
+export type FinishDialogueResult = { dialogueKey: string; flag: string | null; gift: ItemGrant[] }
 
 export type SearchResult = {
   spotKey: string

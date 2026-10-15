@@ -11,6 +11,8 @@ import app.wheregrows.garden.GardenMaps;
 import app.wheregrows.exploration.ArtifactRepository;
 import app.wheregrows.exploration.DiscoverySpotRepository;
 import app.wheregrows.magic.RecipeRepository;
+import app.wheregrows.mentor.MentorContent;
+import app.wheregrows.mentor.MentorContentLoader;
 import app.wheregrows.player.AppearanceSlotRepository;
 
 /** Каталог одинаков для всех игроков: категории кристаллов, растения, предметы с ценами и карта сада. */
@@ -25,10 +27,12 @@ class CatalogController {
     private final ArtifactRepository artifacts;
     private final DiscoverySpotRepository spots;
     private final AppearanceSlotRepository appearance;
+    private final MentorContentLoader mentor;
 
     CatalogController(CrystalCategoryRepository crystals, PlantSpeciesRepository species, ItemDefinitionRepository items,
                       GardenMaps gardens, RecipeRepository recipes, ArtifactRepository artifacts,
-                      DiscoverySpotRepository spots, AppearanceSlotRepository appearance) {
+                      DiscoverySpotRepository spots, AppearanceSlotRepository appearance, MentorContentLoader mentor) {
+        this.mentor = mentor;
         this.appearance = appearance;
         this.recipes = recipes;
         this.artifacts = artifacts;
@@ -73,12 +77,13 @@ class CatalogController {
                                 slot.getOptions().stream()
                                         .map(o -> new CatalogResponse.AppearanceOption(o.key(), o.name(), o.color()))
                                         .toList()))
-                        .toList());
+                        .toList(),
+                mentor.content());
     }
 
     record CatalogResponse(List<Crystal> crystals, List<Species> species, List<Item> items, GardenMap garden,
                            List<Recipe> recipes, List<Artifact> artifacts, List<Spot> spots,
-                           List<AppearanceSlot> appearance) {
+                           List<AppearanceSlot> appearance, MentorContent mentor) {
 
         record AppearanceSlot(String key, String name, String kind, List<AppearanceOption> options) {
         }

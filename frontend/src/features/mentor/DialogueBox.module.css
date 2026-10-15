@@ -1,0 +1,126 @@
+/* Разговор внизу экрана, как в старых RPG: сад остаётся виден над ним */
+.layer {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 6;
+  display: flex;
+  justify-content: center;
+  padding: var(--space-4);
+  pointer-events: none;
+}
+
+.box {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-4);
+  width: min(760px, 100%);
+  padding: var(--space-3) var(--space-4);
+  background: var(--paper-texture), var(--c-parchment);
+  background-size: var(--paper-size), auto;
+  box-shadow:
+    0 0 0 var(--px) var(--c-wood),
+    0 0 0 calc(var(--px) * 2) var(--c-bark),
+    0 0 0 calc(var(--px) * 3) var(--c-ink),
+    0 0 40px 8px rgb(255 176 96 / 0.25);
+  cursor: pointer;
+  pointer-events: auto;
+  outline: none;
+  animation: rise 160ms steps(3) both;
+}
+
+.portrait {
+  align-self: start;
+  padding: var(--space-1);
+  background: #e9d3df;
+  box-shadow: 0 0 0 var(--px) var(--c-bark);
+}
+
+.face {
+  display: block;
+  width: 96px;
+  height: 96px;
+  image-rendering: pixelated;
+}
+
+.speech {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+  min-height: 104px;
+}
+
+.name {
+  justify-self: start;
+  padding: 0 var(--space-2);
+  background: #c98aa8;
+  color: var(--c-parchment);
+  text-shadow: 1px 1px 0 #6b4058;
+  box-shadow: 0 0 0 2px var(--c-ink);
+}
+
+.text {
+  margin: 0;
+  font-size: calc(var(--text-m) + 1px);
+}
+
+/* Ещё не напечатанный текст занимает место — строки не прыгают */
+.ghost {
+  visibility: hidden;
+}
+
+.more {
+  justify-self: end;
+  min-height: 1.4em;
+  color: var(--c-bark);
+  font-size: var(--text-s);
+  animation: blink 1s steps(2) infinite;
+}
+
+.choices {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+}
+
+.choice {
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  background: transparent;
+  color: var(--c-ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.choice:hover,
+.choice:focus-visible {
+  background: var(--c-sun);
+  outline: none;
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(var(--space-4));
+    opacity: 0;
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .box,
+  .more {
+    animation: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .face {
+    width: 64px;
+    height: 64px;
+  }
+}

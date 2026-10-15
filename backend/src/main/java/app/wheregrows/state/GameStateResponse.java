@@ -8,6 +8,7 @@ import java.util.Map;
 import app.wheregrows.garden.GardenObjectView;
 import app.wheregrows.habit.HabitService.DailyRewards;
 import app.wheregrows.habit.HabitView;
+import app.wheregrows.mentor.MentorProgress;
 
 /**
  * Снимок состояния игрока. Расширяется по мере появления механик (коллекция, магия).
@@ -16,7 +17,7 @@ import app.wheregrows.habit.HabitView;
  */
 record GameStateResponse(Player player, LocalDate today, List<InventoryEntry> inventory, List<HabitView> habits,
                          DailyRewards dailyRewards, Garden garden, List<WorldObject> worldObjects,
-                         List<String> searchedSpots, List<CollectedArtifact> artifacts) {
+                         List<String> searchedSpots, List<CollectedArtifact> artifacts, MentorProgress mentor) {
 
     /** Артефакт в коллекции: когда и где найден. Описание — в каталоге. */
     record CollectedArtifact(String key, Instant foundAt, String foundWhere) {

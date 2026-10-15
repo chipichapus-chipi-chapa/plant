@@ -1,5 +1,5 @@
 import { apiFetch } from './client'
-import type { CastResult, Catalog, CompletionResult, DayCompletionResult, HabitHistory, GameState, GardenObject, Habit, HabitInput, PurchaseResult, SearchResult } from './types'
+import type { CastResult, Catalog, CompletionResult, DayCompletionResult, FinishDialogueResult, HabitHistory, GameState, GardenObject, Habit, HabitInput, PurchaseResult, SearchResult } from './types'
 
 export const fetchGameState = () => apiFetch<GameState>('/api/state')
 export const fetchCatalog = () => apiFetch<Catalog>('/api/catalog')
@@ -44,3 +44,7 @@ export const searchSpot = (spotKey: string) =>
 
 export const saveProfile = (displayName: string, appearance: Record<string, string>) =>
   apiFetch<void>('/api/profile', { method: 'PUT', body: JSON.stringify({ displayName, appearance }) })
+
+/** Разговор дочитан: сервер ставит флаг и (один раз) выдаёт подарок */
+export const finishDialogue = (key: string) =>
+  apiFetch<FinishDialogueResult>(`/api/mentor/dialogues/${key}/finish`, { method: 'POST' })

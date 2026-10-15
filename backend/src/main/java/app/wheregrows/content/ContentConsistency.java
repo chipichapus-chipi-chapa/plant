@@ -14,10 +14,11 @@ import app.wheregrows.garden.GardenMap;
 import app.wheregrows.garden.GardenMaps;
 import app.wheregrows.magic.Recipe;
 import app.wheregrows.magic.RecipeRepository;
+import app.wheregrows.mentor.MentorContentLoader;
 
 /**
  * Контент живёт в двух местах: рецепты и точки находок — в базе, карта — в JSON. Связи между ними
- * (рецепт → постройка, находка → постройка) проверяются при старте: опечатка в ключе роняет запуск,
+ * (рецепт → постройка, находка → постройка, подарок наставника → предмет) проверяются при старте: опечатка в ключе роняет запуск,
  * а не ломает игру у игрока.
  */
 @Component
@@ -26,11 +27,16 @@ class ContentConsistency implements ApplicationRunner {
     private final RecipeRepository recipes;
     private final DiscoverySpotRepository spots;
     private final GardenMaps maps;
+    private final MentorContentLoader mentor;
+    private final ItemDefinitionRepository items;
 
-    ContentConsistency(RecipeRepository recipes, DiscoverySpotRepository spots, GardenMaps maps) {
+    ContentConsistency(RecipeRepository recipes, DiscoverySpotRepository spots, GardenMaps maps,
+                       MentorContentLoader mentor, ItemDefinitionRepository items) {
         this.recipes = recipes;
         this.spots = spots;
         this.maps = maps;
+        this.mentor = mentor;
+        this.items = items;
     }
 
     @Override
@@ -46,6 +52,12 @@ class ContentConsistency implements ApplicationRunner {
                 requireProp(props, spot.getRequiresAwakened(), "Условие места находки " + spot.getKey());
             }
         }
+        // подарки наставника — существующие предметы каталога
+        mentor.content().dialogues().forEach((key, dialogue) -> dialogue.giftOrEmpty().forEach(gift -> {
+            if (!items.existsById(gift.itemKey())) {
+                throw new IllegalStateException("Подарок в диалоге " + key + " — неизвестный предмет " + gift.itemKey());
+            }
+        }));
     }
 
     private static void requireProp(Set<String> props, String key, String who) {
