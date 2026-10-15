@@ -1,0 +1,70 @@
+.picker {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  margin-bottom: var(--space-1);
+  font-size: var(--text-s);
+  color: var(--c-bark);
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.option {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  background: var(--c-parchment-shade);
+  cursor: pointer;
+}
+
+.option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.option:hover {
+  background: var(--c-parchment);
+}
+
+/* Выбранный камень: рамка цвета солнца */
+.option:has(input:checked) {
+  background: var(--c-parchment);
+  box-shadow: 0 0 0 var(--px) var(--c-sun), 0 0 0 calc(var(--px) * 2) var(--c-ink);
+}
+
+.option:has(input:focus-visible) {
+  outline: var(--px) dashed var(--c-ink);
+  outline-offset: calc(var(--px) * 2);
+}
+
+.none {
+  width: 16px;
+  height: 16px;
+  border: var(--px) dotted var(--c-bark);
+}
+
+.hint {
+  margin: var(--space-2) 0 0;
+  min-height: 2.8em;
+  font-size: var(--text-s);
+  color: var(--c-bark);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

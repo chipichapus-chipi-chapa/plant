@@ -10,8 +10,7 @@ import jakarta.persistence.Table;
 
 /**
  * Игровой профиль. Ключ совпадает с id пользователя; в остальных таблицах он называется player_id.
- * Баланс меняется только атомарными запросами в репозитории, а не через сеттер,
- * чтобы два параллельных запроса не перезаписали друг друга.
+ * Ресурсы (включая Семена жизни) хранятся не здесь, а в инвентаре.
  */
 @Entity
 @Table(name = "player_profile")
@@ -26,9 +25,6 @@ public class PlayerProfile {
 
     @Column(nullable = false)
     private String timezone;
-
-    @Column(nullable = false)
-    private int coins;
 
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
     private Instant createdAt;
@@ -46,10 +42,6 @@ public class PlayerProfile {
 
     public ZoneId getZone() {
         return ZoneId.of(timezone);
-    }
-
-    public int getCoins() {
-        return coins;
     }
 
     public Instant getCreatedAt() {

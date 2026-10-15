@@ -1,12 +1,11 @@
 package app.wheregrows.state;
 
-import java.time.Clock;
-import java.time.LocalDate;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import app.wheregrows.economy.InventoryItemRepository;
+import app.wheregrows.habit.HabitService;
+import app.wheregrows.player.GameCalendar;
 import app.wheregrows.player.PlayerProfile;
 import app.wheregrows.player.PlayerProfileRepository;
 
@@ -15,24 +14,28 @@ class GameStateService {
 
     private final PlayerProfileRepository profiles;
     private final InventoryItemRepository inventory;
-    private final Clock clock;
+    private final HabitService habits;
+    private final GameCalendar calendar;
 
-    GameStateService(PlayerProfileRepository profiles, InventoryItemRepository inventory, Clock clock) {
+    GameStateService(PlayerProfileRepository profiles, InventoryItemRepository inventory, HabitService habits,
+                     GameCalendar calendar) {
         this.profiles = profiles;
         this.inventory = inventory;
-        this.clock = clock;
+        this.habits = habits;
+        this.calendar = calendar;
     }
 
     @Transactional(readOnly = true)
     GameStateResponse load(long playerId) {
         PlayerProfile profile = profiles.findById(playerId).orElseThrow();
-        LocalDate today = LocalDate.now(clock.withZone(profile.getZone()));
 
         return new GameStateResponse(
-                new GameStateResponse.Player(profile.getDisplayName(), profile.getCoins(), profile.getZone().getId()),
-                today,
+                new GameStateResponse.Player(profile.getDisplayName(), profile.getZone().getId()),
+                calendar.today(profile),
                 inventory.findByIdPlayerIdAndQuantityGreaterThanOrderByIdItemKey(playerId, 0).stream()
                         .map(item -> new GameStateResponse.InventoryEntry(item.getItemKey(), item.getQuantity()))
-                        .toList());
+                        .toList(),
+                habits.list(profile),
+                habits.dailyRewards(profile));
     }
 }

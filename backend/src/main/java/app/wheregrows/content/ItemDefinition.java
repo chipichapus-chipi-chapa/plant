@@ -7,7 +7,10 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/** Описание предмета: семена, декор. Количество у игрока хранится отдельно, в inventory_item. */
+/**
+ * Описание предмета: валюта, осколок, семена, декор.
+ * Количество у игрока хранится отдельно, в inventory_item.
+ */
 @Entity
 @Table(name = "item_def")
 public class ItemDefinition {
@@ -30,6 +33,10 @@ public class ItemDefinition {
 
     @Column(name = "species_key")
     private String speciesKey;
+
+    /** Для осколков: категория кристалла. */
+    @Column(name = "crystal_category")
+    private String crystalCategory;
 
     protected ItemDefinition() {
     }
@@ -56,5 +63,9 @@ public class ItemDefinition {
 
     public String getSpeciesKey() {
         return speciesKey;
+    }
+
+    public String getCrystalCategory() {
+        return crystalCategory;
     }
 }
