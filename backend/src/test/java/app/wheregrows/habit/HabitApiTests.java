@@ -310,6 +310,80 @@ class HabitApiTests {
                 .andExpect(jsonPath("$.inventory[?(@.itemKey == 'shard_rose')].quantity").value(1));
     }
 
+    // --- Трекер: прошлые дни и история (сегодня в тестах — 2026-10-15) ---------------
+
+    @Test
+    void pastDayIsRecordedWithoutReward() throws Exception {
+        long id = createdId(createHabit("Читать", "emerald"));
+
+        mvc.perform(put("/api/habits/{id}/completions/{day}", id, "2026-10-10"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.historyOnly").value(true))
+                .andExpect(jsonPath("$.reward").isEmpty());
+
+        assertThat(quantity("life_seed")).isZero();
+        mvc.perform(get("/api/state")).andExpect(jsonPath("$.dailyRewards.used").value(0));
+        mvc.perform(get("/api/habits/history"))
+                .andExpect(jsonPath("$.month").value("2026-10"))
+                .andExpect(jsonPath("$.daysInMonth").value(31))
+                .andExpect(jsonPath("$.today").value("2026-10-15"))
+                .andExpect(jsonPath("$.habits[0].days[0]").value(10));
+    }
+
+    @Test
+    void todayByDateRewardsLikeTodayEndpoint() throws Exception {
+        long id = createdId(createHabit("Читать", "emerald"));
+
+        mvc.perform(put("/api/habits/{id}/completions/{day}", id, "2026-10-15"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.historyOnly").value(false))
+                .andExpect(jsonPath("$.reward", hasSize(2)));
+        assertThat(quantity("life_seed")).isEqualTo(3);
+    }
+
+    @Test
+    void futureAndTooOldDaysAreRejected() throws Exception {
+        long id = createdId(createHabit("Читать", null));
+
+        mvc.perform(put("/api/habits/{id}/completions/{day}", id, "2026-10-16"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("Этот день ещё не наступил."));
+        mvc.perform(put("/api/habits/{id}/completions/{day}", id, "2026-08-01"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(put("/api/habits/{id}/completions/{day}", id, "не-дата"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void pastMarkCanBeRemovedButTodaysStays() throws Exception {
+        long id = createdId(createHabit("Читать", "emerald"));
+        mvc.perform(put("/api/habits/{id}/completions/{day}", id, "2026-10-03")).andExpect(status().isCreated());
+        complete(id).andExpect(status().isCreated());
+
+        mvc.perform(delete("/api/habits/{id}/completions/{day}", id, "2026-10-03")).andExpect(status().isNoContent());
+        mvc.perform(delete("/api/habits/{id}/completions/{day}", id, "2026-10-03")).andExpect(status().isNoContent());
+        mvc.perform(delete("/api/habits/{id}/completions/{day}", id, "2026-10-15"))
+                .andExpect(status().isConflict());
+
+        mvc.perform(get("/api/habits/history")).andExpect(jsonPath("$.habits[0].days", hasSize(1)))
+                .andExpect(jsonPath("$.habits[0].days[0]").value(15));
+        assertThat(quantity("life_seed")).isEqualTo(3);
+    }
+
+    @Test
+    void historyOfOtherMonthAndOnlyActiveHabits() throws Exception {
+        long kept = createdId(createHabit("Гулять", "sapphire"));
+        long archived = createdId(createHabit("Старое", null));
+        mvc.perform(put("/api/habits/{id}/completions/{day}", kept, "2026-09-30")).andExpect(status().isCreated());
+        mvc.perform(delete("/api/habits/{id}", archived)).andExpect(status().isNoContent());
+
+        mvc.perform(get("/api/habits/history").param("month", "2026-09"))
+                .andExpect(jsonPath("$.month").value("2026-09"))
+                .andExpect(jsonPath("$.daysInMonth").value(30))
+                .andExpect(jsonPath("$.habits", hasSize(1)))
+                .andExpect(jsonPath("$.habits[0].days[0]").value(30));
+    }
+
     // --- Вспомогательное ---------------------------------------------------------------
 
     private ResultActions createHabit(String title, String category) throws Exception {

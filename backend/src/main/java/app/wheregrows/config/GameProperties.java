@@ -44,7 +44,10 @@ public record GameProperties(
             @DefaultValue("6") int dailyRewardedCompletions) {
     }
 
-    /** @param maxActive сколько активных привычек может быть одновременно */
-    public record Habits(@DefaultValue("30") int maxActive) {
+    /**
+     * @param maxActive   сколько активных привычек может быть одновременно
+     * @param historyDays на сколько дней назад можно поставить или снять отметку в трекере (без награды)
+     */
+    public record Habits(@DefaultValue("30") int maxActive, @DefaultValue("62") int historyDays) {
     }
 }

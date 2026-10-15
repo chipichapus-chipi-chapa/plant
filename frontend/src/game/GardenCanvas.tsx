@@ -5,6 +5,9 @@ import { cellAtPoint, fitScale, inBounds, TILE, type Cell } from './layout'
 import { drawGarden } from './renderer'
 import styles from './GardenCanvas.module.css'
 
+/** Сколько высоты экрана занято вокруг сада: шапка, табличка о клетке, панель кнопок. */
+const RESERVED_HEIGHT = 300
+
 type Props = {
   map: GardenMap
   objects: GardenObject[]
@@ -16,7 +19,7 @@ type Props = {
 
 /**
  * Канвас сада. React владеет состоянием (выбранная клетка), канвас только рисует.
- * Масштаб целый (×1/×2/×3), чтобы пиксели не размывались (на телефоне — дробный); плотность экрана (devicePixelRatio)
+ * Масштаб подбирается под экран (до ×3) без сглаживания; плотность экрана (devicePixelRatio)
  * учитывается в размере буфера. Сцена сначала рисуется 1:1 во внеэкранный канвас, затем переносится целиком.
  */
 export function GardenCanvas({ map, objects, awakened, atlas, selected, onSelect }: Props) {
@@ -28,13 +31,19 @@ export function GardenCanvas({ map, objects, awakened, atlas, selected, onSelect
   const [scale, setScale] = useState(1)
   const [hover, setHover] = useState<Cell | null>(null)
 
-  // Подбираем масштаб под ширину контейнера
+  // Подбираем масштаб под ширину контейнера и высоту окна: шапка, табличка
+  // и панель действий должны помещаться на экране без прокрутки
   useEffect(() => {
     const wrap = wrapRef.current
     if (!wrap) return
-    const observer = new ResizeObserver(([entry]) => setScale(fitScale(entry.contentRect.width, map)))
+    const update = () => setScale(fitScale(wrap.clientWidth, map, window.innerHeight - RESERVED_HEIGHT))
+    const observer = new ResizeObserver(update)
     observer.observe(wrap)
-    return () => observer.disconnect()
+    window.addEventListener('resize', update)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', update)
+    }
   }, [map])
 
   // Перерисовка при любом изменении входных данных

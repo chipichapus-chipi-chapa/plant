@@ -63,14 +63,14 @@ export function cellAtPoint(px: number, py: number, scale: number): Cell {
 }
 
 /**
- * Масштаб сада под доступную ширину. Если влезает хотя бы ×1 — берём наибольший целый (до ×3),
- * чтобы пиксели были ровными. На узких экранах (телефон) — дробный: чуть неровные пиксели
- * лучше горизонтальной прокрутки.
+ * Масштаб сада под доступную ширину и высоту (не больше ×3, не меньше ×0.25).
+ * Масштаб дробный: на обычном ноутбуке целый ×1 оставил бы сад крошечным, а ×2 не влез бы.
+ * Сцена рисуется в буфер 1:1 и растягивается без сглаживания, поэтому пиксели остаются чёткими,
+ * лишь часть из них на экранный пиксель шире соседних.
  */
-export function fitScale(availableWidth: number, map: GardenMap): number {
-  const fit = availableWidth / (map.width * TILE)
-  if (fit >= 1) return Math.min(3, Math.floor(fit))
-  return Math.max(0.25, fit)
+export function fitScale(availableWidth: number, map: GardenMap, availableHeight = Infinity): number {
+  const fit = Math.min(availableWidth / (map.width * TILE), availableHeight / (map.height * TILE))
+  return Math.max(0.25, Math.min(3, fit))
 }
 
 /** Что показать игроку о клетке: постройка важнее тайла под ней. */

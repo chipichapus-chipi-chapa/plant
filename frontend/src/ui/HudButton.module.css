@@ -1,0 +1,74 @@
+.button {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  min-width: 96px;
+  padding: var(--space-2) var(--space-3) var(--space-2);
+  border: 0;
+  background: var(--c-wood);
+  color: var(--c-parchment);
+  /* табличка: контур, тёмная нижняя кромка — объём; гвоздики по углам */
+  box-shadow:
+    0 0 0 var(--px) var(--c-ink),
+    inset 0 calc(var(--px) * -2) 0 0 var(--c-bark),
+    inset 0 var(--px) 0 0 var(--c-parchment-shade);
+  background-image:
+    radial-gradient(circle at 6px 6px, var(--c-bark) 1.5px, transparent 2px),
+    radial-gradient(circle at calc(100% - 6px) 6px, var(--c-bark) 1.5px, transparent 2px);
+  cursor: pointer;
+  transition: transform 80ms steps(2);
+}
+
+.button:hover {
+  background-color: var(--c-sun);
+  color: var(--c-ink);
+  transform: translateY(calc(var(--px) * -1));
+}
+
+.button:active {
+  transform: translateY(var(--px));
+  box-shadow:
+    0 0 0 var(--px) var(--c-ink),
+    inset 0 var(--px) 0 0 var(--c-bark);
+}
+
+.button:focus-visible {
+  outline: var(--px) solid var(--c-sun);
+  outline-offset: calc(var(--px) * 2);
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  background: var(--c-parchment);
+  box-shadow: 0 0 0 var(--px) var(--c-bark);
+}
+
+.label {
+  font-weight: 600;
+  text-shadow: 1px 1px 0 var(--c-bark);
+}
+
+.button:hover .label {
+  text-shadow: none;
+}
+
+.badge {
+  position: absolute;
+  top: calc(var(--space-2) * -1);
+  right: calc(var(--space-2) * -1);
+  padding: 0 var(--space-1);
+  background: var(--c-parchment);
+  color: var(--c-ink);
+  font-size: var(--text-s);
+  box-shadow: 0 0 0 var(--px) var(--c-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
+}

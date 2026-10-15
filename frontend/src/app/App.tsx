@@ -1,18 +1,30 @@
+import { useCallback, useState } from 'react'
 import type { ApiError } from '../api/client'
 import { LIFE_SEED, type GameState } from '../api/types'
 import { GardenView } from '../features/garden/GardenView'
-import { HabitsPanel } from '../features/habits/HabitsPanel'
+import { HabitTracker } from '../features/habits/HabitTracker'
 import { InventoryPanel } from '../features/inventory/InventoryPanel'
 import { ToastProvider } from '../features/notifications/Toasts'
 import { ShopPanel } from '../features/shop/ShopPanel'
 import { Button } from '../ui/Button'
+import { HudButton } from '../ui/HudButton'
+import { BagIcon, ShopIcon, TrackerIcon } from '../ui/icons/HudIcons'
 import { LifeSeedIcon } from '../ui/icons/LifeSeedIcon'
 import { Panel } from '../ui/Panel'
+import { Window } from '../ui/Window'
 import styles from './App.module.css'
 import { useGame } from './useGame'
 
+type OpenWindow = 'habits' | 'shop' | 'bag' | null
+
+/**
+ * Главный экран: сад в центре, под ним панель действий. Привычки, лавка и сумка
+ * открываются окнами поверх сада — сад всегда остаётся главным.
+ */
 export function App() {
   const { game, reload, refresh } = useGame()
+  const [open, setOpen] = useState<OpenWindow>(null)
+  const close = useCallback(() => setOpen(null), [])
 
   return (
     <ToastProvider>
@@ -25,7 +37,7 @@ export function App() {
         {game.status === 'error' ? (
           <LoadError error={game.error} onRetry={reload} />
         ) : (
-          <main className={styles.main}>
+          <main className={styles.stage}>
             {game.status === 'ready' ? (
               <GardenView state={game.state} catalog={game.catalog} onChanged={refresh} />
             ) : (
@@ -35,19 +47,46 @@ export function App() {
             )}
 
             {game.status === 'ready' && (
-              <aside className={styles.sidebar}>
-                <HabitsPanel state={game.state} catalog={game.catalog} onChanged={refresh} />
-                <ShopPanel state={game.state} catalog={game.catalog} onChanged={refresh} />
-                <InventoryPanel inventory={game.state.inventory} catalog={game.catalog} />
-              </aside>
+              <nav className={styles.toolbar} aria-label="Действия">
+                <HudButton
+                  icon={<TrackerIcon />}
+                  label="Привычки"
+                  onClick={() => setOpen('habits')}
+                  badge={habitsBadge(game.state)}
+                />
+                <HudButton icon={<ShopIcon />} label="Лавка" onClick={() => setOpen('shop')} />
+                <HudButton icon={<BagIcon />} label="Сумка" onClick={() => setOpen('bag')} />
+              </nav>
             )}
           </main>
+        )}
+
+        {game.status === 'ready' && open === 'habits' && (
+          <Window title="Трекер привычек" size="wide" onClose={close}>
+            <HabitTracker state={game.state} catalog={game.catalog} onChanged={refresh} />
+          </Window>
+        )}
+        {game.status === 'ready' && open === 'shop' && (
+          <Window title="Лавка семян" onClose={close}>
+            <ShopPanel state={game.state} catalog={game.catalog} onChanged={refresh} />
+          </Window>
+        )}
+        {game.status === 'ready' && open === 'bag' && (
+          <Window title="Сумка" onClose={close}>
+            <InventoryPanel inventory={game.state.inventory} catalog={game.catalog} />
+          </Window>
         )}
 
         <footer className={styles.footer}>Локальный режим разработки: без входа, данные хранятся на этом компьютере.</footer>
       </div>
     </ToastProvider>
   )
+}
+
+/** Сколько привычек отмечено сегодня — нейтрально, без «осталось» и процентов. */
+function habitsBadge(state: GameState): string | undefined {
+  const done = state.habits.filter((h) => h.doneToday).length
+  return done > 0 ? `✓${done}` : undefined
 }
 
 function PlayerBadge({ state }: { state: GameState }) {

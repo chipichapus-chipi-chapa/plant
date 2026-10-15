@@ -117,3 +117,17 @@ export type PurchaseResult = {
   /** true — повтор уже выполненной покупки, повторно ничего не списано */
   replayed: boolean
 }
+
+/** Месяц трекера привычек */
+export type HabitHistory = {
+  /** "yyyy-MM" */
+  month: string
+  daysInMonth: number
+  /** сегодня по поясу игрока, yyyy-mm-dd: отметка за этот день — с наградой */
+  today: string
+  /** самый ранний день, который ещё можно отметить или снять */
+  editableFrom: string
+  habits: { id: number; title: string; crystalCategory: string | null; days: number[] }[]
+}
+
+export type DayCompletionResult = CompletionResult & { historyOnly: boolean }

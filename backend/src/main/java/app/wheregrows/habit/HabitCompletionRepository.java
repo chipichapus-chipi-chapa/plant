@@ -14,6 +14,9 @@ public interface HabitCompletionRepository extends JpaRepository<HabitCompletion
 
     List<HabitCompletion> findByPlayerIdAndCompletedOn(long playerId, LocalDate completedOn);
 
+    List<HabitCompletion> findByPlayerIdAndCompletedOnBetweenOrderByCompletedOn(long playerId, LocalDate from,
+                                                                                LocalDate to);
+
     /** Сколько отметок за день уже принесли награду — для дневного лимита. */
     @Query("""
             select count(c) from HabitCompletion c

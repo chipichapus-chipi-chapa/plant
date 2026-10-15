@@ -1,7 +1,6 @@
 import type { Catalog, GameState } from '../../api/types'
 import { CrystalIcon } from '../../ui/icons/CrystalIcon'
 import { SeedPacketIcon } from '../../ui/icons/SeedPacketIcon'
-import { Panel } from '../../ui/Panel'
 import styles from './InventoryPanel.module.css'
 
 type Props = {
@@ -24,7 +23,7 @@ export function InventoryPanel({ inventory, catalog }: Props) {
     .map((item) => ({ item, quantity: quantities.get(item.key)! }))
 
   return (
-    <Panel title="Сумка">
+    <div className={styles.content}>
       <h3 className={styles.heading}>Осколки кристаллов</h3>
       <ul className={styles.shards}>
         {shards.map(({ crystal, item, quantity }) => (
@@ -54,6 +53,6 @@ export function InventoryPanel({ inventory, catalog }: Props) {
           ))}
         </ul>
       )}
-    </Panel>
+    </div>
   )
 }
