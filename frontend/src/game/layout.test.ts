@@ -18,7 +18,7 @@ describe('tileFrame', () => {
   it('выбирает кусок забора по соседям', () => {
     expect(tileFrame(map, 1, 0)).toBe('fence_h')
     expect(tileFrame(map, 0, 0)).toBe('fence_post') // угол: соседи и справа, и снизу
-    expect(tileFrame(map, 3, 1)).toBe('gate')
+    expect(tileFrame(map, 3, 1)).toBe('prop_gate')
   })
 
   it('берёт вариант тайла стабильно', () => {

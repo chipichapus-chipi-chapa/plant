@@ -1,5 +1,6 @@
 package app.wheregrows.state;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -13,7 +14,12 @@ import app.wheregrows.habit.HabitView;
  * Все ресурсы, включая Семена жизни и осколки, лежат в {@code inventory}.
  */
 record GameStateResponse(Player player, LocalDate today, List<InventoryEntry> inventory, List<HabitView> habits,
-                         DailyRewards dailyRewards, Garden garden, List<WorldObject> worldObjects) {
+                         DailyRewards dailyRewards, Garden garden, List<WorldObject> worldObjects,
+                         List<String> searchedSpots, List<CollectedArtifact> artifacts) {
+
+    /** Артефакт в коллекции: когда и где найден. Описание — в каталоге. */
+    record CollectedArtifact(String key, Instant foundAt, String foundWhere) {
+    }
 
     /** Пробуждённые объекты мира (постройки с карты). Нет в списке — объект спит. */
     record WorldObject(String objectKey, String state) {

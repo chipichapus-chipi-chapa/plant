@@ -48,12 +48,26 @@ export type Recipe = {
   ingredients: ItemGrant[]
 }
 
+/** Уникальный коллекционный кристалл */
+export type Artifact = {
+  key: string
+  name: string
+  crystalCategory: string
+  description: string
+  legend: string
+  acquisitionHint: string
+  effectText: string
+}
+
 export type Catalog = {
   crystals: CrystalCategory[]
   species: { key: string; name: string; stageMinutes: number[] }[]
   items: CatalogItem[]
   garden: GardenMap
   recipes: Recipe[]
+  artifacts: Artifact[]
+  /** Места находок: к какой постройке привязаны. Содержимое — секрет сервера. */
+  spots: { key: string; propKey: string }[]
 }
 
 export type Habit = { id: number; title: string; crystalCategory: string | null; doneToday: boolean }
@@ -84,6 +98,19 @@ export type GameState = {
   garden: { objects: GardenObject[] }
   /** Пробуждённые объекты мира; нет в списке — объект спит */
   worldObjects: { objectKey: string; state: 'AWAKENED' }[]
+  /** Обысканные места находок */
+  searchedSpots: string[]
+  /** Коллекция: когда и где найден каждый артефакт */
+  artifacts: { key: string; foundAt: string; foundWhere: string }[]
+}
+
+export type SearchResult = {
+  spotKey: string
+  /** FOUND — нашли; EMPTY — здесь уже всё найдено; LOCKED — пока не найти */
+  outcome: 'FOUND' | 'EMPTY' | 'LOCKED'
+  text: string
+  reward: ItemGrant[]
+  artifact: { key: string; name: string } | null
 }
 
 export type CastResult = {
@@ -108,6 +135,9 @@ export type CompletionResult = {
 
 /** Ключ основной валюты в каталоге */
 export const LIFE_SEED = 'life_seed'
+
+/** Солнечные искры — редкий ресурс за значимые открытия */
+export const SUN_SPARK = 'sun_spark'
 
 export type PurchaseResult = {
   itemKey: string

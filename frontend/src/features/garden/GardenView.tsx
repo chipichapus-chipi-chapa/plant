@@ -10,6 +10,7 @@ import { SeedPacketIcon } from '../../ui/icons/SeedPacketIcon'
 import { useToast } from '../notifications/Toasts'
 import styles from './GardenView.module.css'
 import { RecipeBlock } from './RecipeBlock'
+import { SpotBlock } from './SpotBlock'
 
 type AtlasLoad = { status: 'loading' } | { status: 'ready'; atlas: Atlas } | { status: 'error' }
 
@@ -24,6 +25,10 @@ export function GardenView({ state, catalog, onChanged }: Props) {
   const map = catalog.garden
   const objects = state.garden.objects
   const awakened = useMemo(() => new Set(state.worldObjects.map((w) => w.objectKey)), [state.worldObjects])
+  const sparkles = useMemo(() => {
+    const searched = new Set(state.searchedSpots)
+    return new Set(catalog.spots.filter((spot) => !searched.has(spot.key)).map((spot) => spot.propKey))
+  }, [catalog.spots, state.searchedSpots])
   const [atlas, setAtlas] = useState<AtlasLoad>({ status: 'loading' })
   const [selected, setSelected] = useState<Cell | null>(null)
   const [planting, setPlanting] = useState(false)
@@ -78,7 +83,12 @@ export function GardenView({ state, catalog, onChanged }: Props) {
   return (
     <section className={styles.garden} aria-label={map.name}>
       {atlas.status === 'ready' ? (
-        <GardenCanvas map={map} objects={objects} awakened={awakened} atlas={atlas.atlas} selected={selected} onSelect={select} />
+        <GardenCanvas
+          map={map}
+          objects={objects}
+          awakened={awakened}
+          sparkles={sparkles}
+          atlas={atlas.atlas} selected={selected} onSelect={select} />
       ) : (
         <div className={styles.placeholder} style={{ aspectRatio: `${map.width} / ${map.height}` }}>
           <p className={styles.note}>
@@ -135,6 +145,18 @@ function CellInfo({ cell, state, catalog, now, planting, onPlant, onChanged }: C
   if (!info) return null
 
   const prop = propAt(catalog.garden, cell.x, cell.y)
+  const spot = prop && catalog.spots.find((s) => s.propKey === prop.key)
+  if (spot) {
+    return (
+      <div className={styles.cell}>
+        <p className={styles.text}>
+          <strong>{info.name}.</strong> {info.description}
+        </p>
+        <SpotBlock key={spot.key} spotKey={spot.key} state={state} catalog={catalog} onChanged={onChanged} />
+      </div>
+    )
+  }
+
   const recipe = prop && catalog.recipes.find((r) => r.targetObjectKey === prop.key)
   if (recipe) {
     const awakened = state.worldObjects.some((w) => w.objectKey === recipe.targetObjectKey)

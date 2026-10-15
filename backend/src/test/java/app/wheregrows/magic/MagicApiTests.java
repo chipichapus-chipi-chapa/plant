@@ -59,6 +59,7 @@ class MagicApiTests {
                 .andExpect(jsonPath("$.recipes[0].key").value("awaken_basin"))
                 .andExpect(jsonPath("$.recipes[0].targetObjectKey").value("stone-basin"))
                 .andExpect(jsonPath("$.recipes[0].ingredients", hasSize(2)))
+                .andExpect(jsonPath("$.recipes[1].key").value("open_east_gate"))
                 .andExpect(jsonPath("$.garden.props[?(@.key == 'stone-basin')].kind").value("basin"));
     }
 

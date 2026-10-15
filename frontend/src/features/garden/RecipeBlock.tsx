@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { ApiError } from '../../api/client'
 import { castRecipe } from '../../api/game'
-import type { Catalog, GameState, Recipe } from '../../api/types'
+import { SUN_SPARK, type Catalog, type GameState, type Recipe } from '../../api/types'
 import { Button } from '../../ui/Button'
-import { CrystalIcon } from '../../ui/icons/CrystalIcon'
+import { ItemIcon } from '../../ui/icons/ItemIcon'
 import { useToast } from '../notifications/Toasts'
 import styles from './RecipeBlock.module.css'
 
@@ -25,7 +25,12 @@ export function RecipeBlock({ recipe, state, catalog, onChanged }: Props) {
   }
 
   const have = (itemKey: string) => state.inventory.find((e) => e.itemKey === itemKey)?.quantity ?? 0
-  const enough = recipe.ingredients.every((i) => have(i.itemKey) >= i.quantity)
+  const missing = recipe.ingredients.filter((i) => have(i.itemKey) < i.quantity)
+  const enough = missing.length === 0
+  // Подсказка о том, откуда берётся недостающее, — без давления и сроков
+  const hint = missing.some((i) => i.itemKey === SUN_SPARK)
+    ? 'Солнечные искры находят при важных открытиях. Мерцание над постройкой подскажет, где стоит поискать.'
+    : 'Осколки приходят за привычки нужного цвета. Ничего не сгорит, пока копятся.'
 
   const cast = async () => {
     setBusy(true)
@@ -52,7 +57,7 @@ export function RecipeBlock({ recipe, state, catalog, onChanged }: Props) {
           const count = have(ingredient.itemKey)
           return (
             <li key={ingredient.itemKey} className={count >= ingredient.quantity ? styles.ok : styles.short}>
-              {color && <CrystalIcon color={color} />}
+              <ItemIcon itemKey={ingredient.itemKey} color={color} />
               <span>{item?.name ?? ingredient.itemKey}</span>
               <span className={styles.count}>
                 {Math.min(count, ingredient.quantity)}/{ingredient.quantity}
@@ -64,7 +69,7 @@ export function RecipeBlock({ recipe, state, catalog, onChanged }: Props) {
       <Button onClick={() => void cast()} disabled={!enough || busy}>
         Пробудить
       </Button>
-      {!enough && <p className={styles.hint}>Осколки приходят за привычки нужного цвета. Ничего не сгорит, пока копятся.</p>}
+      {!enough && <p className={styles.hint}>{hint}</p>}
     </div>
   )
 }

@@ -58,3 +58,21 @@ export const BagIcon = () =>
       <rect x="7" y="9" width="2" height="1" fill="var(--c-sun)" />
     </>,
   )
+
+/** Раскрытая книга с камнем — коллекция артефактов. */
+export const CollectionIcon = () =>
+  svg(
+    <>
+      <rect x="1" y="3" width="14" height="11" fill="var(--c-ink)" />
+      <rect x="2" y="4" width="5" height="9" fill="var(--c-parchment)" />
+      <rect x="9" y="4" width="5" height="9" fill="var(--c-parchment)" />
+      <rect x="7" y="4" width="2" height="10" fill="var(--c-bark)" />
+      <rect x="3" y="6" width="3" height="1" fill="var(--c-parchment-shade)" />
+      <rect x="3" y="8" width="3" height="1" fill="var(--c-parchment-shade)" />
+      <rect x="3" y="10" width="2" height="1" fill="var(--c-parchment-shade)" />
+      <rect x="10" y="6" width="3" height="1" fill="var(--c-ink)" />
+      <rect x="10" y="7" width="3" height="2" fill="var(--week-3)" />
+      <rect x="11" y="9" width="1" height="1" fill="var(--week-3)" />
+      <rect x="10" y="7" width="1" height="1" fill="var(--c-parchment)" />
+    </>,
+  )

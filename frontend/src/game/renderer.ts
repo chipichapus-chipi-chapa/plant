@@ -16,6 +16,7 @@ export function drawGarden(
   atlas: Atlas,
   highlights: Highlights,
   awakened: ReadonlySet<string> = new Set(),
+  sparkles: ReadonlySet<string> = new Set(),
 ) {
   ctx.imageSmoothingEnabled = false
   ctx.clearRect(0, 0, map.width * TILE, map.height * TILE)
@@ -40,6 +41,13 @@ export function drawGarden(
   ].sort((a, b) => a.bottom - b.bottom)
   for (const sprite of sprites) {
     drawFrame(ctx, atlas, sprite.frame, sprite.x, sprite.y)
+  }
+
+  // Мерцание над постройками, где ещё что-то спрятано: подсказка «здесь стоит поискать»
+  for (const prop of map.props) {
+    if (sparkles.has(prop.key)) {
+      drawFrame(ctx, atlas, 'fx_sparkle', (prop.x + prop.width) * TILE - 10, prop.y * TILE + 1)
+    }
   }
 
   if (highlights.hover) drawCorners(ctx, highlights.hover, 'rgba(242, 227, 194, 0.85)')

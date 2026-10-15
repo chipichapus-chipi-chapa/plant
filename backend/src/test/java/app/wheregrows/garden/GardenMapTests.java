@@ -41,7 +41,7 @@ class GardenMapTests {
             }
         }
         assertThat(plantable).isEqualTo(12);
-        assertThat(home.tileAt(15, 6).type()).isEqualTo("gate");
+        assertThat(home.propAt(15, 6).key()).isEqualTo("east-gate");
     }
 
     @Test

@@ -43,7 +43,8 @@ export function tileFrame(map: GardenMap, x: number, y: number): string {
       return horizontal ? 'fence_h' : 'fence_v'
     }
     case 'gate':
-      return 'gate'
+      // калитка-тайл (в старых картах); в домашнем саду калитка — постройка
+      return 'prop_gate'
     case 'weeds':
       return `weeds_${variant(x, y, 3)}`
     case 'path':

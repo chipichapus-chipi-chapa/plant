@@ -1,0 +1,82 @@
+.collection {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.counter {
+  margin: 0;
+  color: var(--c-bark);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+  padding: var(--space-3);
+  background: var(--c-parchment-shade);
+  box-shadow: 0 0 0 var(--px) var(--c-bark);
+}
+
+/* Рамка редкого артефакта: золото и мягкое сияние */
+.frame {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  background: radial-gradient(circle, rgb(240 194 90 / 0.45), transparent 70%), var(--c-parchment);
+  box-shadow: 0 0 0 var(--px) var(--c-sun), 0 0 0 calc(var(--px) * 2) var(--c-ink);
+}
+
+.silhouette {
+  background: var(--c-parchment);
+  box-shadow: 0 0 0 var(--px) var(--c-bark);
+  opacity: 0.7;
+}
+
+.text {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.text p {
+  margin: 0;
+}
+
+.name {
+  margin: 0;
+  font-size: var(--text-l);
+  color: var(--c-bark);
+}
+
+.category {
+  font-size: var(--text-s);
+  color: var(--c-bark);
+}
+
+.legend {
+  font-style: italic;
+  color: var(--c-bark);
+}
+
+.effect {
+  font-size: var(--text-s);
+}
+
+.found,
+.hint {
+  font-size: var(--text-s);
+  color: var(--c-bark);
+}
+
+.unknown .name {
+  letter-spacing: 0.2em;
+}
