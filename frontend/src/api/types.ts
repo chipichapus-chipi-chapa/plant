@@ -49,6 +49,20 @@ export type Habit = { id: number; title: string; crystalCategory: string | null;
 
 export type ItemGrant = { itemKey: string; quantity: number }
 
+/** Растение (позже и декор) в клетке сада. Стадию роста считает сервер. */
+export type GardenObject = {
+  x: number
+  y: number
+  kind: 'PLANT'
+  speciesKey: string
+  plantedAt: string
+  stage: number
+  stageCount: number
+  mature: boolean
+  /** ISO-время следующей стадии; null — растение взрослое */
+  nextStageAt: string | null
+}
+
 export type GameState = {
   player: { displayName: string; timezone: string }
   /** Дата «сегодня» по часовому поясу игрока, ISO yyyy-mm-dd */
@@ -56,6 +70,7 @@ export type GameState = {
   inventory: ItemGrant[]
   habits: Habit[]
   dailyRewards: { used: number; limit: number }
+  garden: { objects: GardenObject[] }
 }
 
 export type HabitInput = { title: string; crystalCategory: string | null }
