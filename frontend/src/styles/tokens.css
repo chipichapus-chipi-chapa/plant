@@ -14,7 +14,9 @@
   --c-moss-dark: #384026;
   --c-moss: #616338;
   --c-leaf: #86b56e;
-  --c-dusk: #2e3a33;           /* фон вокруг сада: тёмная листва */
+  --c-dusk: #2a2119;           /* фон вокруг сада: тёплый тёмный, как комната вечером */
+  --c-dusk-light: #3b2e22;
+  --c-glow: #ffcf7a;           /* свет лампы */
   --c-dew: #7ec8d8;            /* росинки — игровая валюта */
   --c-sun: #f0c25a;            /* подсветка, награды */
   --c-berry: #b5485a;          /* ошибки, предупреждения */
@@ -50,9 +52,16 @@
   --space-4: calc(var(--px) * 4);
   --space-6: calc(var(--px) * 6);
 
-  /* Шрифт */
-  --font-pixel: 'Pixelify Sans', system-ui, sans-serif;
-  --text-s: 14px;
-  --text-m: 16px;
-  --text-l: 22px;
+  /* Шрифт: тёплая «книжная» антиква. Заменить — одна строка здесь и импорт в global.css */
+  --font-main: 'Kurale', Georgia, 'Times New Roman', serif;
+  --text-s: 15px;
+  --text-m: 17px;
+  --text-l: 23px;
+
+  /* Фактура бумаги: мелкие неровные крапинки поверх пергамента */
+  --paper-texture:
+    radial-gradient(circle at 20% 30%, rgb(122 82 54 / 0.07) 1px, transparent 1.5px),
+    radial-gradient(circle at 70% 80%, rgb(122 82 54 / 0.06) 1px, transparent 1.5px),
+    radial-gradient(circle at 45% 60%, rgb(255 255 255 / 0.18) 1px, transparent 1.5px);
+  --paper-size: 7px 7px, 11px 11px, 5px 5px;
 }

@@ -1,5 +1,5 @@
-@import '@fontsource/pixelify-sans/400.css';
-@import '@fontsource/pixelify-sans/600.css';
+@import '@fontsource/kurale/cyrillic-400.css';
+@import '@fontsource/kurale/latin-400.css';
 @import './tokens.css';
 
 *,
@@ -16,11 +16,18 @@ body,
 }
 
 body {
-  background: var(--c-dusk);
+  /* Вечерняя комната: тёплый свет лампы сверху, мягкая темнота по углам */
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 28%, rgb(255 207 122 / 0.16), transparent 70%),
+    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 55%, rgb(0 0 0 / 0.45)),
+    var(--c-dusk);
+  background-attachment: fixed;
   color: var(--c-ink);
-  font-family: var(--font-pixel);
+  font-family: var(--font-main);
   font-size: var(--text-m);
-  line-height: 1.4;
+  line-height: 1.45;
+  /* У шрифта одно начертание: без синтетического «полужирного», чтобы буквы не расплывались */
+  font-synthesis: none;
   /* Пиксельная графика не должна размываться при масштабировании */
   image-rendering: pixelated;
 }

@@ -50,8 +50,31 @@ export function drawGarden(
     }
   }
 
+  drawEveningLight(ctx, map)
+
   if (highlights.hover) drawCorners(ctx, highlights.hover, 'rgba(242, 227, 194, 0.85)')
   if (highlights.selected) drawSelection(ctx, highlights.selected)
+}
+
+/**
+ * «Ламповый» вечерний свет поверх сцены: тёплая подкраска и мягкое затемнение к краям.
+ * Рисуется до подсветки клеток, чтобы рамки выбора оставались чёткими.
+ */
+function drawEveningLight(ctx: CanvasRenderingContext2D, map: GardenMap) {
+  const w = map.width * TILE
+  const h = map.height * TILE
+  ctx.save()
+  ctx.globalCompositeOperation = 'soft-light'
+  ctx.fillStyle = 'rgba(255, 176, 96, 0.35)'
+  ctx.fillRect(0, 0, w, h)
+  ctx.globalCompositeOperation = 'source-over'
+  const vignette = ctx.createRadialGradient(w * 0.55, h * 0.4, h * 0.25, w / 2, h / 2, w * 0.62)
+  vignette.addColorStop(0, 'rgba(255, 207, 122, 0.06)')
+  vignette.addColorStop(0.6, 'rgba(36, 27, 19, 0)')
+  vignette.addColorStop(1, 'rgba(36, 27, 19, 0.38)')
+  ctx.fillStyle = vignette
+  ctx.fillRect(0, 0, w, h)
+  ctx.restore()
 }
 
 function drawFrame(ctx: CanvasRenderingContext2D, atlas: Atlas, name: string, x: number, y: number) {

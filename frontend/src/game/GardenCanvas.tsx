@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from
 import type { GardenMap, GardenObject } from '../api/types'
 import type { Atlas } from './atlas'
 import { cellAtPoint, fitScale, inBounds, TILE, type Cell } from './layout'
+import { Fireflies } from './Fireflies'
 import { drawGarden } from './renderer'
 import styles from './GardenCanvas.module.css'
 
@@ -102,22 +103,25 @@ export function GardenCanvas({ map, objects, awakened, sparkles, atlas, selected
 
   return (
     <div ref={wrapRef} className={styles.wrap}>
-      <canvas
-        ref={canvasRef}
-        className={styles.canvas}
-        tabIndex={0}
-        aria-label={`${map.name}. Стрелки — выбрать клетку, Escape — снять выбор.`}
-        onPointerMove={(e) => {
-          const cell = cellFromEvent(e)
-          if (!sameCell(cell, hover)) setHover(cell)
-        }}
-        onPointerLeave={() => setHover(null)}
-        onClick={(e) => {
-          const cell = cellFromEvent(e)
-          onSelect(sameCell(cell, selected) ? null : cell)
-        }}
-        onKeyDown={onKeyDown}
-      />
+      <div className={styles.stage}>
+        <canvas
+          ref={canvasRef}
+          className={styles.canvas}
+          tabIndex={0}
+          aria-label={`${map.name}. Стрелки — выбрать клетку, Escape — снять выбор.`}
+          onPointerMove={(e) => {
+            const cell = cellFromEvent(e)
+            if (!sameCell(cell, hover)) setHover(cell)
+          }}
+          onPointerLeave={() => setHover(null)}
+          onClick={(e) => {
+            const cell = cellFromEvent(e)
+            onSelect(sameCell(cell, selected) ? null : cell)
+          }}
+          onKeyDown={onKeyDown}
+        />
+        <Fireflies />
+      </div>
     </div>
   )
 }

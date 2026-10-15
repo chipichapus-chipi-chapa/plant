@@ -15,7 +15,8 @@
   grid-template-rows: auto minmax(0, 1fr);
   width: min(560px, 100%);
   max-height: calc(100dvh - var(--space-4) * 2);
-  background: var(--c-parchment);
+  background: var(--paper-texture), var(--c-parchment);
+  background-size: var(--paper-size), auto;
   box-shadow:
     0 0 0 var(--px) var(--c-wood),
     0 0 0 calc(var(--px) * 2) var(--c-bark),

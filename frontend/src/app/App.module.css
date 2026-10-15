@@ -18,10 +18,13 @@
 
 .logo {
   margin: 0;
-  font-size: 28px;
-  font-weight: 600;
-  color: var(--c-sun);
-  text-shadow: var(--px) var(--px) 0 var(--c-ink);
+  font-size: 32px;
+  font-weight: 400;
+  color: var(--c-glow);
+  /* надпись будто нарисована светом лампы */
+  text-shadow:
+    2px 2px 0 var(--c-ink),
+    0 0 18px rgb(255 176 96 / 0.55);
 }
 
 /* Сад — центральный элемент: во всю ширину, под ним панель действий */
