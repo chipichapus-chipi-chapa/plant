@@ -6,8 +6,16 @@ export const CHARACTER_HEIGHT = 56
 
 export type Highlights = { hover: Cell | null; selected: Cell | null }
 
-/** Персонаж на клетке: готовая картинка 32×56 (низ — по низу клетки, голова выше неё). */
-export type CharacterSprite = { x: number; y: number; image: CanvasImageSource }
+/**
+ * Персонаж: готовая картинка 32×56 и точка его ступней в логических пикселях.
+ * flip — смотрит влево (спрайт нарисован вполоборота вправо), lift — подпрыгивание при ходьбе.
+ */
+export type CharacterSprite = { px: number; py: number; image: CanvasImageSource; flip?: boolean; lift?: number }
+
+/** Персонаж, стоящий в клетке: ступни по центру у нижнего края. */
+export function standingAt(cell: Cell, image: CanvasImageSource): CharacterSprite {
+  return { px: cell.x * TILE + TILE / 2, py: cell.y * TILE + TILE - 2, image }
+}
 
 /** Всё, что меняется у игрока: растения, пробуждённые объекты, мерцания, персонажи. */
 export type Scene = {
@@ -53,11 +61,11 @@ export function drawGarden(
     // кадр растения 32×48: низ совпадает с низом клетки, верх выступает над ней
     ...objects.map((o) => ({ bottom: o.y + 1, frame: `plant_${o.speciesKey}_${o.stage}`, x: o.x * TILE, y: o.y * TILE - 16 })),
   ].sort((a, b) => a.bottom - b.bottom)
-  // Персонажи — после построек своей «строки», чтобы стоять перед ними
-  const people = [...characters].sort((a, b) => a.y - b.y)
+  // Персонажи и постройки — по глубине: кто ниже на экране, тот ближе и рисуется позже
+  const people = [...characters].sort((a, b) => a.py - b.py)
   let next = 0
   for (const sprite of sprites) {
-    while (next < people.length && people[next].y + 1 < sprite.bottom) drawCharacter(ctx, people[next++])
+    while (next < people.length && people[next].py < sprite.bottom * TILE) drawCharacter(ctx, people[next++])
     drawFrame(ctx, atlas, sprite.frame, sprite.x, sprite.y)
   }
   while (next < people.length) drawCharacter(ctx, people[next++])
@@ -102,7 +110,17 @@ function drawEveningLight(ctx: CanvasRenderingContext2D, map: GardenMap) {
 }
 
 function drawCharacter(ctx: CanvasRenderingContext2D, c: CharacterSprite) {
-  ctx.drawImage(c.image, c.x * TILE, c.y * TILE - (CHARACTER_HEIGHT - TILE))
+  const left = Math.round(c.px - TILE / 2)
+  const top = Math.round(c.py - CHARACTER_HEIGHT + 2 - (c.lift ?? 0))
+  if (!c.flip) {
+    ctx.drawImage(c.image, left, top)
+    return
+  }
+  ctx.save()
+  ctx.translate(left + TILE, top)
+  ctx.scale(-1, 1)
+  ctx.drawImage(c.image, 0, 0)
+  ctx.restore()
 }
 
 function drawFrame(ctx: CanvasRenderingContext2D, atlas: Atlas, name: string, x: number, y: number) {

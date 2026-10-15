@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApiError } from '../../api/client'
 import { plantSeed } from '../../api/game'
 import type { Catalog, GameState } from '../../api/types'
 import { frameImage, loadAtlas, type Atlas } from '../../game/atlas'
 import { composeCharacter } from '../../game/character'
 import { GardenCanvas } from '../../game/GardenCanvas'
-import type { Scene } from '../../game/renderer'
+import { standingAt, type Scene } from '../../game/renderer'
 import {
   describeCell,
   MENTOR_SPOT,
@@ -32,12 +32,16 @@ type Props = {
   onChanged: () => Promise<void>
   /** Открыть окно изменения облика (клик по своему персонажу) */
   onEditCharacter: () => void
+  /** Можно ходить: не открыто ни одно окно */
+  inputEnabled: boolean
 }
+
+const STANDING: Cell[] = [MENTOR_SPOT]
 
 const sameCell = (a: Cell, b: Cell) => a.x === b.x && a.y === b.y
 
 /** Сад, табличка о выбранной клетке и посадка из сумки. */
-export function GardenView({ state, catalog, onChanged, onEditCharacter }: Props) {
+export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEnabled }: Props) {
   const map = catalog.garden
   const [atlas, setAtlas] = useState<AtlasLoad>({ status: 'loading' })
   const [selected, setSelected] = useState<Cell | null>(null)
@@ -78,18 +82,41 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter }: Props
       objects: state.garden.objects,
       awakened: new Set(state.worldObjects.map((w) => w.objectKey)),
       sparkles: new Set(catalog.spots.filter((spot) => !searched.has(spot.key)).map((spot) => spot.propKey)),
-      characters: [
-        { ...PLAYER_SPOT, image: composeCharacter(atlas.atlas, state.player.appearance, catalog.appearance) },
-        ...(mentorImage ? [{ ...MENTOR_SPOT, image: mentorImage }] : []),
-      ],
+      characters: mentorImage ? [standingAt(MENTOR_SPOT, mentorImage)] : [],
       bubbles: state.mentor.hasNews ? [MENTOR_SPOT] : [],
     }
   }, [atlas, state, catalog])
+
+  const playerImage = useMemo(
+    () => (atlas.status === 'ready' ? composeCharacter(atlas.atlas, state.player.appearance, catalog.appearance) : null),
+    [atlas, state.player.appearance, catalog.appearance],
+  )
+
+  // Где стоит персонаж и куда смотрит: клетка перед ним становится выбранной
+  const [playerCell, setPlayerCell] = useState<Cell>(PLAYER_SPOT)
+  const facingRef = useRef<Cell | null>(null)
+  const infoRef = useRef<HTMLDivElement>(null)
+  const onPlayerMove = useCallback((at: Cell, facing: Cell) => {
+    setPlayerCell(at)
+    facingRef.current = facing
+    setSelected(facing)
+    setNow(Date.now())
+  }, [])
 
   const [dialogue, setDialogue] = useState<string | null>(null)
   const talk = () => {
     const idle = catalog.mentor.idle
     setDialogue(state.mentor.nextDialogue ?? idle[Math.floor(Math.random() * idle.length)])
+  }
+
+  /** Действие — «нажать главную кнопку таблички» о клетке перед персонажем. С наставником — заговорить. */
+  const act = () => {
+    const facing = facingRef.current
+    if (facing && sameCell(facing, MENTOR_SPOT)) {
+      talk()
+      return
+    }
+    infoRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.click()
   }
 
   // Знакомство начинается само — один раз, сразу после создания персонажа
@@ -124,8 +151,19 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter }: Props
 
   return (
     <section className={styles.garden} aria-label={map.name}>
-      {atlas.status === 'ready' && scene ? (
-        <GardenCanvas map={map} scene={scene} atlas={atlas.atlas} selected={selected} onSelect={select} />
+      {atlas.status === 'ready' && scene && playerImage ? (
+        <GardenCanvas
+          map={map}
+          scene={scene}
+          standing={STANDING}
+          atlas={atlas.atlas}
+          player={{ image: playerImage, start: PLAYER_SPOT }}
+          selected={selected}
+          onSelect={select}
+          onPlayerMove={onPlayerMove}
+          onAction={act}
+          inputEnabled={inputEnabled && dialogue === null}
+        />
       ) : (
         <div className={styles.placeholder} style={{ aspectRatio: `${map.width} / ${map.height}` }}>
           <p className={styles.note}>
@@ -134,7 +172,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter }: Props
         </div>
       )}
 
-      <div className={styles.info} aria-live="polite">
+      <div className={styles.info} aria-live="polite" ref={infoRef}>
         {selected && sameCell(selected, MENTOR_SPOT) ? (
           <div className={styles.cell}>
             <p className={styles.text}>
@@ -144,7 +182,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter }: Props
               <Button onClick={talk}>Поговорить</Button>
             </div>
           </div>
-        ) : selected && sameCell(selected, PLAYER_SPOT) ? (
+        ) : selected && sameCell(selected, playerCell) ? (
           <div className={styles.cell}>
             <p className={styles.text}>
               <strong>{state.player.displayName}.</strong> Это вы. Сад, кажется, уже привык к вашим шагам.
@@ -164,7 +202,9 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter }: Props
             onChanged={onChanged}
           />
         ) : (
-          <span className={styles.hint}>Нажмите на клетку сада, чтобы рассмотреть её поближе.</span>
+          <span className={styles.hint}>
+            Стрелки или WASD — идти, E или пробел — действие. Можно и просто нажать на клетку.
+          </span>
         )}
       </div>
 

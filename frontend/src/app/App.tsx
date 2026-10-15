@@ -47,6 +47,7 @@ export function App() {
                 catalog={game.catalog}
                 onChanged={refresh}
                 onEditCharacter={() => setOpen('character')}
+                inputEnabled={open === null && game.state.player.onboarded}
               />
             ) : (
               <div className={styles.garden} aria-busy="true">
