@@ -5,6 +5,7 @@ import type { Catalog, GameState } from '../../api/types'
 import { frameImage, loadAtlas, type Atlas } from '../../game/atlas'
 import { composeCharacter } from '../../game/character'
 import { GardenCanvas } from '../../game/GardenCanvas'
+import { isInteractive, markerPoint, promptPoint, type Objective } from '../../game/guidance'
 import { standingAt, type Scene } from '../../game/renderer'
 import {
   describeCell,
@@ -34,6 +35,8 @@ type Props = {
   onEditCharacter: () => void
   /** Можно ходить: не открыто ни одно окно */
   inputEnabled: boolean
+  /** Текущее задание от Вереска — над его целью в саду покачивается стрелка */
+  objective: Objective | null
 }
 
 const STANDING: Cell[] = [MENTOR_SPOT]
@@ -41,9 +44,11 @@ const STANDING: Cell[] = [MENTOR_SPOT]
 const sameCell = (a: Cell, b: Cell) => a.x === b.x && a.y === b.y
 
 /** Сад, табличка о выбранной клетке и посадка из сумки. */
-export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEnabled }: Props) {
+export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEnabled, objective }: Props) {
   const map = catalog.garden
   const [atlas, setAtlas] = useState<AtlasLoad>({ status: 'loading' })
+  // клетка перед персонажем: если с ней можно что-то сделать, над ней загорается «!»
+  const [facing, setFacing] = useState<Cell | null>(null)
   const [selected, setSelected] = useState<Cell | null>(null)
   const [planting, setPlanting] = useState(false)
   // «Сейчас» для подписей вроде «через 5 мин»: обновляется раз в 30 секунд
@@ -84,8 +89,10 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
       sparkles: new Set(catalog.spots.filter((spot) => !searched.has(spot.key)).map((spot) => spot.propKey)),
       characters: mentorImage ? [standingAt(MENTOR_SPOT, mentorImage)] : [],
       bubbles: state.mentor.hasNews ? [MENTOR_SPOT] : [],
+      prompt: facing && isInteractive(facing, state, catalog) ? promptPoint(facing, map) : null,
+      marker: objective ? markerPoint(objective.target, map, state) : null,
     }
-  }, [atlas, state, catalog])
+  }, [atlas, state, catalog, facing, objective, map])
 
   const playerImage = useMemo(
     () => (atlas.status === 'ready' ? composeCharacter(atlas.atlas, state.player.appearance, catalog.appearance) : null),
@@ -99,6 +106,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
   const onPlayerMove = useCallback((at: Cell, facing: Cell) => {
     setPlayerCell(at)
     facingRef.current = facing
+    setFacing(facing)
     setSelected(facing)
     setNow(Date.now())
   }, [])
@@ -158,7 +166,6 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
           standing={STANDING}
           atlas={atlas.atlas}
           player={{ image: playerImage, start: PLAYER_SPOT }}
-          selected={selected}
           onSelect={select}
           onPlayerMove={onPlayerMove}
           onAction={act}

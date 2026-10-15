@@ -4,7 +4,7 @@ import { TILE, tileFrame, type Cell } from './layout'
 
 export const CHARACTER_HEIGHT = 56
 
-export type Highlights = { hover: Cell | null; selected: Cell | null }
+export type Highlights = { hover: Cell | null }
 
 /**
  * Персонаж: готовая картинка 32×56 и точка его ступней в логических пикселях.
@@ -23,8 +23,14 @@ export type Scene = {
   awakened: ReadonlySet<string>
   sparkles: ReadonlySet<string>
   characters: CharacterSprite[]
-  /** Клетки, над чьими персонажами горит «!» */
+  /** Клетки, над чьими персонажами горит «!» новостей */
   bubbles: Cell[]
+  /** Точка над объектом рядом с персонажем, с которым можно взаимодействовать (золотой «!») */
+  prompt?: { x: number; y: number } | null
+  /** Точка над целью текущего задания (стрелка) */
+  marker?: { x: number; y: number } | null
+  /** Время в мс — для покачивания стрелки */
+  time?: number
 }
 
 /**
@@ -39,7 +45,7 @@ export function drawGarden(
   scene: Scene,
   highlights: Highlights,
 ) {
-  const { objects, awakened, sparkles, characters, bubbles } = scene
+  const { objects, awakened, sparkles, characters, bubbles, prompt, marker, time = 0 } = scene
   ctx.imageSmoothingEnabled = false
   ctx.clearRect(0, 0, map.width * TILE, map.height * TILE)
 
@@ -84,8 +90,14 @@ export function drawGarden(
     drawFrame(ctx, atlas, 'fx_bubble', cell.x * TILE + 18, cell.y * TILE - (CHARACTER_HEIGHT - TILE) + 2)
   }
 
-  if (highlights.hover) drawCorners(ctx, highlights.hover, 'rgba(242, 227, 194, 0.85)')
-  if (highlights.selected) drawSelection(ctx, highlights.selected)
+  if (prompt) drawFrame(ctx, atlas, 'fx_interact', Math.round(prompt.x - 5), Math.round(prompt.y - 15))
+  if (marker) {
+    const bob = Math.round(Math.sin(time / 220) * 2)
+    drawFrame(ctx, atlas, 'fx_arrow', Math.round(marker.x - 6), Math.round(marker.y - 13 + bob))
+  }
+
+  // Лёгкие уголки под мышью — подсказка, куда придётся клик. Выбор клетки отдельно не рисуется.
+  if (highlights.hover) drawCorners(ctx, highlights.hover, 'rgba(242, 227, 194, 0.7)')
 }
 
 /**
@@ -144,20 +156,4 @@ function drawCorners(ctx: CanvasRenderingContext2D, cell: Cell, color: string) {
     ctx.fillRect(dx > 0 ? cx : cx - l, dy > 0 ? cy : cy - 2, l, 2)
     ctx.fillRect(dx > 0 ? cx : cx - 2, dy > 0 ? cy : cy - l, 2, l)
   }
-}
-
-/** Выбранная клетка: рамка цвета солнца с тёмной обводкой. */
-function drawSelection(ctx: CanvasRenderingContext2D, cell: Cell) {
-  const x = cell.x * TILE
-  const y = cell.y * TILE
-  ctx.fillStyle = '#241b13'
-  ctx.fillRect(x - 1, y - 1, TILE + 2, 4)
-  ctx.fillRect(x - 1, y + TILE - 3, TILE + 2, 4)
-  ctx.fillRect(x - 1, y - 1, 4, TILE + 2)
-  ctx.fillRect(x + TILE - 3, y - 1, 4, TILE + 2)
-  ctx.fillStyle = '#f0c25a'
-  ctx.fillRect(x, y, TILE, 2)
-  ctx.fillRect(x, y + TILE - 2, TILE, 2)
-  ctx.fillRect(x, y, 2, TILE)
-  ctx.fillRect(x + TILE - 2, y, 2, TILE)
 }

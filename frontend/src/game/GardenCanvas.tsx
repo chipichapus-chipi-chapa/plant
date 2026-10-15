@@ -2,7 +2,6 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent 
 import type { GardenMap } from '../api/types'
 import type { Atlas } from './atlas'
 import { Fireflies } from './Fireflies'
-import { Joystick } from './Joystick'
 import { cellAtPoint, fitScale, inBounds, TILE, type Cell } from './layout'
 import { blockedCells, cellOf, facingCell, walk, walkerAt, type Walker } from './movement'
 import { drawGarden, type Scene } from './renderer'
@@ -31,7 +30,6 @@ type Props = {
   standing: Cell[]
   atlas: Atlas
   player: { image: CanvasImageSource; start: Cell }
-  selected: Cell | null
   onSelect: (cell: Cell | null) => void
   /** Персонаж перешёл в другую клетку или повернулся к другой клетке */
   onPlayerMove: (at: Cell, facing: Cell) => void
@@ -45,6 +43,11 @@ const isTyping = (target: EventTarget | null) =>
   target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName))
 
 const coarsePointer = () => window.matchMedia?.('(pointer: coarse)').matches ?? false
+
+/** На сколько пикселей надо провести пальцем, чтобы это считалось ходьбой, а не касанием клетки. */
+const DRAG_THRESHOLD = 10
+/** Отклонение пальца, при котором персонаж идёт в полную скорость. */
+const STICK_RADIUS = 48
 
 /**
  * Канвас сада с игровым циклом. Каждый кадр: ввод (клавиатура или джойстик) → шаг ходьбы
@@ -81,7 +84,11 @@ export function GardenCanvas(props: Props) {
   // Любое изменение входных данных — повод перерисовать кадр
   useEffect(() => {
     dirtyRef.current = true
-  }, [scene, atlas, scale, props.selected, player.image])
+  }, [scene, atlas, scale, player.image])
+
+  // Невидимый джойстик на телефоне: ведёшь пальцем по саду — персонаж идёт в ту сторону
+  const touchRef = useRef<{ id: number; x: number; y: number; dragging: boolean } | null>(null)
+  const lastPointerWasTouch = useRef(false)
 
   // Масштаб под ширину контейнера и высоту окна
   useEffect(() => {
@@ -157,14 +164,16 @@ export function GardenCanvas(props: Props) {
         }
       }
 
-      if (moving || dirtyRef.current) {
+      // Стрелка задания покачивается — пока она видна, кадр перерисовывается постоянно
+      const animated = !!p.scene.marker
+      if (moving || animated || dirtyRef.current) {
         dirtyRef.current = moving // после остановки нарисуем ещё один кадр — без подпрыгивания
-        draw(moving ? Math.floor(now / 140) % 2 : 0)
+        draw(moving ? Math.floor(now / 140) % 2 : 0, now)
       }
       frame = requestAnimationFrame(tick)
     }
 
-    const draw = (lift: number) => {
+    const draw = (lift: number, time: number) => {
       const p = latest.current
       const canvas = canvasRef.current
       const ctx = canvas?.getContext('2d')
@@ -188,12 +197,13 @@ export function GardenCanvas(props: Props) {
       const w = walkerRef.current
       const scene: Scene = {
         ...p.scene,
+        time,
         characters: [
           ...p.scene.characters,
           { px: w.x, py: w.y, image: p.player.image, flip: w.facing === 'left', lift },
         ],
       }
-      drawGarden(bufferCtx, p.map, p.atlas, scene, { hover: hoverRef.current, selected: p.selected })
+      drawGarden(bufferCtx, p.map, p.atlas, scene, { hover: hoverRef.current })
 
       ctx.imageSmoothingEnabled = false
       ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -215,10 +225,35 @@ export function GardenCanvas(props: Props) {
       <div className={styles.stage}>
         <canvas
           ref={canvasRef}
-          className={styles.canvas}
+          className={touch ? `${styles.canvas} ${styles.touch}` : styles.canvas}
           tabIndex={0}
           aria-label={`${map.name}. Стрелки или WASD — идти, E или пробел — действие, клик — рассмотреть клетку.`}
+          onPointerDown={(e) => {
+            lastPointerWasTouch.current = e.pointerType === 'touch'
+            if (e.pointerType !== 'touch' || touchRef.current || !inputEnabled) return
+            touchRef.current = { id: e.pointerId, x: e.clientX, y: e.clientY, dragging: false }
+          }}
+          onPointerUp={(e) => {
+            const t = touchRef.current
+            if (!t || t.id !== e.pointerId) return
+            touchRef.current = null
+            stickRef.current = { dx: 0, dy: 0 }
+            if (!t.dragging) onSelect(cellFromEvent(e)) // короткое касание — рассмотреть клетку
+          }}
+          onPointerCancel={(e) => {
+            if (touchRef.current?.id !== e.pointerId) return
+            touchRef.current = null
+            stickRef.current = { dx: 0, dy: 0 }
+          }}
           onPointerMove={(e) => {
+            const t = touchRef.current
+            if (t && t.id === e.pointerId) {
+              const dx = e.clientX - t.x
+              const dy = e.clientY - t.y
+              if (Math.hypot(dx, dy) > DRAG_THRESHOLD) t.dragging = true
+              if (t.dragging) stickRef.current = { dx: dx / STICK_RADIUS, dy: dy / STICK_RADIUS }
+              return
+            }
             const cell = cellFromEvent(e)
             const hover = hoverRef.current
             if (cell?.x !== hover?.x || cell?.y !== hover?.y) {
@@ -230,19 +265,23 @@ export function GardenCanvas(props: Props) {
             hoverRef.current = null
             dirtyRef.current = true
           }}
-          onClick={(e) => onSelect(cellFromEvent(e))}
+          onClick={(e) => {
+            // касания обрабатываются в onPointerUp (там отличаем ходьбу от касания клетки)
+            if (!lastPointerWasTouch.current) onSelect(cellFromEvent(e))
+          }}
         />
         <Fireflies />
+        {touch && inputEnabled && (
+          <button
+            type="button"
+            className={styles.action}
+            aria-label="Действие"
+            onClick={() => latest.current.onAction()}
+          >
+            <span aria-hidden="true">✋</span>
+          </button>
+        )}
       </div>
-      {/* На телефоне — панель управления под садом, чтобы не закрывать его пальцами */}
-      {touch && inputEnabled && (
-        <Joystick
-          onMove={(dx, dy) => {
-            stickRef.current = { dx, dy }
-          }}
-          onAction={() => latest.current.onAction()}
-        />
-      )}
     </div>
   )
 }

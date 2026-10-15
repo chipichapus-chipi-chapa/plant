@@ -15,7 +15,8 @@ class MentorContentTests {
     }
 
     private static MentorContent content(Map<String, MentorContent.Dialogue> dialogues, List<MentorContent.Step> steps) {
-        return new MentorContent(new MentorContent.Speaker("v", "В"), "intro", List.of(), steps, dialogues);
+        return new MentorContent(new MentorContent.Speaker("v", "В"), "intro", List.of(), steps, dialogues,
+                "Поговорите", "Расскажите");
     }
 
     @Test
@@ -34,13 +35,25 @@ class MentorContentTests {
     }
 
     @Test
+    void stepNeedsExactlyOneTarget() {
+        var line = Map.of("a", new MentorContent.Node("...", null, null));
+        var dialogues = Map.of("intro", dialogue(line), "hint", dialogue(line),
+                "done", new MentorContent.Dialogue("a", "ack_plant", null, line));
+        var twoTargets = new MentorContent.Step("plant", Condition.PLANTED, "hint", "done", "Посадите",
+                new MentorContent.Target("shop", null, "soil"));
+        assertThatThrownBy(() -> content(dialogues, List.of(twoTargets)).validate())
+                .hasMessageContaining("ровно одна цель");
+    }
+
+    @Test
     void stepCompletionMustSetAckFlag() {
         var line = Map.of("a", new MentorContent.Node("...", null, null));
         var dialogues = Map.of(
                 "intro", dialogue(line),
                 "hint", dialogue(line),
                 "done", new MentorContent.Dialogue("a", "wrong_flag", null, line));
-        var step = new MentorContent.Step("plant", Condition.PLANTED, "hint", "done");
+        var step = new MentorContent.Step("plant", Condition.PLANTED, "hint", "done", "Посадите",
+                new MentorContent.Target(null, null, "soil"));
         assertThatThrownBy(() -> content(dialogues, List.of(step)).validate())
                 .hasMessageContaining("ack_plant");
     }

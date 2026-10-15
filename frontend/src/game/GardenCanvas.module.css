@@ -27,3 +27,31 @@
   outline: var(--px) solid var(--c-sun);
   outline-offset: calc(var(--px) * 2);
 }
+
+/* На телефоне сад — это и есть джойстик: страница не должна прокручиваться под пальцем */
+.touch {
+  touch-action: none;
+}
+
+/* Маленькая кнопка действия в углу сада */
+.action {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(240 194 90 / 0.85);
+  font-size: 18px;
+  line-height: 1;
+  box-shadow: 0 0 0 2px var(--c-ink), inset 0 -3px 0 0 var(--c-wood);
+  touch-action: manipulation;
+}
+
+.action:active {
+  box-shadow: 0 0 0 2px var(--c-ink), inset 0 2px 0 0 var(--c-wood);
+}

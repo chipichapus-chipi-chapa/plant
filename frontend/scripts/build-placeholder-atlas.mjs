@@ -274,6 +274,30 @@ function bubble() {
   return s
 }
 
+/** Золотой «!»: рядом есть то, с чем можно взаимодействовать. */
+function interactBubble() {
+  const s = new Sprite(11, 13)
+  s.rect(0, 0, 11, 10, P.ink)
+  s.rect(1, 1, 9, 8, P.sun)
+  s.rect(1, 1, 9, 1, P.petal)
+  s.rect(3, 10, 3, 1, P.ink)
+  s.rect(4, 11, 2, 1, P.ink)
+  s.rect(4, 10, 1, 1, P.sun)
+  s.rect(5, 2, 1, 4, P.ink)
+  s.rect(5, 7, 1, 1, P.ink)
+  return s
+}
+
+/** Стрелка-указатель задания: смотрит вниз, на цель. */
+function questArrow() {
+  const s = new Sprite(13, 12)
+  const body = [[4, 0, 5, 5], [1, 5, 11, 2], [2, 7, 9, 1], [3, 8, 7, 1], [4, 9, 5, 1], [5, 10, 3, 1], [6, 11, 1, 1]]
+  for (const [x, y, w, h] of body) s.rect(x - 1, y - 1, w + 2, h + 2, P.ink)
+  for (const [x, y, w, h] of body) s.rect(x, y, w, h, P.sun)
+  s.rect(5, 1, 1, 5, P.petal)
+  return s
+}
+
 /** Мерцание над местом, где что-то спрятано: крошечная четырёхлучевая искра. */
 function sparkle() {
   const s = new Sprite(9, 9)
@@ -809,6 +833,8 @@ const frames = {
   prop_gate_awakened: gateOpen(701),
   fx_sparkle: sparkle(),
   fx_bubble: bubble(),
+  fx_interact: interactBubble(),
+  fx_arrow: questArrow(),
   char_body: charBody(),
   ...Object.fromEntries(['overalls', 'sweater', 'dress'].map((k) => [`char_outfit_${k}`, charOutfit(k)])),
   ...Object.fromEntries(['short', 'bob', 'long', 'braid', 'bun', 'curly'].map((k) => [`char_hair_${k}`, charHair(k)])),

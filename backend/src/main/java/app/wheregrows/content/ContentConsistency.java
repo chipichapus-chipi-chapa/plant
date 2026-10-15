@@ -52,6 +52,15 @@ class ContentConsistency implements ApplicationRunner {
                 requireProp(props, spot.getRequiresAwakened(), "Условие места находки " + spot.getKey());
             }
         }
+        // цели обучения — существующие постройки и типы клеток карты
+        java.util.Set<String> tileTypes = maps.home().tiles().values().stream()
+                .map(GardenMap.TileType::type).collect(Collectors.toSet());
+        for (var step : mentor.content().tutorial()) {
+            if (step.target().prop() != null) requireProp(props, step.target().prop(), "Цель шага " + step.key());
+            if (step.target().tile() != null && !tileTypes.contains(step.target().tile())) {
+                throw new IllegalStateException("Цель шага " + step.key() + " — неизвестный тип клетки " + step.target().tile());
+            }
+        }
         // подарки наставника — существующие предметы каталога
         mentor.content().dialogues().forEach((key, dialogue) -> dialogue.giftOrEmpty().forEach(gift -> {
             if (!items.existsById(gift.itemKey())) {

@@ -148,7 +148,9 @@ class MentorApiTests {
     void catalogCarriesDialogues() throws Exception {
         mvc.perform(get("/api/catalog"))
                 .andExpect(jsonPath("$.mentor.speaker.name").value("Мастер Вереск"))
-                .andExpect(jsonPath("$.mentor.dialogues.intro.nodes.question.choices[1].next").value("lazy"));
+                .andExpect(jsonPath("$.mentor.dialogues.intro.nodes.question.choices[1].next").value("lazy"))
+                .andExpect(jsonPath("$.mentor.tutorial[0].target.hud").value("habits"))
+                .andExpect(jsonPath("$.mentor.tutorial[3].target.prop").value("rock-2"));
     }
 
     private ResultActions finish(String dialogue) throws Exception {

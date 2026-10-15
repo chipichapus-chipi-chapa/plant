@@ -7,7 +7,9 @@ import { GardenView } from '../features/garden/GardenView'
 import { HabitTracker } from '../features/habits/HabitTracker'
 import { InventoryPanel } from '../features/inventory/InventoryPanel'
 import { ToastProvider } from '../features/notifications/Toasts'
+import { QuestTracker } from '../features/mentor/QuestTracker'
 import { ShopPanel } from '../features/shop/ShopPanel'
+import { currentObjective } from '../game/guidance'
 import { Button } from '../ui/Button'
 import { HudButton } from '../ui/HudButton'
 import { BagIcon, CollectionIcon, ShopIcon, TrackerIcon } from '../ui/icons/HudIcons'
@@ -28,6 +30,11 @@ export function App() {
   const { game, reload, refresh } = useGame()
   const [open, setOpen] = useState<OpenWindow>(null)
   const close = useCallback(() => setOpen(null), [])
+  const objective = game.status === 'ready' ? currentObjective(game.state, game.catalog) : null
+  const isTarget = (key: string) => objective?.target.kind === 'hud' && objective.target.key === key
+  const openHud = (key: string) => {
+    if (key === 'habits' || key === 'shop' || key === 'bag' || key === 'collection') setOpen(key)
+  }
 
   return (
     <ToastProvider>
@@ -41,6 +48,9 @@ export function App() {
           <LoadError error={game.error} onRetry={reload} />
         ) : (
           <main className={styles.stage}>
+            {game.status === 'ready' && objective && game.state.player.onboarded && (
+              <QuestTracker objective={objective} speaker={game.catalog.mentor.speaker.name} onOpenHud={openHud} />
+            )}
             {game.status === 'ready' ? (
               <GardenView
                 state={game.state}
@@ -48,6 +58,7 @@ export function App() {
                 onChanged={refresh}
                 onEditCharacter={() => setOpen('character')}
                 inputEnabled={open === null && game.state.player.onboarded}
+                objective={objective}
               />
             ) : (
               <div className={styles.garden} aria-busy="true">
@@ -62,13 +73,15 @@ export function App() {
                   label="Привычки"
                   onClick={() => setOpen('habits')}
                   badge={habitsBadge(game.state)}
+                  highlight={isTarget('habits')}
                 />
-                <HudButton icon={<ShopIcon />} label="Лавка" onClick={() => setOpen('shop')} />
-                <HudButton icon={<BagIcon />} label="Сумка" onClick={() => setOpen('bag')} />
+                <HudButton icon={<ShopIcon />} label="Лавка" onClick={() => setOpen('shop')} highlight={isTarget('shop')} />
+                <HudButton icon={<BagIcon />} label="Сумка" onClick={() => setOpen('bag')} highlight={isTarget('bag')} />
                 <HudButton
                   icon={<CollectionIcon />}
                   label="Коллекция"
                   onClick={() => setOpen('collection')}
+                  highlight={isTarget('collection')}
                   badge={game.state.artifacts.length > 0 ? String(game.state.artifacts.length) : undefined}
                 />
               </nav>

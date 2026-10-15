@@ -73,11 +73,18 @@ export type DialogueNode = { text: string; next: string | null; choices: { text:
 export type Dialogue = { start: string; onEnd: string | null; gift: ItemGrant[] | null; nodes: Record<string, DialogueNode> }
 
 /** Реплики наставника и обучение — контент с сервера */
+/** Цель стрелки шага: кнопка панели, постройка карты или тип клетки — задано ровно одно */
+export type TutorialTarget = { hud: string | null; prop: string | null; tile: string | null }
+
 export type MentorContent = {
   speaker: { key: string; name: string }
   intro: string
   idle: string[]
   dialogues: Record<string, Dialogue>
+  tutorial: { key: string; goal: string; target: TutorialTarget }[]
+  /** строка задания до знакомства и после выполненного шага */
+  meetGoal: string
+  reportGoal: string
 }
 
 export type Catalog = {

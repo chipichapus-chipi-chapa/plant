@@ -12,13 +12,23 @@ import app.wheregrows.economy.ItemGrant;
  * если шаг использует уже известное условие ({@link Condition}).
  */
 public record MentorContent(Speaker speaker, String intro, List<String> idle, List<Step> tutorial,
-                            Map<String, Dialogue> dialogues) {
+                            Map<String, Dialogue> dialogues, String meetGoal, String reportGoal) {
 
     public record Speaker(String key, String name) {
     }
 
-    /** Шаг обучения: засчитывается по условию из реальной игры, а не по нажатию «далее». */
-    public record Step(String key, Condition condition, String hint, String done) {
+    /**
+     * Шаг обучения: засчитывается по условию из реальной игры, а не по нажатию «далее».
+     * goal — строка задания на экране; target — куда указывает стрелка.
+     */
+    public record Step(String key, Condition condition, String hint, String done, String goal, Target target) {
+    }
+
+    /**
+     * Цель стрелки: кнопка панели (hud: habits / shop / bag / collection), постройка карты (prop)
+     * или тип клетки (tile: например soil — свободная грядка). Задано ровно одно.
+     */
+    public record Target(String hud, String prop, String tile) {
     }
 
     /**
@@ -47,8 +57,13 @@ public record MentorContent(Speaker speaker, String intro, List<String> idle, Li
     void validate() {
         require(dialogues.containsKey(intro), "нет вступительного диалога " + intro);
         idle.forEach(key -> require(dialogues.containsKey(key), "нет диалога " + key));
+        require(meetGoal != null && reportGoal != null, "нет текстов заданий meetGoal / reportGoal");
         for (Step step : tutorial) {
             require(step.condition() != null, "у шага " + step.key() + " нет условия");
+            require(step.goal() != null, "у шага " + step.key() + " нет текста задания");
+            Target t = step.target();
+            require(t != null && java.util.stream.Stream.of(t.hud(), t.prop(), t.tile()).filter(java.util.Objects::nonNull).count() == 1,
+                    "у шага " + step.key() + " должна быть ровно одна цель");
             require(dialogues.containsKey(step.hint()), "нет подсказки " + step.hint());
             Dialogue done = dialogues.get(step.done());
             require(done != null, "нет диалога " + step.done());

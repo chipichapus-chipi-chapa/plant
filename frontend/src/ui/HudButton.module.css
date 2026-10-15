@@ -67,8 +67,44 @@
   box-shadow: 0 0 0 var(--px) var(--c-ink);
 }
 
+/* Цель задания: тёплое пульсирующее свечение и стрелка сверху */
+.highlight {
+  animation: glow 1.6s ease-in-out infinite;
+}
+
+.arrow {
+  position: absolute;
+  top: -26px;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  background: var(--c-sun);
+  clip-path: polygon(30% 0, 70% 0, 70% 45%, 100% 45%, 50% 100%, 0 45%, 30% 45%);
+  filter: drop-shadow(0 0 1px var(--c-ink)) drop-shadow(0 0 1px var(--c-ink));
+  animation: bob 0.9s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  50% {
+    box-shadow:
+      0 0 0 var(--px) var(--c-ink),
+      inset 0 calc(var(--px) * -2) 0 0 var(--c-bark),
+      0 0 18px 6px rgb(255 207 122 / 0.75);
+  }
+}
+
+@keyframes bob {
+  to {
+    transform: translateY(5px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .button {
+  .button,
+  .highlight,
+  .arrow {
     transition: none;
+    animation: none;
   }
 }
