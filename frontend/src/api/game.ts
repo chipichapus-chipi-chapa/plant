@@ -41,3 +41,6 @@ export const uncompleteHabitOn = (id: number, day: string) =>
 
 export const searchSpot = (spotKey: string) =>
   apiFetch<SearchResult>(`/api/exploration/spots/${spotKey}/search`, { method: 'POST' })
+
+export const saveProfile = (displayName: string, appearance: Record<string, string>) =>
+  apiFetch<void>('/api/profile', { method: 'PUT', body: JSON.stringify({ displayName, appearance }) })

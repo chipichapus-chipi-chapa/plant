@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import type { ApiError } from '../api/client'
 import { LIFE_SEED, SUN_SPARK, type GameState } from '../api/types'
+import { CharacterEditor } from '../features/character/CharacterEditor'
 import { CollectionPanel } from '../features/collection/CollectionPanel'
 import { GardenView } from '../features/garden/GardenView'
 import { HabitTracker } from '../features/habits/HabitTracker'
@@ -17,7 +18,7 @@ import { Window } from '../ui/Window'
 import styles from './App.module.css'
 import { useGame } from './useGame'
 
-type OpenWindow = 'habits' | 'shop' | 'bag' | 'collection' | null
+type OpenWindow = 'habits' | 'shop' | 'bag' | 'collection' | 'character' | null
 
 /**
  * Главный экран: сад в центре, под ним панель действий. Привычки, лавка и сумка
@@ -41,7 +42,12 @@ export function App() {
         ) : (
           <main className={styles.stage}>
             {game.status === 'ready' ? (
-              <GardenView state={game.state} catalog={game.catalog} onChanged={refresh} />
+              <GardenView
+                state={game.state}
+                catalog={game.catalog}
+                onChanged={refresh}
+                onEditCharacter={() => setOpen('character')}
+              />
             ) : (
               <div className={styles.garden} aria-busy="true">
                 <p className={styles.gardenNote}>Отворяем калитку…</p>
@@ -88,6 +94,26 @@ export function App() {
         {game.status === 'ready' && open === 'collection' && (
           <Window title="Коллекция находок" onClose={close}>
             <CollectionPanel state={game.state} catalog={game.catalog} />
+          </Window>
+        )}
+
+        {game.status === 'ready' && !game.state.player.onboarded && (
+          <Window title="Новый садовник" onClose={close} dismissible={false}>
+            <CharacterEditor state={game.state} catalog={game.catalog} firstTime onDone={refresh} onCancel={close} />
+          </Window>
+        )}
+        {game.status === 'ready' && game.state.player.onboarded && open === 'character' && (
+          <Window title="Облик" onClose={close}>
+            <CharacterEditor
+              state={game.state}
+              catalog={game.catalog}
+              firstTime={false}
+              onDone={async () => {
+                await refresh()
+                close()
+              }}
+              onCancel={close}
+            />
           </Window>
         )}
 

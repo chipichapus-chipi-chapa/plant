@@ -3,8 +3,18 @@ import { ApiError } from '../../api/client'
 import { plantSeed } from '../../api/game'
 import type { Catalog, GameState } from '../../api/types'
 import { loadAtlas, type Atlas } from '../../game/atlas'
+import { composeCharacter } from '../../game/character'
 import { GardenCanvas } from '../../game/GardenCanvas'
-import { describeCell, minutesUntilNextStage, nextGrowthRefresh, objectAt, propAt, type Cell } from '../../game/layout'
+import type { Scene } from '../../game/renderer'
+import {
+  describeCell,
+  minutesUntilNextStage,
+  nextGrowthRefresh,
+  objectAt,
+  PLAYER_SPOT,
+  propAt,
+  type Cell,
+} from '../../game/layout'
 import { Button } from '../../ui/Button'
 import { SeedPacketIcon } from '../../ui/icons/SeedPacketIcon'
 import { useToast } from '../notifications/Toasts'
@@ -18,17 +28,15 @@ type Props = {
   state: GameState
   catalog: Catalog
   onChanged: () => Promise<void>
+  /** Открыть окно изменения облика (клик по своему персонажу) */
+  onEditCharacter: () => void
 }
 
+const sameCell = (a: Cell, b: Cell) => a.x === b.x && a.y === b.y
+
 /** Сад, табличка о выбранной клетке и посадка из сумки. */
-export function GardenView({ state, catalog, onChanged }: Props) {
+export function GardenView({ state, catalog, onChanged, onEditCharacter }: Props) {
   const map = catalog.garden
-  const objects = state.garden.objects
-  const awakened = useMemo(() => new Set(state.worldObjects.map((w) => w.objectKey)), [state.worldObjects])
-  const sparkles = useMemo(() => {
-    const searched = new Set(state.searchedSpots)
-    return new Set(catalog.spots.filter((spot) => !searched.has(spot.key)).map((spot) => spot.propKey))
-  }, [catalog.spots, state.searchedSpots])
   const [atlas, setAtlas] = useState<AtlasLoad>({ status: 'loading' })
   const [selected, setSelected] = useState<Cell | null>(null)
   const [planting, setPlanting] = useState(false)
@@ -53,11 +61,25 @@ export function GardenView({ state, catalog, onChanged }: Props) {
 
   // Стадию считает сервер; когда наступит ближайшая смена стадии — тихо перечитываем состояние
   useEffect(() => {
-    const delay = nextGrowthRefresh(objects, Date.now())
+    const delay = nextGrowthRefresh(state.garden.objects, Date.now())
     if (delay === null) return
     const timer = window.setTimeout(() => void onChanged(), delay)
     return () => window.clearTimeout(timer)
-  }, [objects, onChanged])
+  }, [state.garden.objects, onChanged])
+
+  // Всё, что меняется у игрока, собирается в «сцену» для рендера
+  const scene = useMemo((): Scene | null => {
+    if (atlas.status !== 'ready') return null
+    const searched = new Set(state.searchedSpots)
+    return {
+      objects: state.garden.objects,
+      awakened: new Set(state.worldObjects.map((w) => w.objectKey)),
+      sparkles: new Set(catalog.spots.filter((spot) => !searched.has(spot.key)).map((spot) => spot.propKey)),
+      characters: [
+        { ...PLAYER_SPOT, image: composeCharacter(atlas.atlas, state.player.appearance, catalog.appearance) },
+      ],
+    }
+  }, [atlas, state.garden.objects, state.worldObjects, state.searchedSpots, state.player.appearance, catalog])
 
   const select = (cell: Cell | null) => {
     setSelected(cell)
@@ -82,13 +104,8 @@ export function GardenView({ state, catalog, onChanged }: Props) {
 
   return (
     <section className={styles.garden} aria-label={map.name}>
-      {atlas.status === 'ready' ? (
-        <GardenCanvas
-          map={map}
-          objects={objects}
-          awakened={awakened}
-          sparkles={sparkles}
-          atlas={atlas.atlas} selected={selected} onSelect={select} />
+      {atlas.status === 'ready' && scene ? (
+        <GardenCanvas map={map} scene={scene} atlas={atlas.atlas} selected={selected} onSelect={select} />
       ) : (
         <div className={styles.placeholder} style={{ aspectRatio: `${map.width} / ${map.height}` }}>
           <p className={styles.note}>
@@ -98,7 +115,16 @@ export function GardenView({ state, catalog, onChanged }: Props) {
       )}
 
       <div className={styles.info} aria-live="polite">
-        {selected ? (
+        {selected && sameCell(selected, PLAYER_SPOT) ? (
+          <div className={styles.cell}>
+            <p className={styles.text}>
+              <strong>{state.player.displayName}.</strong> Это вы. Сад, кажется, уже привык к вашим шагам.
+            </p>
+            <div>
+              <Button onClick={onEditCharacter}>Изменить облик</Button>
+            </div>
+          </div>
+        ) : selected ? (
           <CellInfo
             cell={selected}
             state={state}

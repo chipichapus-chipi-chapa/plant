@@ -142,3 +142,56 @@ INSERT INTO discovery_spot_reward (spot_key, item_key, quantity) VALUES
     ('rock_cache', 'shard_amethyst', 2),
     ('rock_cache', 'shard_emerald', 1),
     ('shed_corner', 'sun_spark', 1);
+
+-- Внешность персонажа ----------------------------------------------------------
+-- Первый вариант каждого слота (по sort_order) — облик по умолчанию.
+
+INSERT INTO appearance_slot (key, name, kind, sort_order) VALUES
+    ('skin',         'Кожа',          'COLOR', 1),
+    ('hair',         'Причёска',      'STYLE', 2),
+    ('hair_color',   'Цвет волос',    'COLOR', 3),
+    ('outfit',       'Одежда',        'STYLE', 4),
+    ('outfit_color', 'Цвет одежды',   'COLOR', 5),
+    ('accessory',    'Мелочь',        'STYLE', 6)
+ON CONFLICT (key) DO UPDATE SET name = EXCLUDED.name, kind = EXCLUDED.kind, sort_order = EXCLUDED.sort_order;
+
+INSERT INTO appearance_option (slot_key, key, name, color, sort_order) VALUES
+    ('skin', 'light',  'Светлая',      '#f7e1d2', 1),
+    ('skin', 'warm',   'Тёплая',       '#e8c4a0', 2),
+    ('skin', 'tan',    'Загорелая',    '#c99a6e', 3),
+    ('skin', 'brown',  'Смуглая',      '#8d5f3e', 4),
+    ('skin', 'deep',   'Тёмная',       '#5e3b26', 5),
+
+    ('hair', 'short',  'Короткие',     NULL, 1),
+    ('hair', 'bob',    'Каре',         NULL, 2),
+    ('hair', 'long',   'Длинные',      NULL, 3),
+    ('hair', 'braid',  'Коса',         NULL, 4),
+    ('hair', 'bun',    'Пучок',        NULL, 5),
+    ('hair', 'curly',  'Кудри',        NULL, 6),
+
+    ('hair_color', 'chestnut', 'Каштановые',  '#7a4a2a', 1),
+    ('hair_color', 'wheat',    'Пшеничные',   '#e3c27a', 2),
+    ('hair_color', 'copper',   'Медные',      '#c8642e', 3),
+    ('hair_color', 'black',    'Чёрные',      '#2f2a2e', 4),
+    ('hair_color', 'silver',   'Седые',       '#d9d4cc', 5),
+    ('hair_color', 'heather',  'Вересковые',  '#c98aa8', 6),
+
+    ('outfit', 'overalls', 'Комбинезон', NULL, 1),
+    ('outfit', 'sweater',  'Свитер',     NULL, 2),
+    ('outfit', 'dress',    'Сарафан',    NULL, 3),
+
+    ('outfit_color', 'olive',   'Олива',     '#7d8a3e', 0),
+    ('outfit_color', 'moss',    'Мох',       '#5f8a3a', 1),
+    ('outfit_color', 'sky',     'Небо',      '#4a7fc9', 2),
+    ('outfit_color', 'berry',   'Ягода',     '#b5485a', 3),
+    ('outfit_color', 'mustard', 'Горчица',   '#d99a2b', 4),
+    ('outfit_color', 'cream',   'Сливки',    '#e8d9b5', 5),
+    ('outfit_color', 'plum',    'Слива',     '#7a4a8a', 6),
+
+    ('accessory', 'none',         'Ничего',              NULL, 1),
+    ('accessory', 'gardener_hat', 'Шляпа садовника',     NULL, 2),
+    ('accessory', 'straw_hat',    'Соломенная шляпа',    NULL, 3),
+    ('accessory', 'scarf',        'Шарф',                NULL, 4),
+    ('accessory', 'glasses',      'Очки',                NULL, 5),
+    ('accessory', 'flower',       'Цветок в волосах',    NULL, 6)
+ON CONFLICT (slot_key, key) DO UPDATE SET name = EXCLUDED.name, color = EXCLUDED.color, sort_order = EXCLUDED.sort_order;

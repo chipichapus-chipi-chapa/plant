@@ -2,7 +2,20 @@ import type { GardenMap, GardenObject } from '../api/types'
 import type { Atlas } from './atlas'
 import { TILE, tileFrame, type Cell } from './layout'
 
+export const CHARACTER_HEIGHT = 56
+
 export type Highlights = { hover: Cell | null; selected: Cell | null }
+
+/** Персонаж на клетке: готовая картинка 32×56 (низ — по низу клетки, голова выше неё). */
+export type CharacterSprite = { x: number; y: number; image: CanvasImageSource }
+
+/** Всё, что меняется у игрока: растения, пробуждённые объекты, мерцания, персонажи. */
+export type Scene = {
+  objects: GardenObject[]
+  awakened: ReadonlySet<string>
+  sparkles: ReadonlySet<string>
+  characters: CharacterSprite[]
+}
 
 /**
  * Рисует сад в логических пикселях (1 тайл = 32). Масштаб задаётся трансформацией контекста,
@@ -12,12 +25,11 @@ export type Highlights = { hover: Cell | null; selected: Cell | null }
 export function drawGarden(
   ctx: CanvasRenderingContext2D,
   map: GardenMap,
-  objects: GardenObject[],
   atlas: Atlas,
+  scene: Scene,
   highlights: Highlights,
-  awakened: ReadonlySet<string> = new Set(),
-  sparkles: ReadonlySet<string> = new Set(),
 ) {
+  const { objects, awakened, sparkles, characters } = scene
   ctx.imageSmoothingEnabled = false
   ctx.clearRect(0, 0, map.width * TILE, map.height * TILE)
 
@@ -39,9 +51,14 @@ export function drawGarden(
     // кадр растения 32×48: низ совпадает с низом клетки, верх выступает над ней
     ...objects.map((o) => ({ bottom: o.y + 1, frame: `plant_${o.speciesKey}_${o.stage}`, x: o.x * TILE, y: o.y * TILE - 16 })),
   ].sort((a, b) => a.bottom - b.bottom)
+  // Персонажи — после построек своей «строки», чтобы стоять перед ними
+  const people = [...characters].sort((a, b) => a.y - b.y)
+  let next = 0
   for (const sprite of sprites) {
+    while (next < people.length && people[next].y + 1 < sprite.bottom) drawCharacter(ctx, people[next++])
     drawFrame(ctx, atlas, sprite.frame, sprite.x, sprite.y)
   }
+  while (next < people.length) drawCharacter(ctx, people[next++])
 
   // Мерцание над постройками, где ещё что-то спрятано: подсказка «здесь стоит поискать»
   for (const prop of map.props) {
@@ -75,6 +92,10 @@ function drawEveningLight(ctx: CanvasRenderingContext2D, map: GardenMap) {
   ctx.fillStyle = vignette
   ctx.fillRect(0, 0, w, h)
   ctx.restore()
+}
+
+function drawCharacter(ctx: CanvasRenderingContext2D, c: CharacterSprite) {
+  ctx.drawImage(c.image, c.x * TILE, c.y * TILE - (CHARACTER_HEIGHT - TILE))
 }
 
 function drawFrame(ctx: CanvasRenderingContext2D, atlas: Atlas, name: string, x: number, y: number) {

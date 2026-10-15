@@ -59,7 +59,16 @@ export type Artifact = {
   effectText: string
 }
 
+/** Слот внешности: STYLE — форма (кадр атласа), COLOR — цвет для перекраски */
+export type AppearanceSlot = {
+  key: string
+  name: string
+  kind: 'STYLE' | 'COLOR'
+  options: { key: string; name: string; color: string | null }[]
+}
+
 export type Catalog = {
+  appearance: AppearanceSlot[]
   crystals: CrystalCategory[]
   species: { key: string; name: string; stageMinutes: number[] }[]
   items: CatalogItem[]
@@ -89,7 +98,14 @@ export type GardenObject = {
 }
 
 export type GameState = {
-  player: { displayName: string; timezone: string }
+  player: {
+    displayName: string
+    timezone: string
+    /** персонаж создан; иначе показываем окно «Новый садовник» */
+    onboarded: boolean
+    /** слот внешности → выбранный вариант */
+    appearance: Record<string, string>
+  }
   /** Дата «сегодня» по часовому поясу игрока, ISO yyyy-mm-dd */
   today: string
   inventory: ItemGrant[]

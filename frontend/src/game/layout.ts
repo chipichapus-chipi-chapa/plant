@@ -7,6 +7,9 @@ export const TILE = 32
 
 export type Cell = { x: number; y: number }
 
+/** Где стоит персонаж игрока: на тропинке у двери сарая. */
+export const PLAYER_SPOT: Cell = { x: 12, y: 4 }
+
 export function tileAt(map: GardenMap, x: number, y: number): TileType | undefined {
   return map.tiles[map.rows[y]?.[x] ?? '']
 }

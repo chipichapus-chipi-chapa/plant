@@ -553,6 +553,234 @@ function basin(awakened) {
   return s
 }
 
+
+// --- Персонажи ----------------------------------------------------------------------------
+// Слои персонажа игрока рисуются МАРКЕРНЫМИ цветами: игра перекрашивает их в цвет кожи,
+// волос и одежды, выбранный игроком (src/game/character.ts). Контур — обычный тёмный.
+// Кадр 32×56: низ — уровень земли клетки, голова и шляпа выступают над клеткой.
+// Пропорции чиби (образец — docs/ART_DIRECTION.md): голова почти в половину роста,
+// лицо вполоборота вправо — глаза сдвинуты, видно левое ухо, у лица пряди.
+
+// blush — румянец: игра смешивает цвет кожи с розовым, чтобы он подходил любому тону
+const MASK = { base: '#ff00ff', shade: '#800080', light: '#ff80ff', blush: '#ff0080' }
+const CW = 32
+const CH = 56
+const SHIRT = '#efdfb6'
+const SHIRT_SHADE = '#d6c393'
+
+/** Набор прямоугольников: сначала общий контур, потом заливка — чтобы контур был только снаружи. */
+function shapes(s, list) {
+  for (const [x, y, w, h] of list) s.rect(x - 1, y - 1, w + 2, h + 2, P.ink)
+  for (const [x, y, w, h, c] of list) s.rect(x, y, w, h, c)
+}
+
+function charBody() {
+  const s = new Sprite(CW, CH)
+  const { base, shade, light, blush } = MASK
+  s.shadow(16, 54, 9, 2)
+  shapes(s, [
+    [12, 45, 3, 4, base], [17, 45, 3, 4, base],          // ноги
+    [8, 35, 3, 9, base], [21, 35, 3, 9, base],            // руки
+    [11, 34, 10, 11, base],                               // туловище
+    [14, 32, 4, 2, base],                                 // шея
+    [7, 24, 2, 3, base],                                  // ухо слева
+    [9, 17, 15, 15, base], [8, 19, 17, 11, base], [10, 16, 13, 1, base], // голова
+  ])
+  // крупные ботинки — свой цвет, не перекрашиваются
+  shapes(s, [[10, 49, 5, 4, P.bark], [17, 49, 5, 4, P.bark]])
+  s.rect(11, 49, 3, 1, P.rustLight)
+  s.rect(18, 49, 3, 1, P.rustLight)
+  // объём головы
+  s.rect(23, 20, 1, 9, shade)
+  s.rect(10, 31, 13, 1, shade)
+  s.rect(10, 18, 3, 1, light)
+  s.px(8, 25, shade)
+  // лицо вполоборота: глаза-капельки, румянец, маленький рот
+  s.rect(15, 23, 2, 3, P.ink)
+  s.rect(20, 23, 2, 3, P.ink)
+  s.px(15, 23, '#5a4a52')
+  s.px(20, 23, '#5a4a52')
+  s.rect(13, 27, 2, 1, blush)
+  s.rect(21, 27, 2, 1, blush)
+  s.px(18, 28, shade)
+  return s
+}
+
+function charOutfit(style) {
+  const s = new Sprite(CW, CH)
+  const { base, shade, light } = MASK
+  if (style === 'overalls') {
+    // светлая рубашка под комбинезоном, как на образце
+    shapes(s, [
+      [8, 35, 3, 4, SHIRT], [21, 35, 3, 4, SHIRT],
+      [11, 34, 10, 10, SHIRT],
+      [11, 44, 10, 2, base], [12, 45, 3, 4, base], [17, 45, 3, 4, base],
+    ])
+    s.rect(8, 38, 3, 1, SHIRT_SHADE)
+    s.rect(21, 38, 3, 1, SHIRT_SHADE)
+    // нагрудник и лямки
+    s.rect(12, 37, 8, 8, base)
+    s.rect(12, 34, 2, 3, base)
+    s.rect(18, 34, 2, 3, base)
+    s.rect(19, 37, 1, 8, shade)
+    s.rect(14, 39, 4, 3, shade)
+    s.rect(14, 39, 4, 1, light)
+    s.px(12, 37, P.sun)
+    s.px(19, 37, P.sun)
+  } else if (style === 'sweater') {
+    shapes(s, [
+      [8, 35, 3, 8, base], [21, 35, 3, 8, base],
+      [10, 34, 12, 11, base],
+      [12, 45, 3, 4, P.woodDark], [17, 45, 3, 4, P.woodDark],
+    ])
+    s.rect(8, 42, 3, 1, shade)
+    s.rect(21, 42, 3, 1, shade)
+    s.rect(10, 44, 12, 1, shade)
+    s.rect(14, 34, 4, 1, light)
+    for (let y = 37; y < 44; y += 3) s.rect(12, y, 8, 1, shade) // вязка
+  } else {
+    // сарафан поверх рубашки
+    shapes(s, [
+      [8, 35, 3, 3, SHIRT], [21, 35, 3, 3, SHIRT],
+      [11, 34, 10, 6, base],
+      [10, 40, 12, 3, base], [9, 43, 14, 4, base],
+    ])
+    s.rect(13, 34, 6, 1, SHIRT)
+    s.rect(11, 39, 10, 1, shade)
+    s.rect(9, 46, 14, 1, shade)
+    s.rect(13, 42, 1, 4, shade)
+    s.rect(18, 42, 1, 4, shade)
+  }
+  return s
+}
+
+function charHair(style) {
+  const s = new Sprite(CW, CH)
+  const { base, shade, light } = MASK
+  const cap = [[8, 13, 17, 6, base], [9, 12, 15, 1, base]]
+  // чёлка открывает лоб посередине; слева — прядь у уха, справа — короче (поворот головы)
+  const fringe = [[9, 19, 5, 2, base], [14, 19, 3, 1, base], [19, 19, 5, 3, base]]
+  const sides = {
+    short: [[7, 18, 3, 6, base], [23, 18, 2, 4, base]],
+    bob: [[6, 18, 4, 13, base], [23, 18, 3, 12, base]],
+    long: [[6, 18, 4, 24, base], [23, 18, 3, 23, base]],
+    braid: [[7, 18, 3, 7, base], [23, 18, 2, 5, base]],
+    bun: [[7, 18, 3, 6, base], [23, 18, 2, 4, base]],
+    curly: [[5, 17, 5, 12, base], [23, 17, 4, 11, base]],
+  }[style]
+  const extra = {
+    braid: [[24, 22, 3, 4, base], [25, 26, 3, 4, base], [24, 30, 3, 4, base], [25, 34, 3, 4, base]],
+    bun: [[12, 7, 9, 6, base], [13, 6, 7, 1, base]],
+    curly: [[6, 10, 21, 9, base], [8, 9, 17, 1, base]],
+  }[style] ?? []
+  shapes(s, [...extra, ...cap, ...sides, ...fringe])
+  s.rect(10, 14, 5, 1, light)
+  s.rect(9, 15, 2, 1, light)
+  s.rect(8, 18, 1, 5, shade)
+  if (style === 'long' || style === 'bob') {
+    const len = style === 'long' ? 23 : 12
+    s.rect(6, 18 + len, 4, 1, shade)
+    s.rect(9, 21, 1, len - 3, shade)
+  }
+  if (style === 'braid') {
+    for (const y of [25, 29, 33, 37]) s.rect(24, y, 4, 1, shade)
+    s.rect(24, 38, 3, 1, P.berry) // ленточка
+  }
+  if (style === 'bun') s.rect(14, 8, 3, 1, light)
+  if (style === 'curly') {
+    for (const [x, y] of [[9, 11], [14, 10], [19, 11], [24, 12], [6, 20], [25, 21], [11, 15], [21, 15]]) s.px(x, y, shade)
+  }
+  return s
+}
+
+function charAccessory(kind) {
+  const s = new Sprite(CW, CH)
+  const straw = '#d2a462'
+  const strawDark = '#a87a42'
+  const strawLight = '#e6c182'
+  if (kind === 'gardener_hat') {
+    // высокая остроконечная соломенная шляпа с заломом — как на образце
+    shapes(s, [
+      [3, 15, 26, 3, straw],
+      [8, 11, 17, 4, straw], [10, 8, 14, 3, straw], [13, 5, 11, 3, straw],
+      [16, 3, 9, 2, straw], [19, 1, 7, 2, straw], [23, 0, 4, 1, straw],
+    ])
+    s.rect(8, 13, 17, 2, strawDark) // лента
+    s.rect(3, 17, 26, 1, strawDark)
+    s.rect(4, 15, 6, 1, strawLight)
+    s.rect(11, 9, 4, 1, strawLight)
+    s.rect(14, 6, 3, 1, strawLight)
+    s.rect(21, 8, 3, 5, strawDark) // тень на конусе
+    s.rect(23, 4, 2, 4, strawDark)
+  } else if (kind === 'straw_hat') {
+    shapes(s, [[4, 15, 25, 3, straw], [9, 9, 15, 6, straw]])
+    s.rect(9, 13, 15, 1, P.berry)
+    s.rect(4, 17, 25, 1, strawDark)
+    for (let x = 10; x < 23; x += 3) s.px(x, 10, strawDark)
+  } else if (kind === 'scarf') {
+    shapes(s, [[11, 32, 10, 3, P.berry], [17, 35, 3, 6, P.berry]])
+    s.rect(11, 33, 10, 1, '#d36a7a')
+    s.rect(17, 38, 3, 1, P.petal)
+  } else if (kind === 'glasses') {
+    for (const x of [14, 19]) {
+      s.rect(x, 22, 4, 1, P.ink)
+      s.rect(x, 26, 4, 1, P.ink)
+      s.rect(x, 22, 1, 5, P.ink)
+      s.rect(x + 3, 22, 1, 5, P.ink)
+    }
+    s.px(18, 23, P.ink)
+  } else if (kind === 'flower') {
+    shapes(s, [[8, 14, 3, 3, P.petal], [7, 15, 5, 1, P.petal], [9, 13, 1, 5, P.petal]])
+    s.px(9, 15, P.sun)
+  }
+  return s
+}
+
+/** Мастер Вереск: плащ цвета цветущего вереска, седые волосы и борода, посох с веточкой вереска. */
+function vereshk() {
+  const s = new Sprite(CW, CH)
+  const cloak = '#c98aa8'
+  const cloakDark = '#9b6684'
+  const cloakLight = '#e0b0c6'
+  const skin = '#f0d2bc'
+  const silver = '#d9d4cc'
+  const silverDark = '#b5aea4'
+  const o = 6 // общий сдвиг вниз: Вереск выше игрока, но стоит на той же земле
+  s.shadow(16, 54, 10, 2)
+  // посох
+  s.rect(24, 4 + o, 3, 44, P.ink)
+  s.rect(25, 5 + o, 1, 42, P.wood)
+  // плащ с капюшоном
+  shapes(s, [
+    [7, 32 + o, 17, 16, cloak], [8, 23 + o, 15, 10, cloak],
+    [7, 4 + o, 17, 19, cloak],
+  ])
+  s.rect(7, 47 + o, 17, 1, cloakDark)
+  s.rect(19, 24 + o, 4, 23, cloakDark)
+  s.rect(9, 5 + o, 5, 1, cloakLight)
+  s.rect(15, 24 + o, 1, 23, cloakDark) // запах плаща
+  // лицо в капюшоне, вполоборота
+  shapes(s, [[10, 9 + o, 12, 11, skin]])
+  s.rect(10, 9 + o, 12, 2, silver) // седые пряди
+  s.rect(14, 13 + o, 2, 3, P.ink)
+  s.rect(19, 13 + o, 2, 3, P.ink)
+  s.rect(13, 12 + o, 3, 1, silverDark) // брови
+  s.rect(18, 12 + o, 3, 1, silverDark)
+  // борода
+  shapes(s, [[11, 17 + o, 10, 5, silver], [12, 22 + o, 8, 3, silver], [14, 25 + o, 4, 2, silver]])
+  s.rect(15, 18 + o, 3, 1, P.ink, 120)
+  s.rect(12, 24 + o, 8, 1, silverDark)
+  // застёжка
+  s.rect(15, 28 + o, 2, 2, P.sun)
+  // рука на посохе
+  shapes(s, [[22, 29 + o, 3, 3, skin]])
+  // веточка вереска на посохе
+  for (const [x, y] of [[24, 2], [26, 1], [27, 3], [23, 4], [26, 4]]) s.px(x, y + o, cloakLight)
+  for (const [x, y] of [[25, 3], [24, 0], [27, 2]]) s.px(x, y + o, cloak)
+  s.px(25, 4 + o, P.leaf)
+  return s
+}
+
 // --- Сборка атласа ------------------------------------------------------------------------
 
 const frames = {
@@ -567,6 +795,13 @@ const frames = {
   prop_gate: gate(700),
   prop_gate_awakened: gateOpen(701),
   fx_sparkle: sparkle(),
+  char_body: charBody(),
+  ...Object.fromEntries(['overalls', 'sweater', 'dress'].map((k) => [`char_outfit_${k}`, charOutfit(k)])),
+  ...Object.fromEntries(['short', 'bob', 'long', 'braid', 'bun', 'curly'].map((k) => [`char_hair_${k}`, charHair(k)])),
+  ...Object.fromEntries(
+    ['gardener_hat', 'straw_hat', 'scarf', 'glasses', 'flower'].map((k) => [`char_acc_${k}`, charAccessory(k)]),
+  ),
+  npc_vereshk: vereshk(),
   prop_shed: shed(),
   prop_tools: tools(),
   prop_barrel: barrel(),
@@ -580,7 +815,7 @@ const frames = {
 }
 
 // Упаковка «полками»: кадры по высоте, слева направо
-const ATLAS_W = 512
+const ATLAS_W = 768
 const entries = Object.entries(frames).sort(([, a], [, b]) => b.h - a.h)
 const placed = {}
 let cx = 0

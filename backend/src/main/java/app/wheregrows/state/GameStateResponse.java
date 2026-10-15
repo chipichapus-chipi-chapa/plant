@@ -3,6 +3,7 @@ package app.wheregrows.state;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import app.wheregrows.garden.GardenObjectView;
 import app.wheregrows.habit.HabitService.DailyRewards;
@@ -29,7 +30,11 @@ record GameStateResponse(Player player, LocalDate today, List<InventoryEntry> in
     record Garden(List<GardenObjectView> objects) {
     }
 
-    record Player(String displayName, String timezone) {
+    /**
+     * @param onboarded  персонаж уже создан (иначе клиент покажет окно «Новый садовник»)
+     * @param appearance слот внешности → выбранный вариант
+     */
+    record Player(String displayName, String timezone, boolean onboarded, Map<String, String> appearance) {
     }
 
     record InventoryEntry(String itemKey, int quantity) {

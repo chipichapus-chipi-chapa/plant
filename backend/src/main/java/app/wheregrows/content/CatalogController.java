@@ -11,6 +11,7 @@ import app.wheregrows.garden.GardenMaps;
 import app.wheregrows.exploration.ArtifactRepository;
 import app.wheregrows.exploration.DiscoverySpotRepository;
 import app.wheregrows.magic.RecipeRepository;
+import app.wheregrows.player.AppearanceSlotRepository;
 
 /** Каталог одинаков для всех игроков: категории кристаллов, растения, предметы с ценами и карта сада. */
 @RestController
@@ -23,10 +24,12 @@ class CatalogController {
     private final RecipeRepository recipes;
     private final ArtifactRepository artifacts;
     private final DiscoverySpotRepository spots;
+    private final AppearanceSlotRepository appearance;
 
     CatalogController(CrystalCategoryRepository crystals, PlantSpeciesRepository species, ItemDefinitionRepository items,
                       GardenMaps gardens, RecipeRepository recipes, ArtifactRepository artifacts,
-                      DiscoverySpotRepository spots) {
+                      DiscoverySpotRepository spots, AppearanceSlotRepository appearance) {
+        this.appearance = appearance;
         this.recipes = recipes;
         this.artifacts = artifacts;
         this.spots = spots;
@@ -64,11 +67,24 @@ class CatalogController {
                 // содержимое тайников не раскрываем — только где можно искать
                 spots.findAll(Sort.by("key")).stream()
                         .map(s -> new CatalogResponse.Spot(s.getKey(), s.getPropKey()))
+                        .toList(),
+                appearance.findAllByOrderBySortOrderAsc().stream()
+                        .map(slot -> new CatalogResponse.AppearanceSlot(slot.getKey(), slot.getName(), slot.getKind(),
+                                slot.getOptions().stream()
+                                        .map(o -> new CatalogResponse.AppearanceOption(o.key(), o.name(), o.color()))
+                                        .toList()))
                         .toList());
     }
 
     record CatalogResponse(List<Crystal> crystals, List<Species> species, List<Item> items, GardenMap garden,
-                           List<Recipe> recipes, List<Artifact> artifacts, List<Spot> spots) {
+                           List<Recipe> recipes, List<Artifact> artifacts, List<Spot> spots,
+                           List<AppearanceSlot> appearance) {
+
+        record AppearanceSlot(String key, String name, String kind, List<AppearanceOption> options) {
+        }
+
+        record AppearanceOption(String key, String name, String color) {
+        }
 
         record Artifact(String key, String name, String crystalCategory, String description, String legend,
                         String acquisitionHint, String effectText) {

@@ -29,6 +29,10 @@ public class PlayerProfile {
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
     private Instant createdAt;
 
+    /** Когда игрок создал персонажа; null — окно «Новый садовник» ещё не пройдено. */
+    @Column(name = "onboarded_at")
+    private Instant onboardedAt;
+
     protected PlayerProfile() {
     }
 
@@ -46,5 +50,19 @@ public class PlayerProfile {
 
     public Instant getCreatedAt() {
         return createdAt;
+    }
+
+    public boolean isOnboarded() {
+        return onboardedAt != null;
+    }
+
+    void rename(String displayName) {
+        this.displayName = displayName;
+    }
+
+    void markOnboarded(Instant at) {
+        if (onboardedAt == null) {
+            onboardedAt = at;
+        }
     }
 }

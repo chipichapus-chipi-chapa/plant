@@ -8,7 +8,18 @@ export type Atlas = { image: HTMLImageElement; frames: Record<string, Frame> }
 
 const BASE = '/assets/'
 
-export async function loadAtlas(): Promise<Atlas> {
+let loading: Promise<Atlas> | null = null
+
+/** Атлас грузится один раз на всю игру; после ошибки следующий вызов пробует снова. */
+export function loadAtlas(): Promise<Atlas> {
+  loading ??= fetchAtlas().catch((e: unknown) => {
+    loading = null
+    throw e
+  })
+  return loading
+}
+
+async function fetchAtlas(): Promise<Atlas> {
   const response = await fetch(`${BASE}atlas.json`)
   if (!response.ok) throw new Error(`atlas.json: ${response.status}`)
   const manifest = (await response.json()) as { image: string; frames: Record<string, Frame> }

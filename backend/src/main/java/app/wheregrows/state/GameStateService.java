@@ -11,6 +11,7 @@ import app.wheregrows.magic.MagicService;
 import app.wheregrows.player.GameCalendar;
 import app.wheregrows.player.PlayerProfile;
 import app.wheregrows.player.PlayerProfileRepository;
+import app.wheregrows.player.ProfileService;
 
 @Service
 class GameStateService {
@@ -22,10 +23,12 @@ class GameStateService {
     private final GardenService garden;
     private final MagicService magic;
     private final ExplorationService exploration;
+    private final ProfileService profileService;
 
     GameStateService(PlayerProfileRepository profiles, InventoryItemRepository inventory, HabitService habits,
                      GameCalendar calendar, GardenService garden, MagicService magic,
-                     ExplorationService exploration) {
+                     ExplorationService exploration, ProfileService profileService) {
+        this.profileService = profileService;
         this.magic = magic;
         this.exploration = exploration;
         this.profiles = profiles;
@@ -40,7 +43,8 @@ class GameStateService {
         PlayerProfile profile = profiles.findById(playerId).orElseThrow();
 
         return new GameStateResponse(
-                new GameStateResponse.Player(profile.getDisplayName(), profile.getZone().getId()),
+                new GameStateResponse.Player(profile.getDisplayName(), profile.getZone().getId(),
+                        profile.isOnboarded(), profileService.appearanceOf(playerId)),
                 calendar.today(profile),
                 inventory.findByIdPlayerIdAndQuantityGreaterThanOrderByIdItemKey(playerId, 0).stream()
                         .map(item -> new GameStateResponse.InventoryEntry(item.getItemKey(), item.getQuantity()))

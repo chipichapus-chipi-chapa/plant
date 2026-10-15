@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react'
-import type { GardenMap, GardenObject } from '../api/types'
+import type { GardenMap } from '../api/types'
 import type { Atlas } from './atlas'
 import { cellAtPoint, fitScale, inBounds, TILE, type Cell } from './layout'
 import { Fireflies } from './Fireflies'
-import { drawGarden } from './renderer'
+import { drawGarden, type Scene } from './renderer'
 import styles from './GardenCanvas.module.css'
 
 /** Сколько высоты экрана занято вокруг сада: шапка, табличка о клетке, панель кнопок. */
@@ -11,10 +11,8 @@ const RESERVED_HEIGHT = 300
 
 type Props = {
   map: GardenMap
-  objects: GardenObject[]
-  awakened: ReadonlySet<string>
-  /** Постройки, над которыми мерцает искра (там ещё можно что-то найти) */
-  sparkles: ReadonlySet<string>
+  /** Растения, пробуждённые объекты, мерцания над тайниками, персонажи */
+  scene: Scene
   atlas: Atlas
   selected: Cell | null
   onSelect: (cell: Cell | null) => void
@@ -25,7 +23,7 @@ type Props = {
  * Масштаб подбирается под экран (до ×3) без сглаживания; плотность экрана (devicePixelRatio)
  * учитывается в размере буфера. Сцена сначала рисуется 1:1 во внеэкранный канвас, затем переносится целиком.
  */
-export function GardenCanvas({ map, objects, awakened, sparkles, atlas, selected, onSelect }: Props) {
+export function GardenCanvas({ map, scene, atlas, selected, onSelect }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   // Сцена рисуется в буфер 1:1 (512×320), а на экран переносится одним масштабированием.
@@ -67,12 +65,12 @@ export function GardenCanvas({ map, objects, awakened, sparkles, atlas, selected
     buffer.height = map.height * TILE
     const bufferCtx = buffer.getContext('2d')
     if (!bufferCtx) return
-    drawGarden(bufferCtx, map, objects, atlas, { hover, selected }, awakened, sparkles)
+    drawGarden(bufferCtx, map, atlas, scene, { hover, selected })
 
     ctx.imageSmoothingEnabled = false
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.drawImage(buffer, 0, 0, canvas.width, canvas.height)
-  }, [map, objects, awakened, sparkles, atlas, scale, hover, selected])
+  }, [map, scene, atlas, scale, hover, selected])
 
   const cellFromEvent = (event: MouseEvent<HTMLCanvasElement>): Cell | null => {
     const rect = event.currentTarget.getBoundingClientRect()
