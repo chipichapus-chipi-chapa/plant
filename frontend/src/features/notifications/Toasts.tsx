@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useMemo, useRef, useState, type
 import type { RewardLine } from '../../lib/rewards'
 import { CrystalIcon } from '../../ui/icons/CrystalIcon'
 import { LifeSeedIcon } from '../../ui/icons/LifeSeedIcon'
+import { SeedPacketIcon } from '../../ui/icons/SeedPacketIcon'
 import styles from './Toasts.module.css'
 
 export type Toast = { message: string; reward?: RewardLine[] }
@@ -37,7 +38,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               <ul className={styles.reward}>
                 {toast.reward.map((line) => (
                   <li key={line.itemKey} className={styles.line}>
-                    {line.color ? <CrystalIcon color={line.color} /> : <LifeSeedIcon />}
+                    {line.color ? (
+                      <CrystalIcon color={line.color} />
+                    ) : line.kind === 'CURRENCY' ? (
+                      <LifeSeedIcon />
+                    ) : (
+                      <SeedPacketIcon />
+                    )}
                     <span>{line.label}</span>
                     <span className={styles.qty}>+{line.quantity}</span>
                   </li>
