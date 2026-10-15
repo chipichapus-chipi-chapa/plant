@@ -47,3 +47,12 @@ export type CompletionResult = {
 
 /** Ключ основной валюты в каталоге */
 export const LIFE_SEED = 'life_seed'
+
+export type PurchaseResult = {
+  itemKey: string
+  quantity: number
+  /** сколько Семян жизни списано */
+  cost: number
+  /** true — повтор уже выполненной покупки, повторно ничего не списано */
+  replayed: boolean
+}

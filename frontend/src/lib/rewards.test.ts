@@ -22,8 +22,8 @@ describe('describeReward', () => {
         catalog,
       ),
     ).toEqual([
-      { itemKey: 'life_seed', label: 'Семена жизни', quantity: 3, color: null },
-      { itemKey: 'shard_emerald', label: 'Осколок изумруда', quantity: 1, color: '#4fae6a' },
+      { itemKey: 'life_seed', kind: 'CURRENCY', label: 'Семена жизни', quantity: 3, color: null },
+      { itemKey: 'shard_emerald', kind: 'SHARD', label: 'Осколок изумруда', quantity: 1, color: '#4fae6a' },
     ])
   })
 

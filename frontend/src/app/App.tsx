@@ -3,6 +3,7 @@ import { LIFE_SEED, type GameState } from '../api/types'
 import { HabitsPanel } from '../features/habits/HabitsPanel'
 import { InventoryPanel } from '../features/inventory/InventoryPanel'
 import { ToastProvider } from '../features/notifications/Toasts'
+import { ShopPanel } from '../features/shop/ShopPanel'
 import { Button } from '../ui/Button'
 import { LifeSeedIcon } from '../ui/icons/LifeSeedIcon'
 import { Panel } from '../ui/Panel'
@@ -34,6 +35,7 @@ export function App() {
             {game.status === 'ready' && (
               <aside className={styles.sidebar}>
                 <HabitsPanel state={game.state} catalog={game.catalog} onChanged={refresh} />
+                <ShopPanel state={game.state} catalog={game.catalog} onChanged={refresh} />
                 <InventoryPanel inventory={game.state.inventory} catalog={game.catalog} />
               </aside>
             )}

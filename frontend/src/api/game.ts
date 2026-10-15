@@ -1,5 +1,5 @@
 import { apiFetch } from './client'
-import type { Catalog, CompletionResult, GameState, Habit, HabitInput } from './types'
+import type { Catalog, CompletionResult, GameState, Habit, HabitInput, PurchaseResult } from './types'
 
 export const fetchGameState = () => apiFetch<GameState>('/api/state')
 export const fetchCatalog = () => apiFetch<Catalog>('/api/catalog')
@@ -14,3 +14,11 @@ export const archiveHabit = (id: number) => apiFetch<void>(`/api/habits/${id}`, 
 
 export const completeHabitToday = (id: number) =>
   apiFetch<CompletionResult>(`/api/habits/${id}/completions/today`, { method: 'PUT' })
+
+/** idempotencyKey создаётся один раз на намерение купить и переиспользуется при повторе после сбоя сети */
+export const purchaseItem = (itemKey: string, quantity: number, idempotencyKey: string) =>
+  apiFetch<PurchaseResult>('/api/shop/purchases', {
+    method: 'POST',
+    headers: { 'Idempotency-Key': idempotencyKey },
+    body: JSON.stringify({ itemKey, quantity }),
+  })
