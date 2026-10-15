@@ -1,0 +1,35 @@
+package app.wheregrows.content;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.web.servlet.MockMvc;
+
+import app.wheregrows.TestcontainersConfiguration;
+
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@Import(TestcontainersConfiguration.class)
+@SpringBootTest
+@AutoConfigureMockMvc
+class CatalogApiTests {
+
+    @Autowired
+    MockMvc mvc;
+
+    @Test
+    void catalogListsSpeciesAndTheirSeeds() throws Exception {
+        mvc.perform(get("/api/catalog"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.species", hasSize(3)))
+                .andExpect(jsonPath("$.species[?(@.key == 'radish')].stageMinutes[0]").value(10))
+                .andExpect(jsonPath("$.items[?(@.key == 'seed_radish')].kind").value("SEED"))
+                .andExpect(jsonPath("$.items[?(@.key == 'seed_radish')].price").value(5))
+                .andExpect(jsonPath("$.items[?(@.key == 'seed_radish')].speciesKey").value("radish"));
+    }
+}

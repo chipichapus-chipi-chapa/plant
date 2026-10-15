@@ -13,7 +13,6 @@ export default defineConfig({
     strictPort: true,
     proxy: {
       '/api': backend,
-      '/actuator': backend,
     },
   },
   test: {

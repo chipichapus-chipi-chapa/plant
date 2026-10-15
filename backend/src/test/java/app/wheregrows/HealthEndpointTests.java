@@ -16,14 +16,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class HealthEndpointTests {
 
-	@Autowired
-	MockMvc mvc;
+    @Autowired
+    MockMvc mvc;
 
-	@Test
-	void healthIsUpWhenDatabaseIsReachable() throws Exception {
-		mvc.perform(get("/actuator/health"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.status").value("UP"));
-	}
+    @Test
+    void healthIsUpWhenDatabaseIsReachable() throws Exception {
+        mvc.perform(get("/actuator/health"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
+    }
 
 }

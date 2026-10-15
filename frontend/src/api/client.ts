@@ -5,7 +5,11 @@
  * ошибки одним способом и показывал человеку понятный текст.
  */
 
+/** network — до сервера не достучаться (нет сети или шлюз не видит backend); http — сервер ответил ошибкой */
 export type ApiErrorKind = 'network' | 'http'
+
+// Так отвечает прокси/шлюз, когда сам backend недоступен
+const GATEWAY_STATUSES = new Set([502, 503, 504])
 
 export class ApiError extends Error {
   readonly kind: ApiErrorKind
@@ -43,6 +47,10 @@ export async function apiFetch<T>(path: string, init?: RequestInit, fetchImpl: t
     })
   } catch {
     throw new ApiError('network', null, 'Нет связи с сервером', null)
+  }
+
+  if (GATEWAY_STATUSES.has(response.status)) {
+    throw new ApiError('network', response.status, 'Нет связи с сервером', null)
   }
 
   if (!response.ok) {

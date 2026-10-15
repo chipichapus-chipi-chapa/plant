@@ -77,3 +77,42 @@
     grid-template-columns: 1fr;
   }
 }
+
+.badge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--c-parchment);
+}
+
+.coins {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  background: var(--c-parchment);
+  color: var(--c-ink);
+  box-shadow: 0 0 0 var(--px) var(--c-ink);
+  font-weight: 600;
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.errorWrap {
+  display: grid;
+  place-items: center;
+}
+
+.errorPanel {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+  max-width: 420px;
+}

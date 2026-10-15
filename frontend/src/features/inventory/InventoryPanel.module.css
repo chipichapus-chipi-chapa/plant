@@ -1,0 +1,23 @@
+.empty {
+  margin: 0;
+  color: var(--c-bark);
+  font-size: var(--text-s);
+}
+
+.list {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.qty {
+  color: var(--c-bark);
+}

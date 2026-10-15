@@ -18,8 +18,12 @@ describe('apiFetch', () => {
   })
 
   it('не падает, если тело ошибки не JSON', async () => {
-    const notJson = async () => new Response('<html>Bad gateway</html>', { status: 502 })
-    await expect(apiFetch('/api/x', undefined, notJson)).rejects.toMatchObject({ kind: 'http', status: 502, title: 'Ошибка 502' })
+    const notJson = async () => new Response('<html>Oops</html>', { status: 500 })
+    await expect(apiFetch('/api/x', undefined, notJson)).rejects.toMatchObject({ kind: 'http', status: 500, title: 'Ошибка 500' })
+  })
+
+  it('считает ответ шлюза 502 недоступностью сервера', async () => {
+    await expect(apiFetch('/api/x', undefined, respond(undefined, 502))).rejects.toMatchObject({ kind: 'network', status: 502 })
   })
 
   it('сообщает о сетевой ошибке отдельно от HTTP-ошибок', async () => {
