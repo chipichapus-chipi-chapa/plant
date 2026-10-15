@@ -15,6 +15,7 @@ export function drawGarden(
   objects: GardenObject[],
   atlas: Atlas,
   highlights: Highlights,
+  awakened: ReadonlySet<string> = new Set(),
 ) {
   ctx.imageSmoothingEnabled = false
   ctx.clearRect(0, 0, map.width * TILE, map.height * TILE)
@@ -27,7 +28,13 @@ export function drawGarden(
 
   // Постройки и растения рисуем вместе, по нижнему краю: что ближе к зрителю — поверх
   const sprites = [
-    ...map.props.map((p) => ({ bottom: p.y + p.height, frame: `prop_${p.kind}`, x: p.x * TILE, y: p.y * TILE })),
+    ...map.props.map((p) => ({
+      bottom: p.y + p.height,
+      // пробуждённый магический объект рисуется своим кадром
+      frame: awakened.has(p.key) ? `prop_${p.kind}_awakened` : `prop_${p.kind}`,
+      x: p.x * TILE,
+      y: p.y * TILE,
+    })),
     // кадр растения 32×48: низ совпадает с низом клетки, верх выступает над ней
     ...objects.map((o) => ({ bottom: o.y + 1, frame: `plant_${o.speciesKey}_${o.stage}`, x: o.x * TILE, y: o.y * TILE - 16 })),
   ].sort((a, b) => a.bottom - b.bottom)

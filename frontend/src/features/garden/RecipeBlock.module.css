@@ -1,0 +1,44 @@
+.recipe {
+  display: grid;
+  gap: var(--space-2);
+  justify-items: start;
+}
+
+.name,
+.result,
+.hint {
+  margin: 0;
+}
+
+.result {
+  color: var(--w-alive-leaf);
+}
+
+.hint {
+  font-size: var(--text-s);
+  color: var(--c-bark);
+}
+
+.ingredients {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ok,
+.short {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.short .count {
+  color: var(--c-bark);
+}
+
+.count {
+  font-weight: 600;
+}

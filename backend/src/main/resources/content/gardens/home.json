@@ -4,13 +4,48 @@
   "width": 16,
   "height": 10,
   "tiles": {
-    ".": { "type": "grass", "name": "Сухая трава", "description": "Пожухла, но корни ещё живы.", "plantable": false },
-    ",": { "type": "weeds", "name": "Сорняки", "description": "Упрямые. Видимо, им здесь нравится.", "plantable": false },
-    "p": { "type": "path", "name": "Тропинка", "description": "Кто-то ходил здесь каждый день. Давно.", "plantable": false },
-    "s": { "type": "soil", "name": "Грядка", "description": "Земля мягкая и ждёт семян.", "plantable": true },
-    "S": { "type": "overgrown", "name": "Заросшая грядка", "description": "Сорняки по колено. Когда-нибудь до неё дойдут руки.", "plantable": false },
-    "#": { "type": "fence", "name": "Старый забор", "description": "Доски рассохлись, но держатся. Из уважения к прошлому.", "plantable": false },
-    "g": { "type": "gate", "name": "Калитка на восток", "description": "Заросла ежевикой так, что не открыть. Что за ней — пока загадка.", "plantable": false }
+    ".": {
+      "type": "grass",
+      "name": "Сухая трава",
+      "description": "Пожухла, но корни ещё живы.",
+      "plantable": false
+    },
+    ",": {
+      "type": "weeds",
+      "name": "Сорняки",
+      "description": "Упрямые. Видимо, им здесь нравится.",
+      "plantable": false
+    },
+    "p": {
+      "type": "path",
+      "name": "Тропинка",
+      "description": "Кто-то ходил здесь каждый день. Давно.",
+      "plantable": false
+    },
+    "s": {
+      "type": "soil",
+      "name": "Грядка",
+      "description": "Земля мягкая и ждёт семян.",
+      "plantable": true
+    },
+    "S": {
+      "type": "overgrown",
+      "name": "Заросшая грядка",
+      "description": "Сорняки по колено. Когда-нибудь до неё дойдут руки.",
+      "plantable": false
+    },
+    "#": {
+      "type": "fence",
+      "name": "Старый забор",
+      "description": "Доски рассохлись, но держатся. Из уважения к прошлому.",
+      "plantable": false
+    },
+    "g": {
+      "type": "gate",
+      "name": "Калитка на восток",
+      "description": "Заросла ежевикой так, что не открыть. Что за ней — пока загадка.",
+      "plantable": false
+    }
   },
   "rows": [
     "################",
@@ -25,17 +60,75 @@
     "#######pp#######"
   ],
   "props": [
-    { "key": "shed", "kind": "shed", "x": 11, "y": 1, "width": 4, "height": 3,
-      "name": "Старый сарай", "description": "Крыша проржавела, дверь висит на одной петле. Внутри пахнет землёй и чем-то забытым." },
-    { "key": "tools", "kind": "tools", "x": 3, "y": 0, "width": 2, "height": 1,
-      "name": "Инструменты на заборе", "description": "Лопата и грабли. Ржавые, но ещё послужат." },
-    { "key": "barrel", "kind": "barrel", "x": 1, "y": 8, "width": 1, "height": 1,
-      "name": "Бочка для дождевой воды", "description": "Пустая. На дне — прошлогодние листья." },
-    { "key": "wheelbarrow", "kind": "wheelbarrow", "x": 13, "y": 7, "width": 1, "height": 1,
-      "name": "Тачка", "description": "Колесо скрипит, но крутится." },
-    { "key": "rock-1", "kind": "rock", "x": 10, "y": 7, "width": 1, "height": 1,
-      "name": "Камни", "description": "Обычные камни. Наверное." },
-    { "key": "rock-2", "kind": "rock", "x": 5, "y": 4, "width": 1, "height": 1,
-      "name": "Камни", "description": "Кто-то сложил их горкой." }
+    {
+      "key": "shed",
+      "kind": "shed",
+      "x": 11,
+      "y": 1,
+      "width": 4,
+      "height": 3,
+      "name": "Старый сарай",
+      "description": "Крыша проржавела, дверь висит на одной петле. Внутри пахнет землёй и чем-то забытым."
+    },
+    {
+      "key": "tools",
+      "kind": "tools",
+      "x": 3,
+      "y": 0,
+      "width": 2,
+      "height": 1,
+      "name": "Инструменты на заборе",
+      "description": "Лопата и грабли. Ржавые, но ещё послужат."
+    },
+    {
+      "key": "barrel",
+      "kind": "barrel",
+      "x": 1,
+      "y": 8,
+      "width": 1,
+      "height": 1,
+      "name": "Бочка для дождевой воды",
+      "description": "Пустая. На дне — прошлогодние листья."
+    },
+    {
+      "key": "wheelbarrow",
+      "kind": "wheelbarrow",
+      "x": 13,
+      "y": 7,
+      "width": 1,
+      "height": 1,
+      "name": "Тачка",
+      "description": "Колесо скрипит, но крутится."
+    },
+    {
+      "key": "rock-1",
+      "kind": "rock",
+      "x": 10,
+      "y": 7,
+      "width": 1,
+      "height": 1,
+      "name": "Камни",
+      "description": "Обычные камни. Наверное."
+    },
+    {
+      "key": "rock-2",
+      "kind": "rock",
+      "x": 5,
+      "y": 4,
+      "width": 1,
+      "height": 1,
+      "name": "Камни",
+      "description": "Кто-то сложил их горкой."
+    },
+    {
+      "key": "stone-basin",
+      "kind": "basin",
+      "x": 8,
+      "y": 3,
+      "width": 1,
+      "height": 1,
+      "name": "Каменная чаша",
+      "description": "Старая чаша, заросшая сухим мхом. По краю — едва заметные знаки, похожие на листья."
+    }
   ]
 }

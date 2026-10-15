@@ -1,5 +1,5 @@
 import { apiFetch } from './client'
-import type { Catalog, CompletionResult, GameState, GardenObject, Habit, HabitInput, PurchaseResult } from './types'
+import type { CastResult, Catalog, CompletionResult, GameState, GardenObject, Habit, HabitInput, PurchaseResult } from './types'
 
 export const fetchGameState = () => apiFetch<GameState>('/api/state')
 export const fetchCatalog = () => apiFetch<Catalog>('/api/catalog')
@@ -25,3 +25,6 @@ export const purchaseItem = (itemKey: string, quantity: number, idempotencyKey: 
 
 export const plantSeed = (x: number, y: number, seedItemKey: string) =>
   apiFetch<GardenObject>('/api/garden/plantings', { method: 'POST', body: JSON.stringify({ x, y, seedItemKey }) })
+
+export const castRecipe = (recipeKey: string) =>
+  apiFetch<CastResult>(`/api/magic/recipes/${recipeKey}/cast`, { method: 'POST' })

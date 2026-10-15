@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ApiError } from '../../api/client'
 import { plantSeed } from '../../api/game'
 import type { Catalog, GameState } from '../../api/types'
 import { loadAtlas, type Atlas } from '../../game/atlas'
 import { GardenCanvas } from '../../game/GardenCanvas'
-import { describeCell, minutesUntilNextStage, nextGrowthRefresh, objectAt, type Cell } from '../../game/layout'
+import { describeCell, minutesUntilNextStage, nextGrowthRefresh, objectAt, propAt, type Cell } from '../../game/layout'
 import { Button } from '../../ui/Button'
 import { SeedPacketIcon } from '../../ui/icons/SeedPacketIcon'
 import { useToast } from '../notifications/Toasts'
 import styles from './GardenView.module.css'
+import { RecipeBlock } from './RecipeBlock'
 
 type AtlasLoad = { status: 'loading' } | { status: 'ready'; atlas: Atlas } | { status: 'error' }
 
@@ -22,6 +23,7 @@ type Props = {
 export function GardenView({ state, catalog, onChanged }: Props) {
   const map = catalog.garden
   const objects = state.garden.objects
+  const awakened = useMemo(() => new Set(state.worldObjects.map((w) => w.objectKey)), [state.worldObjects])
   const [atlas, setAtlas] = useState<AtlasLoad>({ status: 'loading' })
   const [selected, setSelected] = useState<Cell | null>(null)
   const [planting, setPlanting] = useState(false)
@@ -76,7 +78,7 @@ export function GardenView({ state, catalog, onChanged }: Props) {
   return (
     <section className={styles.garden} aria-label={map.name}>
       {atlas.status === 'ready' ? (
-        <GardenCanvas map={map} objects={objects} atlas={atlas.atlas} selected={selected} onSelect={select} />
+        <GardenCanvas map={map} objects={objects} awakened={awakened} atlas={atlas.atlas} selected={selected} onSelect={select} />
       ) : (
         <div className={styles.placeholder} style={{ aspectRatio: `${map.width} / ${map.height}` }}>
           <p className={styles.note}>
@@ -87,7 +89,15 @@ export function GardenView({ state, catalog, onChanged }: Props) {
 
       <div className={styles.info} aria-live="polite">
         {selected ? (
-          <CellInfo cell={selected} state={state} catalog={catalog} now={now} planting={planting} onPlant={plant} />
+          <CellInfo
+            cell={selected}
+            state={state}
+            catalog={catalog}
+            now={now}
+            planting={planting}
+            onPlant={plant}
+            onChanged={onChanged}
+          />
         ) : (
           <span className={styles.hint}>Нажмите на клетку сада, чтобы рассмотреть её поближе.</span>
         )}
@@ -103,9 +113,10 @@ type CellInfoProps = {
   now: number
   planting: boolean
   onPlant: (cell: Cell, seedKey: string) => void
+  onChanged: () => Promise<void>
 }
 
-function CellInfo({ cell, state, catalog, now, planting, onPlant }: CellInfoProps) {
+function CellInfo({ cell, state, catalog, now, planting, onPlant, onChanged }: CellInfoProps) {
   const object = objectAt(state.garden.objects, cell)
   if (object) {
     const name = catalog.species.find((s) => s.key === object.speciesKey)?.name ?? object.speciesKey
@@ -122,6 +133,20 @@ function CellInfo({ cell, state, catalog, now, planting, onPlant }: CellInfoProp
 
   const info = describeCell(catalog.garden, cell)
   if (!info) return null
+
+  const prop = propAt(catalog.garden, cell.x, cell.y)
+  const recipe = prop && catalog.recipes.find((r) => r.targetObjectKey === prop.key)
+  if (recipe) {
+    const awakened = state.worldObjects.some((w) => w.objectKey === recipe.targetObjectKey)
+    return (
+      <div className={styles.cell}>
+        <p className={styles.text}>
+          <strong>{info.name}.</strong> {awakened ? '' : info.description}
+        </p>
+        <RecipeBlock recipe={recipe} state={state} catalog={catalog} onChanged={onChanged} />
+      </div>
+    )
+  }
 
   const seeds = catalog.items
     .filter((item) => item.kind === 'SEED')
