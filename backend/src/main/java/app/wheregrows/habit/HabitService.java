@@ -2,8 +2,10 @@ package app.wheregrows.habit;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -142,6 +144,72 @@ public class HabitService {
         completions.saveAndFlush(new HabitCompletion(habitId, playerId, today, lifeSeeds, shardKey));
         inventory.grant(playerId, reward);
         return CompletionResult.completed(habitId, today, reward, withinDailyLimit);
+    }
+
+    /**
+     * Отметка за конкретный день. Сегодня — обычная отметка с наградой.
+     * Прошлые дни — запись в дневнике без награды: так можно вести честную историю,
+     * но нельзя «дозаполнить» месяц ради ресурсов.
+     */
+    @Transactional
+    public CompletionResult completeOn(long playerId, long habitId, LocalDate day) {
+        PlayerProfile player = lockPlayer(playerId);
+        LocalDate today = calendar.today(player);
+        if (day.equals(today)) {
+            return completeToday(playerId, habitId);
+        }
+        requireEditablePastDay(day, today);
+        findActive(playerId, habitId);
+        if (completions.findByHabitIdAndCompletedOn(habitId, day).isPresent()) {
+            return CompletionResult.alreadyDone(habitId, day);
+        }
+        completions.saveAndFlush(new HabitCompletion(habitId, playerId, day, 0, null));
+        return CompletionResult.recorded(habitId, day);
+    }
+
+    /** Снять отметку с прошлого дня. Сегодняшняя отметка остаётся: награда за неё уже в сумке. */
+    @Transactional
+    public void uncomplete(long playerId, long habitId, LocalDate day) {
+        PlayerProfile player = lockPlayer(playerId);
+        LocalDate today = calendar.today(player);
+        if (!day.isBefore(today)) {
+            throw new ConflictException("Сегодняшняя отметка остаётся: награда за неё уже в сумке.");
+        }
+        requireEditablePastDay(day, today);
+        findActive(playerId, habitId);
+        completions.findByHabitIdAndCompletedOn(habitId, day).ifPresent(completions::delete);
+    }
+
+    public LocalDate today(PlayerProfile player) {
+        return calendar.today(player);
+    }
+
+    /** Отметки активных привычек за месяц — для трекера. */
+    @Transactional(readOnly = true)
+    public HabitHistory history(PlayerProfile player, YearMonth month) {
+        LocalDate today = calendar.today(player);
+        List<Habit> active = habits.findByPlayerIdAndArchivedAtIsNullOrderByIdAsc(player.getId());
+        Map<Long, List<Integer>> days = completions
+                .findByPlayerIdAndCompletedOnBetweenOrderByCompletedOn(player.getId(), month.atDay(1), month.atEndOfMonth())
+                .stream()
+                .collect(Collectors.groupingBy(HabitCompletion::getHabitId,
+                        Collectors.mapping(c -> c.getCompletedOn().getDayOfMonth(), Collectors.toList())));
+        return new HabitHistory(month.toString(), month.lengthOfMonth(), today,
+                today.minusDays(limits.historyDays()),
+                active.stream()
+                        .map(h -> new HabitHistory.Row(h.getId(), h.getTitle(), h.getCrystalCategory(),
+                                days.getOrDefault(h.getId(), List.of())))
+                        .toList());
+    }
+
+    private void requireEditablePastDay(LocalDate day, LocalDate today) {
+        if (day.isAfter(today)) {
+            throw new InvalidRequestException("Этот день ещё не наступил.");
+        }
+        if (day.isBefore(today.minusDays(limits.historyDays()))) {
+            throw new InvalidRequestException("Так далеко дневник не листается: отмечать можно последние "
+                    + limits.historyDays() + " дней.");
+        }
     }
 
     private List<ItemGrant> rewardFor(Habit habit) {

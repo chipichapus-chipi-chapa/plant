@@ -1,5 +1,5 @@
 import { apiFetch } from './client'
-import type { CastResult, Catalog, CompletionResult, GameState, GardenObject, Habit, HabitInput, PurchaseResult } from './types'
+import type { CastResult, Catalog, CompletionResult, DayCompletionResult, HabitHistory, GameState, GardenObject, Habit, HabitInput, PurchaseResult } from './types'
 
 export const fetchGameState = () => apiFetch<GameState>('/api/state')
 export const fetchCatalog = () => apiFetch<Catalog>('/api/catalog')
@@ -28,3 +28,13 @@ export const plantSeed = (x: number, y: number, seedItemKey: string) =>
 
 export const castRecipe = (recipeKey: string) =>
   apiFetch<CastResult>(`/api/magic/recipes/${recipeKey}/cast`, { method: 'POST' })
+
+export const fetchHabitHistory = (month?: string) =>
+  apiFetch<HabitHistory>(`/api/habits/history${month ? `?month=${month}` : ''}`)
+
+/** Отметка за день: сегодня — с наградой, прошлые дни — запись без награды */
+export const completeHabitOn = (id: number, day: string) =>
+  apiFetch<DayCompletionResult>(`/api/habits/${id}/completions/${day}`, { method: 'PUT' })
+
+export const uncompleteHabitOn = (id: number, day: string) =>
+  apiFetch<void>(`/api/habits/${id}/completions/${day}`, { method: 'DELETE' })

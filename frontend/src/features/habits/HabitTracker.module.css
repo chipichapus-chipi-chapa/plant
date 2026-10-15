@@ -1,0 +1,308 @@
+.tracker {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.note {
+  margin: 0;
+  color: var(--c-bark);
+}
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  align-items: flex-start;
+}
+
+.summary {
+  display: grid;
+  gap: var(--space-1);
+  flex: 1;
+  min-width: 220px;
+}
+
+.summaryLine {
+  margin: 0;
+}
+
+.hint {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-s);
+  color: var(--c-bark);
+}
+
+/* --- Мини-календарь ------------------------------------------------------------ */
+
+.calendar {
+  padding: var(--space-2);
+  background: var(--c-parchment-shade);
+  box-shadow: 0 0 0 var(--px) var(--c-bark);
+}
+
+.calendarHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.month {
+  font-weight: 600;
+}
+
+.arrow {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  background: var(--c-wood);
+  color: var(--c-parchment);
+  box-shadow: 0 0 0 var(--px) var(--c-ink), inset 0 calc(var(--px) * -1) 0 0 var(--c-bark);
+  cursor: pointer;
+}
+
+.arrow:hover:not(:disabled) {
+  background: var(--c-sun);
+  color: var(--c-ink);
+}
+
+.arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.arrow:focus-visible {
+  outline: var(--px) solid var(--c-sun);
+  outline-offset: 2px;
+}
+
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 26px);
+  gap: 2px;
+  font-size: var(--text-s);
+  text-align: center;
+}
+
+.weekday {
+  color: var(--c-bark);
+}
+
+.calDay {
+  line-height: 22px;
+}
+
+.calMarked {
+  background: var(--w-alive-grass);
+  color: var(--c-ink);
+}
+
+.calToday {
+  box-shadow: inset 0 0 0 2px var(--c-ink);
+  font-weight: 600;
+}
+
+.calFuture {
+  opacity: 0.4;
+}
+
+/* --- Сетка ------------------------------------------------------------------------- */
+
+.scroll {
+  overflow-x: auto;
+  padding-bottom: var(--space-2);
+}
+
+.grid {
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-size: var(--text-s);
+}
+
+.grid th,
+.grid td {
+  padding: 0;
+  text-align: center;
+}
+
+/* Название привычки остаётся на месте при горизонтальной прокрутке */
+.sticky {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--c-parchment);
+}
+
+.grid .head,
+.grid .chartLabel,
+.grid .footLabel {
+  text-align: left;
+}
+
+.head,
+.chartLabel,
+.footLabel {
+  color: var(--c-bark);
+  font-weight: 600;
+}
+
+.chartLabel {
+  vertical-align: bottom;
+}
+
+.habit {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 180px;
+  max-width: 260px;
+  padding-right: var(--space-2);
+  text-align: left;
+  font-weight: 400;
+}
+
+.index {
+  min-width: 1.4em;
+  color: var(--c-bark);
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crystal {
+  display: inline-flex;
+}
+
+.edit {
+  width: 24px;
+  height: 24px;
+  border: 0;
+  background: transparent;
+  color: var(--c-bark);
+  cursor: pointer;
+}
+
+.edit:hover {
+  background: var(--c-parchment-shade);
+}
+
+.edit:focus-visible {
+  outline: var(--px) solid var(--c-sun);
+}
+
+/* График над днями: столбик на день, высота — доля отмеченных привычек */
+.chartCell {
+  height: 56px;
+  vertical-align: bottom;
+}
+
+.bar {
+  display: block;
+  width: 100%;
+  min-height: 2px;
+  background: var(--week-color);
+  box-shadow: inset 0 2px 0 0 rgb(255 255 255 / 0.35);
+}
+
+.dayHead {
+  min-width: 22px;
+  padding: 2px 0 !important;
+  background: var(--week-color);
+  color: var(--c-parchment);
+  font-weight: 600;
+}
+
+.todayHead {
+  background: var(--c-ink);
+  color: var(--c-sun);
+}
+
+.todayCol {
+  background: rgb(240 194 90 / 0.35);
+}
+
+/* Клетка-отметка: рамка цвета недели; отмеченная — залита и с пиксельной галочкой */
+.cell {
+  position: relative;
+  display: block;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  background: var(--c-parchment);
+  box-shadow: inset 0 0 0 2px var(--week-color);
+  cursor: pointer;
+}
+
+.cell:hover:not(:disabled) {
+  background: var(--c-parchment-shade);
+}
+
+.cell:focus-visible {
+  outline: 2px solid var(--c-ink);
+  outline-offset: 1px;
+}
+
+.done {
+  background: var(--week-color);
+}
+
+.done:hover:not(:disabled) {
+  background: var(--week-color);
+  opacity: 0.8;
+}
+
+/* Пиксельная галочка 10×8 (светлая, поверх цвета недели) */
+.done::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 11' shape-rendering='crispEdges' fill='%23f2e3c2'%3E%3Crect x='1' y='5' width='2' height='2'/%3E%3Crect x='2' y='6' width='2' height='2'/%3E%3Crect x='3' y='7' width='2' height='2'/%3E%3Crect x='4' y='6' width='2' height='2'/%3E%3Crect x='5' y='5' width='2' height='2'/%3E%3Crect x='6' y='4' width='2' height='2'/%3E%3Crect x='7' y='3' width='2' height='2'/%3E%3Crect x='8' y='2' width='2' height='2'/%3E%3C/svg%3E")
+    center / 14px 14px no-repeat;
+  image-rendering: pixelated;
+}
+
+.cell:disabled {
+  cursor: default;
+}
+
+.closed {
+  opacity: 0.3;
+}
+
+.total {
+  min-width: 28px;
+  font-weight: 600;
+  color: var(--c-bark);
+}
+
+.count {
+  color: var(--c-bark);
+}
+
+/* Цвета недель — цвета кристаллов (tokens.css) */
+.w1 {
+  --week-color: var(--week-1);
+}
+
+.w2 {
+  --week-color: var(--week-2);
+}
+
+.w3 {
+  --week-color: var(--week-3);
+}
+
+.w4 {
+  --week-color: var(--week-4);
+}
+
+.w5 {
+  --week-color: var(--week-5);
+}

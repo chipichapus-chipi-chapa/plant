@@ -4,27 +4,36 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDate;
+import java.time.YearMonth;
+
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import app.wheregrows.player.CurrentPlayer;
+import app.wheregrows.player.PlayerProfileRepository;
 
 @RestController
 class HabitController {
 
     private final HabitService service;
     private final CurrentPlayer currentPlayer;
+    private final PlayerProfileRepository players;
 
-    HabitController(HabitService service, CurrentPlayer currentPlayer) {
+    HabitController(HabitService service, CurrentPlayer currentPlayer, PlayerProfileRepository players) {
         this.service = service;
         this.currentPlayer = currentPlayer;
+        this.players = players;
     }
 
     /** Тело запроса на создание и изменение. crystalCategory может быть null — без кристалла. */
@@ -61,5 +70,27 @@ class HabitController {
     ResponseEntity<CompletionResult> completeToday(@PathVariable long id) {
         CompletionResult result = service.completeToday(currentPlayer.id(), id);
         return ResponseEntity.status(result.newlyCompleted() ? HttpStatus.CREATED : HttpStatus.OK).body(result);
+    }
+
+    /** Отметка за день yyyy-mm-dd: сегодня — с наградой (как /today), прошлые дни — без награды. */
+    @PutMapping("/api/habits/{id}/completions/{day}")
+    ResponseEntity<CompletionResult> completeOn(@PathVariable long id,
+                                                @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate day) {
+        CompletionResult result = service.completeOn(currentPlayer.id(), id, day);
+        return ResponseEntity.status(result.newlyCompleted() ? HttpStatus.CREATED : HttpStatus.OK).body(result);
+    }
+
+    /** Снять отметку с прошлого дня. Сегодняшнюю снять нельзя — награда за неё уже выдана. */
+    @DeleteMapping("/api/habits/{id}/completions/{day}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void uncomplete(@PathVariable long id, @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate day) {
+        service.uncomplete(currentPlayer.id(), id, day);
+    }
+
+    /** Отметки активных привычек за месяц (по умолчанию — текущий месяц игрока). */
+    @GetMapping("/api/habits/history")
+    HabitHistory history(@RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM") YearMonth month) {
+        var player = players.findById(currentPlayer.id()).orElseThrow();
+        return service.history(player, month != null ? month : YearMonth.from(service.today(player)));
     }
 }

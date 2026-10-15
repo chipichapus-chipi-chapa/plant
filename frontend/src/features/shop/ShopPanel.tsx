@@ -7,7 +7,6 @@ import { describeReward } from '../../lib/rewards'
 import { Button } from '../../ui/Button'
 import { LifeSeedIcon } from '../../ui/icons/LifeSeedIcon'
 import { SeedPacketIcon } from '../../ui/icons/SeedPacketIcon'
-import { Panel } from '../../ui/Panel'
 import { useToast } from '../notifications/Toasts'
 import styles from './ShopPanel.module.css'
 
@@ -50,7 +49,7 @@ export function ShopPanel({ state, catalog, onChanged }: Props) {
   }
 
   return (
-    <Panel title="Лавка семян">
+    <div className={styles.content}>
       <ul className={styles.list}>
         {goods.map((item) => {
           const price = item.price!
@@ -80,6 +79,6 @@ export function ShopPanel({ state, catalog, onChanged }: Props) {
           )
         })}
       </ul>
-    </Panel>
+    </div>
   )
 }
