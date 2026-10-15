@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import app.wheregrows.economy.InventoryItemRepository;
+import app.wheregrows.garden.GardenService;
 import app.wheregrows.habit.HabitService;
 import app.wheregrows.player.GameCalendar;
 import app.wheregrows.player.PlayerProfile;
@@ -16,13 +17,15 @@ class GameStateService {
     private final InventoryItemRepository inventory;
     private final HabitService habits;
     private final GameCalendar calendar;
+    private final GardenService garden;
 
     GameStateService(PlayerProfileRepository profiles, InventoryItemRepository inventory, HabitService habits,
-                     GameCalendar calendar) {
+                     GameCalendar calendar, GardenService garden) {
         this.profiles = profiles;
         this.inventory = inventory;
         this.habits = habits;
         this.calendar = calendar;
+        this.garden = garden;
     }
 
     @Transactional(readOnly = true)
@@ -36,6 +39,7 @@ class GameStateService {
                         .map(item -> new GameStateResponse.InventoryEntry(item.getItemKey(), item.getQuantity()))
                         .toList(),
                 habits.list(profile),
-                habits.dailyRewards(profile));
+                habits.dailyRewards(profile),
+                new GameStateResponse.Garden(garden.objects(playerId)));
     }
 }

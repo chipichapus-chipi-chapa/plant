@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from 'react'
-import type { GardenMap } from '../api/types'
+import type { GardenMap, GardenObject } from '../api/types'
 import type { Atlas } from './atlas'
 import { cellAtPoint, fitScale, inBounds, TILE, type Cell } from './layout'
 import { drawGarden } from './renderer'
@@ -7,6 +7,7 @@ import styles from './GardenCanvas.module.css'
 
 type Props = {
   map: GardenMap
+  objects: GardenObject[]
   atlas: Atlas
   selected: Cell | null
   onSelect: (cell: Cell | null) => void
@@ -15,11 +16,14 @@ type Props = {
 /**
  * Канвас сада. React владеет состоянием (выбранная клетка), канвас только рисует.
  * Масштаб целый (×1/×2/×3), чтобы пиксели не размывались (на телефоне — дробный); плотность экрана (devicePixelRatio)
- * учитывается в размере буфера.
+ * учитывается в размере буфера. Сцена сначала рисуется 1:1 во внеэкранный канвас, затем переносится целиком.
  */
-export function GardenCanvas({ map, atlas, selected, onSelect }: Props) {
+export function GardenCanvas({ map, objects, atlas, selected, onSelect }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  // Сцена рисуется в буфер 1:1 (512×320), а на экран переносится одним масштабированием.
+  // Иначе при дробном масштабе между тайлами появляются швы.
+  const bufferRef = useRef<HTMLCanvasElement | null>(null)
   const [scale, setScale] = useState(1)
   const [hover, setHover] = useState<Cell | null>(null)
 
@@ -44,9 +48,18 @@ export function GardenCanvas({ map, atlas, selected, onSelect }: Props) {
     canvas.height = Math.round(cssHeight * dpr)
     canvas.style.width = `${cssWidth}px`
     canvas.style.height = `${cssHeight}px`
-    ctx.setTransform(scale * dpr, 0, 0, scale * dpr, 0, 0)
-    drawGarden(ctx, map, atlas, { hover, selected })
-  }, [map, atlas, scale, hover, selected])
+
+    const buffer = (bufferRef.current ??= document.createElement('canvas'))
+    buffer.width = map.width * TILE
+    buffer.height = map.height * TILE
+    const bufferCtx = buffer.getContext('2d')
+    if (!bufferCtx) return
+    drawGarden(bufferCtx, map, objects, atlas, { hover, selected })
+
+    ctx.imageSmoothingEnabled = false
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.drawImage(buffer, 0, 0, canvas.width, canvas.height)
+  }, [map, objects, atlas, scale, hover, selected])
 
   const cellFromEvent = (event: MouseEvent<HTMLCanvasElement>): Cell | null => {
     const rect = event.currentTarget.getBoundingClientRect()

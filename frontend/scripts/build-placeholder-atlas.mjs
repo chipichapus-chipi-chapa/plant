@@ -45,6 +45,18 @@ const P = {
   glass: '#3d4a4f',
   berry: '#b5485a',
   bramble: '#3f4a2a',
+  // «живая» палитра: посаженные растения ярче выцветшего сада — сад возвращает цвет
+  leaf: '#4a8258',
+  leafLight: '#86b56e',
+  leafPale: '#9fc179',
+  leafShadow: '#254c3a',
+  outlineGreen: '#1b3831',
+  radish: '#c8424e',
+  radishLight: '#e0707a',
+  petal: '#f2e3c2',
+  sun: '#f0c25a',
+  sunDark: '#d99a2b',
+  bark: '#5e423d',
 }
 
 const rgba = (hex, a = 255) => [
@@ -375,6 +387,110 @@ function rock() {
   return s
 }
 
+
+// --- Растения ---------------------------------------------------------------------------
+// Кадр 32×48: низ совпадает с низом клетки, верх может выступать на полклетки выше.
+
+const PW = T
+const PH = 48
+const GROUND = PH - 6 // уровень земли внутри кадра
+
+function plantCanvas() {
+  const s = new Sprite(PW, PH)
+  // свежевскопанная лунка
+  s.ellipse(16, GROUND + 1, 7, 2, P.soilDark)
+  s.ellipse(15, GROUND, 5, 1, P.soilLight)
+  return s
+}
+
+/** Лист: овал с тёмным контуром и светлой серединкой. */
+function leaf(s, cx, cy, rx, ry, light = P.leafLight) {
+  s.ellipse(cx, cy, rx + 1, ry + 1, P.outlineGreen)
+  s.ellipse(cx, cy, rx, ry, P.leaf)
+  s.ellipse(cx, cy - 1, Math.max(1, rx - 1), Math.max(0, ry - 1), light)
+}
+
+function stem(s, x, top, bottom) {
+  s.rect(x - 1, top, 3, bottom - top, P.outlineGreen)
+  s.rect(x, top, 1, bottom - top, P.leaf)
+}
+
+function sprout() {
+  const s = plantCanvas()
+  stem(s, 16, GROUND - 6, GROUND)
+  leaf(s, 13, GROUND - 7, 2, 1)
+  leaf(s, 19, GROUND - 8, 2, 1, P.leafPale)
+  return s
+}
+
+function radish(stage) {
+  if (stage === 0) return sprout()
+  const s = plantCanvas()
+  const big = stage === 2
+  if (big) {
+    // красная макушка корнеплода выглядывает из земли
+    s.ellipse(16, GROUND - 1, 5, 3, P.outlineGreen)
+    s.ellipse(16, GROUND - 1, 4, 2, P.radish)
+    s.rect(14, GROUND - 2, 2, 1, P.radishLight)
+  }
+  const h = big ? 14 : 9
+  leaf(s, 11, GROUND - h, 3, big ? 5 : 3)
+  leaf(s, 21, GROUND - h, 3, big ? 5 : 3)
+  leaf(s, 16, GROUND - h - 3, 2, big ? 6 : 4, P.leafPale)
+  return s
+}
+
+function chamomile(stage) {
+  if (stage === 0) return sprout()
+  const s = plantCanvas()
+  // кустик из тонких листьев
+  for (const [x, y] of [[11, 10], [21, 10], [14, 14], [18, 14], [16, 8]]) {
+    stem(s, x, GROUND - y, GROUND)
+    leaf(s, x, GROUND - y, 1, 2)
+  }
+  if (stage === 2) {
+    for (const [x, y] of [[10, 18], [16, 22], [22, 17], [13, 13], [20, 12]]) {
+      stem(s, x, GROUND - y, GROUND - y + 6)
+      // ромашка: белые лепестки крестом, жёлтая серединка
+      s.rect(x - 2, GROUND - y - 1, 5, 3, P.outlineGreen)
+      s.rect(x - 1, GROUND - y - 2, 3, 5, P.outlineGreen)
+      s.rect(x - 1, GROUND - y, 3, 1, P.petal)
+      s.rect(x, GROUND - y - 1, 1, 3, P.petal)
+      s.px(x, GROUND - y, P.sun)
+    }
+  }
+  return s
+}
+
+function sunflower(stage) {
+  if (stage === 0) return sprout()
+  const s = plantCanvas()
+  const height = [0, 12, 24, 34][stage]
+  stem(s, 16, GROUND - height, GROUND)
+  leaf(s, 11, GROUND - Math.round(height * 0.35), 4, 2)
+  leaf(s, 21, GROUND - Math.round(height * 0.55), 4, 2, P.leafPale)
+  if (stage >= 2) leaf(s, 11, GROUND - Math.round(height * 0.75), 3, 2)
+  const top = GROUND - height
+  if (stage === 2) {
+    // зелёный бутон
+    s.ellipse(16, top, 3, 3, P.outlineGreen)
+    s.ellipse(16, top, 2, 2, P.leafLight)
+  }
+  if (stage === 3) {
+    // цветок: жёлтые лепестки, тёмная серединка с семечками
+    s.ellipse(16, top, 8, 7, P.outlineGreen)
+    s.ellipse(16, top, 7, 6, P.sun)
+    for (let a = 0; a < 8; a++) {
+      const ang = (a / 8) * Math.PI * 2
+      s.px(16 + Math.round(Math.cos(ang) * 6), top + Math.round(Math.sin(ang) * 5), P.sunDark)
+    }
+    s.ellipse(16, top, 3, 3, P.bark)
+    s.px(15, top - 1, P.soilLight)
+    s.px(17, top + 1, P.soilLight)
+  }
+  return s
+}
+
 // --- Сборка атласа ------------------------------------------------------------------------
 
 const frames = {
@@ -392,6 +508,9 @@ const frames = {
   prop_barrel: barrel(),
   prop_wheelbarrow: wheelbarrow(),
   prop_rock: rock(),
+  ...Object.fromEntries([0, 1, 2].map((i) => [`plant_radish_${i}`, radish(i)])),
+  ...Object.fromEntries([0, 1, 2].map((i) => [`plant_chamomile_${i}`, chamomile(i)])),
+  ...Object.fromEntries([0, 1, 2, 3].map((i) => [`plant_sunflower_${i}`, sunflower(i)])),
 }
 
 // Упаковка «полками»: кадры по высоте, слева направо

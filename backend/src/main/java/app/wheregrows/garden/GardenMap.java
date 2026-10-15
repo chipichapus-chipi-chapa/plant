@@ -22,6 +22,13 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
         return tiles.get(String.valueOf(rows.get(y).charAt(x)));
     }
 
+    /** Постройка, накрывающая клетку, или null. */
+    public Prop propAt(int x, int y) {
+        return props.stream()
+                .filter(p -> x >= p.x() && y >= p.y() && x < p.x() + p.width() && y < p.y() + p.height())
+                .findFirst().orElse(null);
+    }
+
     public boolean contains(int x, int y) {
         return x >= 0 && y >= 0 && x < width && y < height;
     }

@@ -1,7 +1,7 @@
 // Чистая геометрия сада: какой кадр рисовать в клетке, что лежит в клетке,
 // какая клетка под курсором. Без DOM — поэтому легко тестируется.
 
-import type { GardenMap, GardenProp, TileType } from '../api/types'
+import type { GardenMap, GardenObject, GardenProp, TileType } from '../api/types'
 
 export const TILE = 32
 
@@ -80,4 +80,21 @@ export function describeCell(map: GardenMap, cell: Cell): { name: string; descri
   if (prop) return { name: prop.name, description: prop.description, plantable: false }
   const tile = tileAt(map, cell.x, cell.y)
   return tile ? { name: tile.name, description: tile.description, plantable: tile.plantable } : null
+}
+
+export function objectAt(objects: GardenObject[], cell: Cell): GardenObject | undefined {
+  return objects.find((o) => o.x === cell.x && o.y === cell.y)
+}
+
+/** Через сколько минут следующая стадия (округляем вверх, минимум 1). null — растение взрослое. */
+export function minutesUntilNextStage(object: GardenObject, now: number): number | null {
+  if (!object.nextStageAt) return null
+  return Math.max(1, Math.ceil((Date.parse(object.nextStageAt) - now) / 60_000))
+}
+
+/** Когда перечитать состояние, чтобы увидеть ближайшую смену стадии (мс от now), или null. */
+export function nextGrowthRefresh(objects: GardenObject[], now: number): number | null {
+  const times = objects.filter((o) => o.nextStageAt).map((o) => Date.parse(o.nextStageAt!))
+  if (times.length === 0) return null
+  return Math.max(1000, Math.min(...times) - now + 500)
 }

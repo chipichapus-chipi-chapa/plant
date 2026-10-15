@@ -27,7 +27,7 @@ export function App() {
         ) : (
           <main className={styles.main}>
             {game.status === 'ready' ? (
-              <GardenView map={game.catalog.garden} />
+              <GardenView state={game.state} catalog={game.catalog} onChanged={refresh} />
             ) : (
               <div className={styles.garden} aria-busy="true">
                 <p className={styles.gardenNote}>Отворяем калитку…</p>

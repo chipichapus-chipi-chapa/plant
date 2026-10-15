@@ -1,4 +1,4 @@
-import type { GardenMap } from '../api/types'
+import type { GardenMap, GardenObject } from '../api/types'
 import type { Atlas } from './atlas'
 import { TILE, tileFrame, type Cell } from './layout'
 
@@ -7,9 +7,15 @@ export type Highlights = { hover: Cell | null; selected: Cell | null }
 /**
  * Рисует сад в логических пикселях (1 тайл = 32). Масштаб задаётся трансформацией контекста,
  * сглаживание выключено — пиксели остаются чёткими.
- * Порядок слоёв: земля → постройки (сверху вниз, чтобы нижние перекрывали верхние) → подсветка.
+ * Порядок слоёв: земля → постройки и растения (сверху вниз, чтобы нижние перекрывали верхние) → подсветка.
  */
-export function drawGarden(ctx: CanvasRenderingContext2D, map: GardenMap, atlas: Atlas, highlights: Highlights) {
+export function drawGarden(
+  ctx: CanvasRenderingContext2D,
+  map: GardenMap,
+  objects: GardenObject[],
+  atlas: Atlas,
+  highlights: Highlights,
+) {
   ctx.imageSmoothingEnabled = false
   ctx.clearRect(0, 0, map.width * TILE, map.height * TILE)
 
@@ -19,9 +25,14 @@ export function drawGarden(ctx: CanvasRenderingContext2D, map: GardenMap, atlas:
     }
   }
 
-  const props = [...map.props].sort((a, b) => a.y + a.height - (b.y + b.height))
-  for (const prop of props) {
-    drawFrame(ctx, atlas, `prop_${prop.kind}`, prop.x * TILE, prop.y * TILE)
+  // Постройки и растения рисуем вместе, по нижнему краю: что ближе к зрителю — поверх
+  const sprites = [
+    ...map.props.map((p) => ({ bottom: p.y + p.height, frame: `prop_${p.kind}`, x: p.x * TILE, y: p.y * TILE })),
+    // кадр растения 32×48: низ совпадает с низом клетки, верх выступает над ней
+    ...objects.map((o) => ({ bottom: o.y + 1, frame: `plant_${o.speciesKey}_${o.stage}`, x: o.x * TILE, y: o.y * TILE - 16 })),
+  ].sort((a, b) => a.bottom - b.bottom)
+  for (const sprite of sprites) {
+    drawFrame(ctx, atlas, sprite.frame, sprite.x, sprite.y)
   }
 
   if (highlights.hover) drawCorners(ctx, highlights.hover, 'rgba(242, 227, 194, 0.85)')

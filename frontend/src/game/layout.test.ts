@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { GardenMap } from '../api/types'
-import { cellAtPoint, describeCell, fitScale, propAt, tileFrame, variant } from './layout'
+import type { GardenMap, GardenObject } from '../api/types'
+import { cellAtPoint, describeCell, fitScale, minutesUntilNextStage, nextGrowthRefresh, objectAt, propAt, tileFrame, variant } from './layout'
 
 const t = (type: string, plantable = false) => ({ type, name: type, description: '', plantable })
 
@@ -64,5 +64,37 @@ describe('describeCell', () => {
   it('сообщает, можно ли сажать', () => {
     expect(describeCell(map, { x: 1, y: 1 })).toMatchObject({ plantable: true })
     expect(describeCell(map, { x: 9, y: 9 })).toBeNull()
+  })
+})
+
+const plant = (x: number, nextStageAt: string | null): GardenObject => ({
+  x,
+  y: 1,
+  kind: 'PLANT',
+  speciesKey: 'radish',
+  plantedAt: '2026-10-15T10:00:00Z',
+  stage: nextStageAt ? 0 : 2,
+  stageCount: 3,
+  mature: nextStageAt === null,
+  nextStageAt,
+})
+
+describe('рост', () => {
+  const now = Date.parse('2026-10-15T10:00:00Z')
+
+  it('находит растение в клетке', () => {
+    expect(objectAt([plant(1, null)], { x: 1, y: 1 })?.speciesKey).toBe('radish')
+    expect(objectAt([plant(1, null)], { x: 2, y: 1 })).toBeUndefined()
+  })
+
+  it('считает минуты до следующей стадии с округлением вверх', () => {
+    expect(minutesUntilNextStage(plant(1, '2026-10-15T10:09:01Z'), now)).toBe(10)
+    expect(minutesUntilNextStage(plant(1, '2026-10-15T09:59:00Z'), now)).toBe(1)
+    expect(minutesUntilNextStage(plant(1, null), now)).toBeNull()
+  })
+
+  it('планирует обновление к ближайшей смене стадии', () => {
+    expect(nextGrowthRefresh([plant(1, '2026-10-15T10:05:00Z'), plant(2, '2026-10-15T10:02:00Z')], now)).toBe(120_500)
+    expect(nextGrowthRefresh([plant(1, null)], now)).toBeNull()
   })
 })

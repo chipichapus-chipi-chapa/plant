@@ -48,7 +48,8 @@ class GameStateApiTests {
                 .andExpect(jsonPath("$.inventory").isEmpty())
                 .andExpect(jsonPath("$.habits").isEmpty())
                 .andExpect(jsonPath("$.dailyRewards.used").value(0))
-                .andExpect(jsonPath("$.dailyRewards.limit").value(6));
+                .andExpect(jsonPath("$.dailyRewards.limit").value(6))
+                .andExpect(jsonPath("$.garden.objects").isEmpty());
     }
 
     @Test
