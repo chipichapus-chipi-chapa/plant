@@ -65,7 +65,7 @@ class LocalPlayerProvisionerTests {
     void newPlayerStartsWithEmptyPocketsButNoDebt() {
         long id = provisioner.provision("fresh", "Садовник", ZONE);
 
-        assertThat(jdbc.queryForObject("SELECT coins FROM player_profile WHERE user_id = ?", Integer.class, id)).isZero();
+        // никаких стартовых долгов и штрафов: просто пустая сумка
         assertThat(count("inventory_item WHERE player_id = " + id)).isZero();
     }
 

@@ -44,9 +44,11 @@ class GameStateApiTests {
         mvc.perform(get("/api/state"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.player.displayName").value("Садовник"))
-                .andExpect(jsonPath("$.player.coins").value(0))
                 .andExpect(jsonPath("$.player.timezone").value("Asia/Vladivostok"))
-                .andExpect(jsonPath("$.inventory").isEmpty());
+                .andExpect(jsonPath("$.inventory").isEmpty())
+                .andExpect(jsonPath("$.habits").isEmpty())
+                .andExpect(jsonPath("$.dailyRewards.used").value(0))
+                .andExpect(jsonPath("$.dailyRewards.limit").value(6));
     }
 
     @Test

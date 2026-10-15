@@ -5,9 +5,15 @@ import java.time.ZoneId;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 
-/** Настройки игры из application.yml (префикс {@code game}). */
+/**
+ * Настройки игры из application.yml (префикс {@code game}).
+ * Все числа баланса собраны здесь, чтобы их можно было менять без правки кода.
+ */
 @ConfigurationProperties("game")
-public record GameProperties(@DefaultValue Local local) {
+public record GameProperties(
+        @DefaultValue Local local,
+        @DefaultValue Rewards rewards,
+        @DefaultValue Habits habits) {
 
     /**
      * Локальный режим разработки: единственный игрок без входа.
@@ -23,5 +29,22 @@ public record GameProperties(@DefaultValue Local local) {
                 timezone = ZoneId.systemDefault();
             }
         }
+    }
+
+    /**
+     * Награды за отметку привычки.
+     *
+     * @param lifeSeedsPerCompletion сколько Семян жизни приносит отметка
+     * @param shardsPerCompletion    сколько осколков категории привычки (если категория задана)
+     * @param dailyRewardedCompletions сколько отметок в день приносят награду; остальные просто засчитываются
+     */
+    public record Rewards(
+            @DefaultValue("3") int lifeSeedsPerCompletion,
+            @DefaultValue("1") int shardsPerCompletion,
+            @DefaultValue("6") int dailyRewardedCompletions) {
+    }
+
+    /** @param maxActive сколько активных привычек может быть одновременно */
+    public record Habits(@DefaultValue("30") int maxActive) {
     }
 }

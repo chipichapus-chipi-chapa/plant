@@ -23,15 +23,27 @@ class SchemaConstraintTests {
     JdbcTemplate jdbc;
 
     @Test
-    void coinsCannotGoNegative() {
-        long id = newPlayer("negative-coins");
-        assertThatThrownBy(() -> jdbc.update("UPDATE player_profile SET coins = -1 WHERE user_id = ?", id))
+    void habitCanBeCompletedOnlyOncePerDay() {
+        long id = newPlayer("double-completion");
+        long habit = jdbc.queryForObject("INSERT INTO habit (player_id, title) VALUES (?, 'Тест') RETURNING id",
+                Long.class, id);
+        String insert = "INSERT INTO habit_completion (habit_id, player_id, completed_on, life_seeds) "
+                + "VALUES (?, ?, DATE '2026-10-15', 3)";
+        jdbc.update(insert, habit, id);
+        assertThatThrownBy(() -> jdbc.update(insert, habit, id))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void shardMustBelongToCrystalCategory() {
+        assertThatThrownBy(() -> jdbc.update(
+                "INSERT INTO item_def (key, kind, name, description) VALUES ('shard_nothing', 'SHARD', 'Пусто', '?')"))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
     void inventoryQuantityCannotGoNegative() {
-        long id = newPlayer("negative-items");
+        long id = newPlayer("negative-items");  // в том числе Семена жизни: они тоже предмет инвентаря
         assertThatThrownBy(() -> jdbc.update(
                 "INSERT INTO inventory_item (player_id, item_key, quantity) VALUES (?, 'seed_radish', -1)", id))
                 .isInstanceOf(DataIntegrityViolationException.class);

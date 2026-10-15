@@ -1,57 +1,60 @@
 import type { ApiError } from '../api/client'
-import type { GameState } from '../api/types'
+import { LIFE_SEED, type GameState } from '../api/types'
+import { HabitsPanel } from '../features/habits/HabitsPanel'
 import { InventoryPanel } from '../features/inventory/InventoryPanel'
+import { ToastProvider } from '../features/notifications/Toasts'
 import { Button } from '../ui/Button'
-import { DewIcon } from '../ui/icons/DewIcon'
+import { LifeSeedIcon } from '../ui/icons/LifeSeedIcon'
 import { Panel } from '../ui/Panel'
 import styles from './App.module.css'
 import { useGame } from './useGame'
 
 export function App() {
-  const { game, reload } = useGame()
+  const { game, reload, refresh } = useGame()
 
   return (
-    <div className={styles.shell}>
-      <header className={styles.header}>
-        <h1 className={styles.logo}>Там, где растёт</h1>
-        {game.status === 'ready' && <PlayerBadge player={game.state.player} />}
-      </header>
+    <ToastProvider>
+      <div className={styles.shell}>
+        <header className={styles.header}>
+          <h1 className={styles.logo}>Там, где растёт</h1>
+          {game.status === 'ready' && <PlayerBadge state={game.state} />}
+        </header>
 
-      {game.status === 'error' ? (
-        <LoadError error={game.error} onRetry={reload} />
-      ) : (
-        <main className={styles.main}>
-          {/* Сюда встанет canvas-сад (задача 7). Пока — пустая земля в масштабе будущей сетки. */}
-          <div className={styles.garden} aria-label="Сад" aria-busy={game.status === 'loading'}>
-            <p className={styles.gardenNote}>
-              {game.status === 'loading' ? 'Отворяем калитку…' : 'Сад ещё зарос. Скоро здесь появятся грядки.'}
-            </p>
-          </div>
+        {game.status === 'error' ? (
+          <LoadError error={game.error} onRetry={reload} />
+        ) : (
+          <main className={styles.main}>
+            {/* Сюда встанет canvas-сад (задача 7). Пока — пустая земля в масштабе будущей сетки. */}
+            <div className={styles.garden} aria-label="Сад" aria-busy={game.status === 'loading'}>
+              <p className={styles.gardenNote}>
+                {game.status === 'loading' ? 'Отворяем калитку…' : 'Сад ещё зарос. Скоро здесь появятся грядки.'}
+              </p>
+            </div>
 
-          {game.status === 'ready' && (
-            <aside className={styles.sidebar}>
-              <Panel title="Привычки">
-                <p className={styles.empty}>Здесь будут дела, за которые сад скажет спасибо.</p>
-              </Panel>
-              <InventoryPanel inventory={game.state.inventory} catalog={game.catalog} />
-            </aside>
-          )}
-        </main>
-      )}
+            {game.status === 'ready' && (
+              <aside className={styles.sidebar}>
+                <HabitsPanel state={game.state} catalog={game.catalog} onChanged={refresh} />
+                <InventoryPanel inventory={game.state.inventory} catalog={game.catalog} />
+              </aside>
+            )}
+          </main>
+        )}
 
-      <footer className={styles.footer}>Локальный режим разработки: без входа, данные хранятся на этом компьютере.</footer>
-    </div>
+        <footer className={styles.footer}>Локальный режим разработки: без входа, данные хранятся на этом компьютере.</footer>
+      </div>
+    </ToastProvider>
   )
 }
 
-function PlayerBadge({ player }: { player: GameState['player'] }) {
+function PlayerBadge({ state }: { state: GameState }) {
+  const lifeSeeds = state.inventory.find((entry) => entry.itemKey === LIFE_SEED)?.quantity ?? 0
   return (
     <div className={styles.badge}>
-      <span>{player.displayName}</span>
-      <span className={styles.coins} title="Росинки">
-        <DewIcon />
-        {player.coins}
-        <span className={styles.visuallyHidden}> росинок</span>
+      <span>{state.player.displayName}</span>
+      <span className={styles.coins} title="Семена жизни">
+        <LifeSeedIcon />
+        {lifeSeeds}
+        <span className={styles.visuallyHidden}> — Семена жизни</span>
       </span>
     </div>
   )

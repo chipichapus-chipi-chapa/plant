@@ -1,3 +1,42 @@
+.heading {
+  margin: var(--space-2) 0 var(--space-2);
+  font-size: var(--text-s);
+  font-weight: 600;
+  color: var(--c-bark);
+}
+
+.heading:first-of-type {
+  margin-top: 0;
+}
+
+.shards {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shard,
+.shardEmpty {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) 0;
+  background: var(--c-parchment-shade);
+}
+
+.shardEmpty .shardQty {
+  opacity: 0.5;
+}
+
+.shardQty {
+  font-size: var(--text-s);
+  font-weight: 600;
+}
+
 .empty {
   margin: 0;
   color: var(--c-bark);
@@ -20,4 +59,13 @@
 
 .qty {
   color: var(--c-bark);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

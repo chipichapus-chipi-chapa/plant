@@ -23,13 +23,18 @@ class CatalogApiTests {
     MockMvc mvc;
 
     @Test
-    void catalogListsSpeciesAndTheirSeeds() throws Exception {
+    void catalogListsCrystalsSpeciesAndItems() throws Exception {
         mvc.perform(get("/api/catalog"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.crystals", hasSize(6)))
+                .andExpect(jsonPath("$.crystals[0].key").value("emerald"))
+                .andExpect(jsonPath("$.crystals[0].color").value("#4fae6a"))
+                .andExpect(jsonPath("$.items[?(@.key == 'life_seed')].kind").value("CURRENCY"))
+                .andExpect(jsonPath("$.items[?(@.key == 'shard_rose')].crystalCategory").value("rose"))
                 .andExpect(jsonPath("$.species", hasSize(3)))
                 .andExpect(jsonPath("$.species[?(@.key == 'radish')].stageMinutes[0]").value(10))
                 .andExpect(jsonPath("$.items[?(@.key == 'seed_radish')].kind").value("SEED"))
-                .andExpect(jsonPath("$.items[?(@.key == 'seed_radish')].price").value(5))
+                .andExpect(jsonPath("$.items[?(@.key == 'seed_radish')].price").value(2))
                 .andExpect(jsonPath("$.items[?(@.key == 'seed_radish')].speciesKey").value("radish"));
     }
 }
