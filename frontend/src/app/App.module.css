@@ -1,0 +1,79 @@
+.shell {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--space-4);
+  gap: var(--space-4);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.logo {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--c-sun);
+  text-shadow: var(--px) var(--px) 0 var(--c-ink);
+}
+
+/* Сад — центральный элемент; боковая панель не шире 320px */
+.main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+.garden {
+  display: grid;
+  place-items: center;
+  /* Пропорции будущей сетки 16×10 тайлов */
+  aspect-ratio: 16 / 10;
+  background-color: var(--c-moss);
+  /* Шахматка 32px намечает тайловую сетку */
+  background-image:
+    linear-gradient(45deg, var(--c-moss-dark) 25%, transparent 25%, transparent 75%, var(--c-moss-dark) 75%),
+    linear-gradient(45deg, var(--c-moss-dark) 25%, transparent 25%, transparent 75%, var(--c-moss-dark) 75%);
+  background-size: 64px 64px;
+  background-position: 0 0, 32px 32px;
+  background-blend-mode: soft-light;
+  box-shadow: 0 0 0 var(--px) var(--c-ink);
+}
+
+.gardenNote {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--c-parchment);
+  box-shadow: 0 0 0 var(--px) var(--c-ink);
+}
+
+.sidebar {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.empty {
+  margin: 0;
+  color: var(--c-bark);
+  font-size: var(--text-s);
+}
+
+.footer {
+  font-size: var(--text-s);
+  color: var(--c-parchment-shade);
+  opacity: 0.8;
+}
+
+@media (max-width: 900px) {
+  .main {
+    grid-template-columns: 1fr;
+  }
+}

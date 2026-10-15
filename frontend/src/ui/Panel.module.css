@@ -1,0 +1,23 @@
+/*
+ * Пиксельная рамка без картинок: четыре тени по сторонам дают «срезанные» углы,
+ * как у спрайтовой панели. Толщина — один «пиксель» интерфейса (--px).
+ */
+.panel {
+  position: relative;
+  margin: var(--px);
+  padding: var(--space-3) var(--space-4);
+  background: var(--c-parchment);
+  box-shadow:
+    0 calc(var(--px) * -1) 0 0 var(--c-ink),
+    0 var(--px) 0 0 var(--c-ink),
+    calc(var(--px) * -1) 0 0 0 var(--c-ink),
+    var(--px) 0 0 0 var(--c-ink),
+    inset 0 calc(var(--px) * -1) 0 0 var(--c-parchment-shade);
+}
+
+.title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-l);
+  font-weight: 600;
+  color: var(--c-bark);
+}

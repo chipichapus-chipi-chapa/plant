@@ -1,0 +1,30 @@
+@import '@fontsource/pixelify-sans/400.css';
+@import '@fontsource/pixelify-sans/600.css';
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--c-dusk);
+  color: var(--c-ink);
+  font-family: var(--font-pixel);
+  font-size: var(--text-m);
+  line-height: 1.4;
+  /* Пиксельная графика не должна размываться при масштабировании */
+  image-rendering: pixelated;
+}
+
+button {
+  font: inherit;
+}
