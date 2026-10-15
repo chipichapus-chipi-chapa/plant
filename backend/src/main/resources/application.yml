@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: where-it-grows
+  # Пароль БД берётся из корневого .env (тот же файл читает docker compose).
+  config:
+    import: optional:file:../.env[.properties]
+  datasource:
+    url: jdbc:postgresql://localhost:${POSTGRES_PORT:5434}/${POSTGRES_DB:plant}
+    username: ${POSTGRES_USER:plant}
+    password: ${POSTGRES_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Схемой управляет только Flyway; Hibernate лишь сверяет сущности с ней.
+      ddl-auto: validate
+  mvc:
+    problemdetails:
+      enabled: true
+
+server:
+  port: 8081
+  # Локальный режим без авторизации: сервер доступен только с этой машины.
+  address: 127.0.0.1
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

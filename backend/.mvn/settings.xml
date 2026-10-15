@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Настройки только для этого проекта: изолируют сборку от глобального
+     ~/.m2/settings.xml (корпоративных зеркал) и берут зависимости из Maven Central. -->
+<settings xmlns="http://maven.apache.org/SETTINGS/1.2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 https://maven.apache.org/xsd/settings-1.2.0.xsd">
+  <localRepository>${user.home}/.m2/repository</localRepository>
+</settings>
