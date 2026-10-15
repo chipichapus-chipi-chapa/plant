@@ -74,7 +74,8 @@
 
 @media (max-width: 900px) {
   .main {
-    grid-template-columns: 1fr;
+    /* minmax(0, …): колонка не растягивается под ширину канваса, а канвас подстраивается под колонку */
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

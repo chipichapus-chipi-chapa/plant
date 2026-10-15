@@ -1,0 +1,21 @@
+.wrap {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-width: 0;
+  /* канвас подстраивается под обёртку, а не наоборот: иначе ResizeObserver меряет сам канвас */
+  overflow: hidden;
+}
+
+.canvas {
+  display: block;
+  image-rendering: pixelated;
+  box-shadow: 0 0 0 var(--px) var(--c-ink);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.canvas:focus-visible {
+  outline: var(--px) solid var(--c-sun);
+  outline-offset: calc(var(--px) * 2);
+}

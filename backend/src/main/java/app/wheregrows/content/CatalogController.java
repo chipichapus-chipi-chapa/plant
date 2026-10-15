@@ -6,18 +6,24 @@ import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Каталог одинаков для всех игроков: категории кристаллов, виды растений и предметы с ценами. */
+import app.wheregrows.garden.GardenMap;
+import app.wheregrows.garden.GardenMaps;
+
+/** Каталог одинаков для всех игроков: категории кристаллов, растения, предметы с ценами и карта сада. */
 @RestController
 class CatalogController {
 
     private final CrystalCategoryRepository crystals;
     private final PlantSpeciesRepository species;
     private final ItemDefinitionRepository items;
+    private final GardenMaps gardens;
 
-    CatalogController(CrystalCategoryRepository crystals, PlantSpeciesRepository species, ItemDefinitionRepository items) {
+    CatalogController(CrystalCategoryRepository crystals, PlantSpeciesRepository species, ItemDefinitionRepository items,
+                      GardenMaps gardens) {
         this.crystals = crystals;
         this.species = species;
         this.items = items;
+        this.gardens = gardens;
     }
 
     @GetMapping("/api/catalog")
@@ -32,10 +38,11 @@ class CatalogController {
                 items.findAll(Sort.by("key")).stream()
                         .map(i -> new CatalogResponse.Item(i.getKey(), i.getKind(), i.getName(),
                                 i.getDescription(), i.getPrice(), i.getSpeciesKey(), i.getCrystalCategory()))
-                        .toList());
+                        .toList(),
+                gardens.home());
     }
 
-    record CatalogResponse(List<Crystal> crystals, List<Species> species, List<Item> items) {
+    record CatalogResponse(List<Crystal> crystals, List<Species> species, List<Item> items, GardenMap garden) {
 
         record Crystal(String key, String name, String color, String meaning) {
         }

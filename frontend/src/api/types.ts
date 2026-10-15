@@ -14,10 +14,35 @@ export type CatalogItem = {
   crystalCategory: string | null
 }
 
+export type TileType = { type: string; name: string; description: string; plantable: boolean }
+
+export type GardenProp = {
+  key: string
+  kind: string
+  x: number
+  y: number
+  width: number
+  height: number
+  name: string
+  description: string
+}
+
+/** Карта сада: строки символов, легенда символов и постройки поверх тайлов */
+export type GardenMap = {
+  key: string
+  name: string
+  width: number
+  height: number
+  tiles: Record<string, TileType>
+  rows: string[]
+  props: GardenProp[]
+}
+
 export type Catalog = {
   crystals: CrystalCategory[]
   species: { key: string; name: string; stageMinutes: number[] }[]
   items: CatalogItem[]
+  garden: GardenMap
 }
 
 export type Habit = { id: number; title: string; crystalCategory: string | null; doneToday: boolean }
