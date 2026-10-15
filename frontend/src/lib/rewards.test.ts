@@ -2,9 +2,8 @@ import { describe, expect, it } from 'vitest'
 import type { Catalog } from '../api/types'
 import { describeReward } from './rewards'
 
-const catalog: Catalog = {
+const catalog: Pick<Catalog, 'items' | 'crystals'> = {
   crystals: [{ key: 'emerald', name: 'Изумруд роста', color: '#4fae6a', meaning: '' }],
-  species: [],
   items: [
     { key: 'life_seed', kind: 'CURRENCY', name: 'Семена жизни', description: '', price: null, speciesKey: null, crystalCategory: null },
     { key: 'shard_emerald', kind: 'SHARD', name: 'Осколок изумруда', description: '', price: null, speciesKey: null, crystalCategory: 'emerald' },

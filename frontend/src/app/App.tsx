@@ -1,5 +1,6 @@
 import type { ApiError } from '../api/client'
 import { LIFE_SEED, type GameState } from '../api/types'
+import { GardenView } from '../features/garden/GardenView'
 import { HabitsPanel } from '../features/habits/HabitsPanel'
 import { InventoryPanel } from '../features/inventory/InventoryPanel'
 import { ToastProvider } from '../features/notifications/Toasts'
@@ -25,12 +26,13 @@ export function App() {
           <LoadError error={game.error} onRetry={reload} />
         ) : (
           <main className={styles.main}>
-            {/* Сюда встанет canvas-сад (задача 7). Пока — пустая земля в масштабе будущей сетки. */}
-            <div className={styles.garden} aria-label="Сад" aria-busy={game.status === 'loading'}>
-              <p className={styles.gardenNote}>
-                {game.status === 'loading' ? 'Отворяем калитку…' : 'Сад ещё зарос. Скоро здесь появятся грядки.'}
-              </p>
-            </div>
+            {game.status === 'ready' ? (
+              <GardenView map={game.catalog.garden} />
+            ) : (
+              <div className={styles.garden} aria-busy="true">
+                <p className={styles.gardenNote}>Отворяем калитку…</p>
+              </div>
+            )}
 
             {game.status === 'ready' && (
               <aside className={styles.sidebar}>
