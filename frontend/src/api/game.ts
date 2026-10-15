@@ -1,5 +1,5 @@
 import { apiFetch } from './client'
-import type { CastResult, Catalog, CompletionResult, DayCompletionResult, HabitHistory, GameState, GardenObject, Habit, HabitInput, PurchaseResult } from './types'
+import type { CastResult, Catalog, CompletionResult, DayCompletionResult, HabitHistory, GameState, GardenObject, Habit, HabitInput, PurchaseResult, SearchResult } from './types'
 
 export const fetchGameState = () => apiFetch<GameState>('/api/state')
 export const fetchCatalog = () => apiFetch<Catalog>('/api/catalog')
@@ -38,3 +38,6 @@ export const completeHabitOn = (id: number, day: string) =>
 
 export const uncompleteHabitOn = (id: number, day: string) =>
   apiFetch<void>(`/api/habits/${id}/completions/${day}`, { method: 'DELETE' })
+
+export const searchSpot = (spotKey: string) =>
+  apiFetch<SearchResult>(`/api/exploration/spots/${spotKey}/search`, { method: 'POST' })

@@ -247,6 +247,30 @@ function fencePost(seed) {
   return s
 }
 
+/** Открытая калитка: ежевика ушла, створка распахнута наружу, за ней — тропа. */
+function gateOpen(seed) {
+  const s = fenceVertical(seed)
+  s.rect(13, 6, 6, 22, P.path)
+  for (let y = 8; y < 26; y += 5) s.rect(14, y, 3, 1, P.pathShade)
+  // распахнутая створка, видна ребром
+  s.box(19, 4, 6, 24, P.wood, { light: P.woodLight, dark: P.woodDark })
+  // пара листиков на память о ежевике
+  s.px(10, 26, P.bramble)
+  s.px(11, 25, P.leaf)
+  s.rect(9, 27, 2, 1, P.bramble)
+  return s
+}
+
+/** Мерцание над местом, где что-то спрятано: крошечная четырёхлучевая искра. */
+function sparkle() {
+  const s = new Sprite(9, 9)
+  s.rect(4, 0, 1, 9, P.sun, 200)
+  s.rect(0, 4, 9, 1, P.sun, 200)
+  s.rect(3, 3, 3, 3, P.petal)
+  s.px(4, 4, '#ffffff')
+  return s
+}
+
 function gate(seed) {
   const s = fenceVertical(seed)
   const r = rng(seed + 5)
@@ -540,7 +564,9 @@ const frames = {
   fence_h: fenceHorizontal(600),
   fence_v: fenceVertical(601),
   fence_post: fencePost(602),
-  gate: gate(700),
+  prop_gate: gate(700),
+  prop_gate_awakened: gateOpen(701),
+  fx_sparkle: sparkle(),
   prop_shed: shed(),
   prop_tools: tools(),
   prop_barrel: barrel(),

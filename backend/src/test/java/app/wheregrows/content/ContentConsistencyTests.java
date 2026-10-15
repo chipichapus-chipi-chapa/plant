@@ -1,4 +1,4 @@
-package app.wheregrows.magic;
+package app.wheregrows.content;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,5 +37,15 @@ class ContentConsistencyTests {
 
         assertThatThrownBy(() -> consistency.run(new DefaultApplicationArguments()))
                 .hasMessageContaining("no-such-prop");
+    }
+
+    @Test
+    void discoverySpotOnMissingObjectIsRejected() {
+        jdbc.update("""
+                INSERT INTO discovery_spot (key, prop_key, found_text, empty_text)
+                VALUES ('nowhere', 'ghost-tree', '', '')""");
+
+        assertThatThrownBy(() -> consistency.run(new DefaultApplicationArguments()))
+                .hasMessageContaining("ghost-tree");
     }
 }

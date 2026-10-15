@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import type { ApiError } from '../api/client'
-import { LIFE_SEED, type GameState } from '../api/types'
+import { LIFE_SEED, SUN_SPARK, type GameState } from '../api/types'
+import { CollectionPanel } from '../features/collection/CollectionPanel'
 import { GardenView } from '../features/garden/GardenView'
 import { HabitTracker } from '../features/habits/HabitTracker'
 import { InventoryPanel } from '../features/inventory/InventoryPanel'
@@ -8,14 +9,15 @@ import { ToastProvider } from '../features/notifications/Toasts'
 import { ShopPanel } from '../features/shop/ShopPanel'
 import { Button } from '../ui/Button'
 import { HudButton } from '../ui/HudButton'
-import { BagIcon, ShopIcon, TrackerIcon } from '../ui/icons/HudIcons'
+import { BagIcon, CollectionIcon, ShopIcon, TrackerIcon } from '../ui/icons/HudIcons'
 import { LifeSeedIcon } from '../ui/icons/LifeSeedIcon'
+import { SunSparkIcon } from '../ui/icons/SunSparkIcon'
 import { Panel } from '../ui/Panel'
 import { Window } from '../ui/Window'
 import styles from './App.module.css'
 import { useGame } from './useGame'
 
-type OpenWindow = 'habits' | 'shop' | 'bag' | null
+type OpenWindow = 'habits' | 'shop' | 'bag' | 'collection' | null
 
 /**
  * Главный экран: сад в центре, под ним панель действий. Привычки, лавка и сумка
@@ -56,6 +58,12 @@ export function App() {
                 />
                 <HudButton icon={<ShopIcon />} label="Лавка" onClick={() => setOpen('shop')} />
                 <HudButton icon={<BagIcon />} label="Сумка" onClick={() => setOpen('bag')} />
+                <HudButton
+                  icon={<CollectionIcon />}
+                  label="Коллекция"
+                  onClick={() => setOpen('collection')}
+                  badge={game.state.artifacts.length > 0 ? String(game.state.artifacts.length) : undefined}
+                />
               </nav>
             )}
           </main>
@@ -77,6 +85,12 @@ export function App() {
           </Window>
         )}
 
+        {game.status === 'ready' && open === 'collection' && (
+          <Window title="Коллекция находок" onClose={close}>
+            <CollectionPanel state={game.state} catalog={game.catalog} />
+          </Window>
+        )}
+
         <footer className={styles.footer}>Локальный режим разработки: без входа, данные хранятся на этом компьютере.</footer>
       </div>
     </ToastProvider>
@@ -90,15 +104,24 @@ function habitsBadge(state: GameState): string | undefined {
 }
 
 function PlayerBadge({ state }: { state: GameState }) {
-  const lifeSeeds = state.inventory.find((entry) => entry.itemKey === LIFE_SEED)?.quantity ?? 0
+  const quantity = (key: string) => state.inventory.find((entry) => entry.itemKey === key)?.quantity ?? 0
+  const sparks = quantity(SUN_SPARK)
   return (
     <div className={styles.badge}>
       <span>{state.player.displayName}</span>
       <span className={styles.coins} title="Семена жизни">
         <LifeSeedIcon />
-        {lifeSeeds}
+        {quantity(LIFE_SEED)}
         <span className={styles.visuallyHidden}> — Семена жизни</span>
       </span>
+      {/* Искры редки: показываем, только когда они есть — не перегружаем шапку */}
+      {sparks > 0 && (
+        <span className={styles.coins} title="Солнечные искры">
+          <SunSparkIcon />
+          {sparks}
+          <span className={styles.visuallyHidden}> — Солнечные искры</span>
+        </span>
+      )}
     </div>
   )
 }

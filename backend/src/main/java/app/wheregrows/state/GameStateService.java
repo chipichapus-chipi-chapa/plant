@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import app.wheregrows.economy.InventoryItemRepository;
+import app.wheregrows.exploration.ExplorationService;
 import app.wheregrows.garden.GardenService;
 import app.wheregrows.habit.HabitService;
 import app.wheregrows.magic.MagicService;
@@ -20,10 +21,13 @@ class GameStateService {
     private final GameCalendar calendar;
     private final GardenService garden;
     private final MagicService magic;
+    private final ExplorationService exploration;
 
     GameStateService(PlayerProfileRepository profiles, InventoryItemRepository inventory, HabitService habits,
-                     GameCalendar calendar, GardenService garden, MagicService magic) {
+                     GameCalendar calendar, GardenService garden, MagicService magic,
+                     ExplorationService exploration) {
         this.magic = magic;
+        this.exploration = exploration;
         this.profiles = profiles;
         this.inventory = inventory;
         this.habits = habits;
@@ -46,6 +50,11 @@ class GameStateService {
                 new GameStateResponse.Garden(garden.objects(playerId)),
                 magic.worldObjects(playerId).stream()
                         .map(w -> new GameStateResponse.WorldObject(w.getObjectKey(), w.getState()))
+                        .toList(),
+                exploration.searchedSpots(playerId),
+                exploration.collection(playerId).stream()
+                        .map(a -> new GameStateResponse.CollectedArtifact(a.getArtifactKey(), a.getFoundAt(),
+                                a.getFoundWhere()))
                         .toList());
     }
 }

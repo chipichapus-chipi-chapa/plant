@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import app.wheregrows.garden.GardenMap;
 import app.wheregrows.garden.GardenMaps;
+import app.wheregrows.exploration.ArtifactRepository;
+import app.wheregrows.exploration.DiscoverySpotRepository;
 import app.wheregrows.magic.RecipeRepository;
 
 /** Каталог одинаков для всех игроков: категории кристаллов, растения, предметы с ценами и карта сада. */
@@ -19,10 +21,15 @@ class CatalogController {
     private final ItemDefinitionRepository items;
     private final GardenMaps gardens;
     private final RecipeRepository recipes;
+    private final ArtifactRepository artifacts;
+    private final DiscoverySpotRepository spots;
 
     CatalogController(CrystalCategoryRepository crystals, PlantSpeciesRepository species, ItemDefinitionRepository items,
-                      GardenMaps gardens, RecipeRepository recipes) {
+                      GardenMaps gardens, RecipeRepository recipes, ArtifactRepository artifacts,
+                      DiscoverySpotRepository spots) {
         this.recipes = recipes;
+        this.artifacts = artifacts;
+        this.spots = spots;
         this.crystals = crystals;
         this.species = species;
         this.items = items;
@@ -49,11 +56,26 @@ class CatalogController {
                                 r.getIngredients().stream()
                                         .map(i -> new CatalogResponse.Ingredient(i.itemKey(), i.quantity()))
                                         .toList()))
+                        .toList(),
+                artifacts.findAllByOrderBySortOrderAsc().stream()
+                        .map(a -> new CatalogResponse.Artifact(a.getKey(), a.getName(), a.getCrystalCategory(),
+                                a.getDescription(), a.getLegend(), a.getAcquisitionHint(), a.getEffectText()))
+                        .toList(),
+                // содержимое тайников не раскрываем — только где можно искать
+                spots.findAll(Sort.by("key")).stream()
+                        .map(s -> new CatalogResponse.Spot(s.getKey(), s.getPropKey()))
                         .toList());
     }
 
     record CatalogResponse(List<Crystal> crystals, List<Species> species, List<Item> items, GardenMap garden,
-                           List<Recipe> recipes) {
+                           List<Recipe> recipes, List<Artifact> artifacts, List<Spot> spots) {
+
+        record Artifact(String key, String name, String crystalCategory, String description, String legend,
+                        String acquisitionHint, String effectText) {
+        }
+
+        record Spot(String key, String propKey) {
+        }
 
         record Recipe(String key, String name, String description, String targetObjectKey, String resultText,
                       List<Ingredient> ingredients) {

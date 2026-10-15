@@ -33,6 +33,8 @@ ON CONFLICT (key) DO UPDATE SET
 INSERT INTO item_def (key, kind, name, description, price, species_key, crystal_category) VALUES
     ('life_seed', 'CURRENCY', 'Семена жизни',
         'Тёплые искорки, которые сад получает, когда вы заботитесь о своей настоящей жизни.', NULL, NULL, NULL),
+    ('sun_spark', 'CURRENCY', 'Солнечная искра',
+        'Кусочек давнего полудня. Пробуждает места, до которых обычной магии не дотянуться.', NULL, NULL, NULL),
 
     ('shard_emerald',  'SHARD', 'Осколок изумруда',
         'Пахнет мокрой землёй после дождя. Внутри будто шевелятся корешки.', NULL, NULL, 'emerald'),
@@ -68,7 +70,11 @@ INSERT INTO recipe_def (key, name, description, target_object_key, result_text, 
     ('awaken_basin', 'Пробуждение каменной чаши',
         'Изумруд будит корни, аметист — свет. Вместе они вспомнят, как здесь цвело.',
         'stone-basin',
-        'В чаше распустились светящиеся цветы. Ночью их, наверное, видно даже из окна сарая.', 1)
+        'В чаше распустились светящиеся цветы. Ночью их, наверное, видно даже из окна сарая.', 1),
+    ('open_east_gate', 'Солнце для калитки',
+        'Ежевика боится только настоящего солнца. Одной искры хватит, чтобы она вспомнила, что ей пора отдохнуть.',
+        'east-gate',
+        'Ежевика отступила, калитка скрипнула и открылась. За ней — тропа на восток. Куда она ведёт, узнаем в следующей главе.', 2)
 ON CONFLICT (key) DO UPDATE SET
     name = EXCLUDED.name,
     description = EXCLUDED.description,
@@ -76,7 +82,63 @@ ON CONFLICT (key) DO UPDATE SET
     result_text = EXCLUDED.result_text,
     sort_order = EXCLUDED.sort_order;
 
-DELETE FROM recipe_ingredient WHERE recipe_key IN ('awaken_basin');
+DELETE FROM recipe_ingredient WHERE recipe_key IN ('awaken_basin', 'open_east_gate');
 INSERT INTO recipe_ingredient (recipe_key, item_key, quantity) VALUES
     ('awaken_basin', 'shard_emerald', 2),
-    ('awaken_basin', 'shard_amethyst', 1);
+    ('awaken_basin', 'shard_amethyst', 1),
+    ('open_east_gate', 'sun_spark', 1);
+
+-- Артефакты -------------------------------------------------------------------
+-- Лор раскрывается понемногу: через описание, легенду и подсказки к ещё не найденному.
+
+INSERT INTO artifact_def (key, name, crystal_category, description, legend, acquisition_hint, effect_text, sort_order) VALUES
+    ('seed_of_first_garden', 'Зерно первого сада', 'emerald',
+        'Тёплое зерно с зелёной искрой внутри. Если поднести к уху, слышно, как где-то далеко капает вода.',
+        'Говорят, первый садовник посадил это зерно в день, когда в поместье пришла вода. Сад вырос вокруг него — и, кажется, до сих пор помнит.',
+        'Ищите там, куда падает свет пробуждённой чаши.',
+        'Пока просто тёплое в ладони. Похоже, оно ещё проснётся.', 1),
+    ('wanderer_compass', 'Компас странника', 'sapphire',
+        'Стрелка указывает не на север, а туда, где вы ещё не были.',
+        'Его носил тот, кто каждый вечер уходил по восточной тропе и возвращался с новыми семенами.',
+        'Говорят, его обронили где-то за восточной калиткой.',
+        'Покажет дорогу, когда дорога появится.', 2),
+    ('hearth_lantern', 'Фонарь очага', 'amber',
+        'Маленький фонарь с янтарным стеклом. Даже потухший, он греет руки.',
+        'Когда-то в поместье его зажигали в первый холодный вечер — и все собирались на кухне.',
+        'Его свет помнят стены поместья. Само поместье — далеко за садом.',
+        'Когда-нибудь согреет целый дом.', 3)
+ON CONFLICT (key) DO UPDATE SET
+    name = EXCLUDED.name,
+    crystal_category = EXCLUDED.crystal_category,
+    description = EXCLUDED.description,
+    legend = EXCLUDED.legend,
+    acquisition_hint = EXCLUDED.acquisition_hint,
+    effect_text = EXCLUDED.effect_text,
+    sort_order = EXCLUDED.sort_order;
+
+-- Точки находок ---------------------------------------------------------------
+
+INSERT INTO discovery_spot (key, prop_key, found_text, empty_text, requires_awakened, locked_text, artifact_key) VALUES
+    ('rock_cache', 'rock-2',
+        'Под камнями кто-то спрятал жестяную коробочку. Внутри — осколки, бережно завёрнутые в сухой лист.',
+        'Под камнями пусто. Коробочка теперь служит домом для жука.',
+        NULL, NULL, NULL),
+    ('shed_corner', 'shed',
+        'Свет из каменной чаши падает в щель сарая. В углу, под старой рогожей, что-то мерцает — и греет ладонь.',
+        'В сарае пахнет землёй и тишиной. Всё, что здесь было спрятано, уже у вас.',
+        'stone-basin',
+        'В сарае темно, ничего не разглядеть. Вот бы сюда немного света…',
+        'seed_of_first_garden')
+ON CONFLICT (key) DO UPDATE SET
+    prop_key = EXCLUDED.prop_key,
+    found_text = EXCLUDED.found_text,
+    empty_text = EXCLUDED.empty_text,
+    requires_awakened = EXCLUDED.requires_awakened,
+    locked_text = EXCLUDED.locked_text,
+    artifact_key = EXCLUDED.artifact_key;
+
+DELETE FROM discovery_spot_reward WHERE spot_key IN ('rock_cache', 'shed_corner');
+INSERT INTO discovery_spot_reward (spot_key, item_key, quantity) VALUES
+    ('rock_cache', 'shard_amethyst', 2),
+    ('rock_cache', 'shard_emerald', 1),
+    ('shed_corner', 'sun_spark', 1);
