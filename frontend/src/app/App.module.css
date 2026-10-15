@@ -37,11 +37,11 @@
   place-items: center;
   /* Пропорции будущей сетки 16×10 тайлов */
   aspect-ratio: 16 / 10;
-  background-color: var(--c-moss);
-  /* Шахматка 32px намечает тайловую сетку */
+  /* Заросший сад в «выцветшей» палитре; шахматка 32px намечает тайловую сетку */
+  background-color: var(--w-withered-grass);
   background-image:
-    linear-gradient(45deg, var(--c-moss-dark) 25%, transparent 25%, transparent 75%, var(--c-moss-dark) 75%),
-    linear-gradient(45deg, var(--c-moss-dark) 25%, transparent 25%, transparent 75%, var(--c-moss-dark) 75%);
+    linear-gradient(45deg, var(--w-withered-olive) 25%, transparent 25%, transparent 75%, var(--w-withered-olive) 75%),
+    linear-gradient(45deg, var(--w-withered-olive) 25%, transparent 25%, transparent 75%, var(--w-withered-olive) 75%);
   background-size: 64px 64px;
   background-position: 0 0, 32px 32px;
   background-blend-mode: soft-light;
