@@ -36,7 +36,7 @@ export function CharacterEditor({ state, catalog, firstTime, onDone, onCancel }:
   useEffect(() => {
     const ctx = previewRef.current?.getContext('2d')
     if (!ctx || !atlas) return
-    ctx.clearRect(0, 0, 32, 56)
+    ctx.clearRect(0, 0, 40, 64)
     ctx.drawImage(composeCharacter(atlas, look, catalog.appearance), 0, 0)
   }, [atlas, look, catalog.appearance])
 
@@ -82,7 +82,7 @@ export function CharacterEditor({ state, catalog, firstTime, onDone, onCancel }:
       )}
       <div className={styles.layout}>
         <div className={styles.preview}>
-          <canvas ref={previewRef} width={32} height={56} className={styles.canvas} aria-label="Как выглядит персонаж" />
+          <canvas ref={previewRef} width={40} height={64} className={styles.canvas} aria-label="Как выглядит персонаж" />
           <Button onClick={randomize} className={styles.random}>
             Случайный облик
           </Button>

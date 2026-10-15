@@ -21,9 +21,12 @@ describe('tileFrame', () => {
     expect(tileFrame(map, 3, 1)).toBe('prop_gate')
   })
 
-  it('берёт вариант тайла стабильно', () => {
-    expect(tileFrame(map, 1, 1)).toBe(tileFrame(map, 1, 1))
-    expect(tileFrame(map, 1, 1)).toMatch(/^soil_[01]$/)
+  it('выбирает край грядки по соседям', () => {
+    // одиночная грядка: соседей-грядок нет ни с одной стороны
+    expect(tileFrame(map, 1, 1)).toBe('soil_0')
+    const wide = { ...map, rows: ['####', '#ss#', '####'] }
+    expect(tileFrame(wide, 1, 1)).toBe('soil_2') // сосед справа
+    expect(tileFrame(wide, 2, 1)).toBe('soil_8') // сосед слева
   })
 })
 

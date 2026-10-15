@@ -38,6 +38,12 @@ const isFence = (map: GardenMap, x: number, y: number) => {
   return type === 'fence' || type === 'gate'
 }
 
+/** Маска соседей того же типа: север=1, восток=2, юг=4, запад=8. */
+export function neighbourMask(map: GardenMap, x: number, y: number, type: string): number {
+  const same = (dx: number, dy: number) => tileAt(map, x + dx, y + dy)?.type === type
+  return (same(0, -1) ? 1 : 0) | (same(1, 0) ? 2 : 0) | (same(0, 1) ? 4 : 0) | (same(-1, 0) ? 8 : 0)
+}
+
 /** Кадр атласа для клетки. Забор выбирает кусок по соседям: горизонтальный, вертикальный или столб в углу. */
 export function tileFrame(map: GardenMap, x: number, y: number): string {
   const type = tileAt(map, x, y)?.type ?? 'grass'
@@ -54,11 +60,10 @@ export function tileFrame(map: GardenMap, x: number, y: number): string {
     case 'weeds':
       return `weeds_${variant(x, y, 3)}`
     case 'path':
-      return `path_${variant(x, y, 2)}`
     case 'soil':
-      return `soil_${variant(x, y, 2)}`
     case 'overgrown':
-      return `overgrown_${variant(x, y, 2)}`
+      // кадр по соседям того же типа: где соседа нет — трава наползает на тропу, у грядки бортик
+      return `${type}_${neighbourMask(map, x, y, type)}`
     default:
       return `grass_${variant(x, y, 4)}`
   }

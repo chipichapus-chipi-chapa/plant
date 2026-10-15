@@ -2,7 +2,9 @@ import type { GardenMap, GardenObject } from '../api/types'
 import type { Atlas } from './atlas'
 import { TILE, tileFrame, type Cell } from './layout'
 
-export const CHARACTER_HEIGHT = 56
+/** Кадр персонажа: 40×64, низ — по низу клетки. */
+export const CHARACTER_WIDTH = 40
+export const CHARACTER_HEIGHT = 64
 
 export type Highlights = { hover: Cell | null }
 
@@ -54,6 +56,8 @@ export function drawGarden(
       drawFrame(ctx, atlas, tileFrame(map, x, y), x * TILE, y * TILE)
     }
   }
+
+  ctx.drawImage(groundLight(map), 0, 0)
 
   // Постройки и растения рисуем вместе, по нижнему краю: что ближе к зрителю — поверх
   const sprites = [
@@ -121,15 +125,64 @@ function drawEveningLight(ctx: CanvasRenderingContext2D, map: GardenMap) {
   ctx.restore()
 }
 
+const groundCache = new Map<string, HTMLCanvasElement>()
+
+/**
+ * Крупные мягкие пятна света и тени по всему саду, как солнце сквозь листву на референсе.
+ * Считаются один раз на карту; дизеринг 4×4 вместо прозрачности сохраняет пиксельность.
+ */
+function groundLight(map: GardenMap): HTMLCanvasElement {
+  const cached = groundCache.get(map.key)
+  if (cached) return cached
+  const w = map.width * TILE
+  const h = map.height * TILE
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')!
+  const img = ctx.createImageData(w, h)
+  const bayer = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      const n = smoothNoise(x / 70, y / 55) * 0.7 + smoothNoise(x / 23 + 40, y / 19) * 0.3
+      const threshold = (bayer[(y % 4) * 4 + (x % 4)] + 0.5) / 16
+      const i = (y * w + x) * 4
+      if (n > 0.62 && (n - 0.62) * 4 > threshold) {
+        img.data.set([255, 236, 170, 38], i) // солнечное пятно
+      } else if (n < 0.36 && (0.36 - n) * 4 > threshold) {
+        img.data.set([30, 34, 14, 40], i) // тень от невидимых деревьев
+      }
+    }
+  ctx.putImageData(img, 0, 0)
+  groundCache.set(map.key, canvas)
+  return canvas
+}
+
+function smoothNoise(x: number, y: number): number {
+  const hash = (i: number, j: number) => {
+    let h = (i * 374761393 + j * 668265263) >>> 0
+    h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296
+  }
+  const x0 = Math.floor(x)
+  const y0 = Math.floor(y)
+  const s = (t: number) => t * t * (3 - 2 * t)
+  const tx = s(x - x0)
+  const ty = s(y - y0)
+  const a = hash(x0, y0) + (hash(x0 + 1, y0) - hash(x0, y0)) * tx
+  const b = hash(x0, y0 + 1) + (hash(x0 + 1, y0 + 1) - hash(x0, y0 + 1)) * tx
+  return a + (b - a) * ty
+}
+
 function drawCharacter(ctx: CanvasRenderingContext2D, c: CharacterSprite) {
-  const left = Math.round(c.px - TILE / 2)
+  const left = Math.round(c.px - CHARACTER_WIDTH / 2)
   const top = Math.round(c.py - CHARACTER_HEIGHT + 2 - (c.lift ?? 0))
   if (!c.flip) {
     ctx.drawImage(c.image, left, top)
     return
   }
   ctx.save()
-  ctx.translate(left + TILE, top)
+  ctx.translate(left + CHARACTER_WIDTH, top)
   ctx.scale(-1, 1)
   ctx.drawImage(c.image, 0, 0)
   ctx.restore()

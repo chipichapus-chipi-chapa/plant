@@ -5,12 +5,13 @@
 
 import type { AppearanceSlot } from '../api/types'
 import type { Atlas } from './atlas'
-import { CHARACTER_HEIGHT } from './renderer'
+import { CHARACTER_HEIGHT, CHARACTER_WIDTH } from './renderer'
 
 export type Rgb = [number, number, number]
 
-/** Маркерные цвета слоёв: основной, тень, блик и румянец. */
+/** Маркерные цвета слоёв: глубокая тень, тень, основной, блик и румянец. */
 export const MASK = {
+  deep: [64, 0, 64] as Rgb,
   base: [255, 0, 255] as Rgb,
   shade: [128, 0, 128] as Rgb,
   light: [255, 128, 255] as Rgb,
@@ -43,6 +44,7 @@ const same = (data: Uint8ClampedArray, i: number, c: Rgb) => data[i] === c[0] &&
 /** Перекрашивает маркерные пиксели RGBA-буфера в цвет color (на месте). */
 export function recolor(data: Uint8ClampedArray, color: Rgb): void {
   const targets: [Rgb, Rgb][] = [
+    [MASK.deep, shadeOf(shadeOf(color))],
     [MASK.base, color],
     [MASK.shade, shadeOf(color)],
     [MASK.light, lightOf(color)],
@@ -70,6 +72,8 @@ type Layer = { frame: (a: Appearance) => string | null; colorSlot?: string }
  * Новый вариант причёски или одежды — новый кадр атласа; новый слот — новая строка здесь.
  */
 const LAYERS: Layer[] = [
+  // задний слой волос (длинные, каре, кудри) — за спиной; у коротких причёсок кадра нет
+  { frame: (a) => `char_hairback_${a.hair}`, colorSlot: 'hair_color' },
   { frame: () => 'char_body', colorSlot: 'skin' },
   { frame: (a) => `char_outfit_${a.outfit}`, colorSlot: 'outfit_color' },
   { frame: (a) => `char_hair_${a.hair}`, colorSlot: 'hair_color' },
@@ -78,7 +82,7 @@ const LAYERS: Layer[] = [
 
 const cache = new Map<string, HTMLCanvasElement>()
 
-/** Готовый спрайт персонажа 32×56 (кэшируется по облику). */
+/** Готовый спрайт персонажа 40×64 (кэшируется по облику). */
 export function composeCharacter(atlas: Atlas, appearance: Appearance, slots: AppearanceSlot[]): HTMLCanvasElement {
   const key = JSON.stringify(appearance)
   const cached = cache.get(key)
@@ -91,11 +95,11 @@ export function composeCharacter(atlas: Atlas, appearance: Appearance, slots: Ap
   }
 
   const result = document.createElement('canvas')
-  result.width = 32
+  result.width = CHARACTER_WIDTH
   result.height = CHARACTER_HEIGHT
   const ctx = result.getContext('2d')!
   const scratch = document.createElement('canvas')
-  scratch.width = 32
+  scratch.width = CHARACTER_WIDTH
   scratch.height = CHARACTER_HEIGHT
   const sctx = scratch.getContext('2d', { willReadFrequently: true })!
 
@@ -103,11 +107,11 @@ export function composeCharacter(atlas: Atlas, appearance: Appearance, slots: Ap
     const name = layer.frame(appearance)
     const f = name ? atlas.frames[name] : undefined
     if (!f) continue
-    sctx.clearRect(0, 0, 32, CHARACTER_HEIGHT)
+    sctx.clearRect(0, 0, CHARACTER_WIDTH, CHARACTER_HEIGHT)
     sctx.drawImage(atlas.image, f.x, f.y, f.w, f.h, 0, 0, f.w, f.h)
     const color = layer.colorSlot ? colorOf(layer.colorSlot) : null
     if (color) {
-      const pixels = sctx.getImageData(0, 0, 32, CHARACTER_HEIGHT)
+      const pixels = sctx.getImageData(0, 0, CHARACTER_WIDTH, CHARACTER_HEIGHT)
       recolor(pixels.data, color)
       sctx.putImageData(pixels, 0, 0)
     }
