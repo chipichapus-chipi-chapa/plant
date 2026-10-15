@@ -491,6 +491,44 @@ function sunflower(stage) {
   return s
 }
 
+
+// Каменная чаша — магический объект. Спит: сухой мох, трещина. Пробуждена: светящиеся цветы.
+function basin(awakened) {
+  const s = new Sprite(T, T)
+  const r = rng(awakened ? 811 : 810)
+  if (awakened) {
+    // мягкое свечение вокруг
+    s.ellipse(16, 18, 15, 12, P.leafPale, 50)
+    s.ellipse(16, 18, 12, 9, P.petal, 50)
+  }
+  s.shadow(18, 28, 11, 3)
+  // ножка и чаша
+  s.box(12, 20, 9, 8, P.stoneDark, { light: P.stone })
+  s.ellipse(16, 15, 12, 7, P.ink)
+  s.ellipse(16, 15, 11, 6, P.stone)
+  s.ellipse(16, 14, 9, 4, awakened ? P.leafShadow : P.earth)
+  // знаки-листья по краю
+  for (const x of [8, 16, 24]) s.px(x, 19, P.stoneLight)
+  s.px(12, 20, P.stoneLight)
+  s.px(20, 20, P.stoneLight)
+  if (!awakened) {
+    for (let i = 0; i < 18; i++) s.px(9 + r() * 14, 12 + r() * 4, r() > 0.5 ? P.olive : P.grassShade)
+    s.rect(19, 16, 1, 4, P.ink) // трещина
+    s.px(20, 18, P.ink)
+    return s
+  }
+  // пробуждённые цветы: изумрудные листья и аметистовые светящиеся бутоны
+  for (const [x, y] of [[10, 12], [22, 12], [16, 9]]) leaf(s, x, y, 2, 2)
+  for (const [x, y, c] of [[12, 8, '#b48ad6'], [20, 7, '#b48ad6'], [16, 4, '#d9c2ef'], [8, 10, '#9b6fc4'], [24, 10, '#9b6fc4']]) {
+    s.rect(x - 1, y - 1, 3, 3, P.outlineGreen)
+    s.px(x, y, c)
+    s.px(x - 1, y, c, 160)
+    s.px(x + 1, y, c, 160)
+    s.px(x, y - 1, '#f2e3c2', 200)
+  }
+  return s
+}
+
 // --- Сборка атласа ------------------------------------------------------------------------
 
 const frames = {
@@ -508,6 +546,8 @@ const frames = {
   prop_barrel: barrel(),
   prop_wheelbarrow: wheelbarrow(),
   prop_rock: rock(),
+  prop_basin: basin(false),
+  prop_basin_awakened: basin(true),
   ...Object.fromEntries([0, 1, 2].map((i) => [`plant_radish_${i}`, radish(i)])),
   ...Object.fromEntries([0, 1, 2].map((i) => [`plant_chamomile_${i}`, chamomile(i)])),
   ...Object.fromEntries([0, 1, 2, 3].map((i) => [`plant_sunflower_${i}`, sunflower(i)])),

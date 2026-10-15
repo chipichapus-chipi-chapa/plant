@@ -8,6 +8,7 @@ import styles from './GardenCanvas.module.css'
 type Props = {
   map: GardenMap
   objects: GardenObject[]
+  awakened: ReadonlySet<string>
   atlas: Atlas
   selected: Cell | null
   onSelect: (cell: Cell | null) => void
@@ -18,7 +19,7 @@ type Props = {
  * Масштаб целый (×1/×2/×3), чтобы пиксели не размывались (на телефоне — дробный); плотность экрана (devicePixelRatio)
  * учитывается в размере буфера. Сцена сначала рисуется 1:1 во внеэкранный канвас, затем переносится целиком.
  */
-export function GardenCanvas({ map, objects, atlas, selected, onSelect }: Props) {
+export function GardenCanvas({ map, objects, awakened, atlas, selected, onSelect }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   // Сцена рисуется в буфер 1:1 (512×320), а на экран переносится одним масштабированием.
@@ -54,12 +55,12 @@ export function GardenCanvas({ map, objects, atlas, selected, onSelect }: Props)
     buffer.height = map.height * TILE
     const bufferCtx = buffer.getContext('2d')
     if (!bufferCtx) return
-    drawGarden(bufferCtx, map, objects, atlas, { hover, selected })
+    drawGarden(bufferCtx, map, objects, atlas, { hover, selected }, awakened)
 
     ctx.imageSmoothingEnabled = false
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.drawImage(buffer, 0, 0, canvas.width, canvas.height)
-  }, [map, objects, atlas, scale, hover, selected])
+  }, [map, objects, awakened, atlas, scale, hover, selected])
 
   const cellFromEvent = (event: MouseEvent<HTMLCanvasElement>): Cell | null => {
     const rect = event.currentTarget.getBoundingClientRect()

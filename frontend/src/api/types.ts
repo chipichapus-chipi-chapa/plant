@@ -38,11 +38,22 @@ export type GardenMap = {
   props: GardenProp[]
 }
 
+/** Магический рецепт: ингредиенты пробуждают постройку с карты (targetObjectKey) */
+export type Recipe = {
+  key: string
+  name: string
+  description: string
+  targetObjectKey: string
+  resultText: string
+  ingredients: ItemGrant[]
+}
+
 export type Catalog = {
   crystals: CrystalCategory[]
   species: { key: string; name: string; stageMinutes: number[] }[]
   items: CatalogItem[]
   garden: GardenMap
+  recipes: Recipe[]
 }
 
 export type Habit = { id: number; title: string; crystalCategory: string | null; doneToday: boolean }
@@ -71,6 +82,16 @@ export type GameState = {
   habits: Habit[]
   dailyRewards: { used: number; limit: number }
   garden: { objects: GardenObject[] }
+  /** Пробуждённые объекты мира; нет в списке — объект спит */
+  worldObjects: { objectKey: string; state: 'AWAKENED' }[]
+}
+
+export type CastResult = {
+  recipeKey: string
+  objectKey: string
+  state: 'AWAKENED'
+  spent: ItemGrant[]
+  resultText: string
 }
 
 export type HabitInput = { title: string; crystalCategory: string | null }

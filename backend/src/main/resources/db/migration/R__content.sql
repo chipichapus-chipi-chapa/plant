@@ -60,3 +60,23 @@ ON CONFLICT (key) DO UPDATE SET
     price = EXCLUDED.price,
     species_key = EXCLUDED.species_key,
     crystal_category = EXCLUDED.crystal_category;
+
+-- Магические рецепты -----------------------------------------------------------
+-- Ингредиенты пересоздаются целиком: на них не ссылаются данные игроков.
+
+INSERT INTO recipe_def (key, name, description, target_object_key, result_text, sort_order) VALUES
+    ('awaken_basin', 'Пробуждение каменной чаши',
+        'Изумруд будит корни, аметист — свет. Вместе они вспомнят, как здесь цвело.',
+        'stone-basin',
+        'В чаше распустились светящиеся цветы. Ночью их, наверное, видно даже из окна сарая.', 1)
+ON CONFLICT (key) DO UPDATE SET
+    name = EXCLUDED.name,
+    description = EXCLUDED.description,
+    target_object_key = EXCLUDED.target_object_key,
+    result_text = EXCLUDED.result_text,
+    sort_order = EXCLUDED.sort_order;
+
+DELETE FROM recipe_ingredient WHERE recipe_key IN ('awaken_basin');
+INSERT INTO recipe_ingredient (recipe_key, item_key, quantity) VALUES
+    ('awaken_basin', 'shard_emerald', 2),
+    ('awaken_basin', 'shard_amethyst', 1);

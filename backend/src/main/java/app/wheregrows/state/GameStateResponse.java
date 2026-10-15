@@ -13,7 +13,11 @@ import app.wheregrows.habit.HabitView;
  * Все ресурсы, включая Семена жизни и осколки, лежат в {@code inventory}.
  */
 record GameStateResponse(Player player, LocalDate today, List<InventoryEntry> inventory, List<HabitView> habits,
-                         DailyRewards dailyRewards, Garden garden) {
+                         DailyRewards dailyRewards, Garden garden, List<WorldObject> worldObjects) {
+
+    /** Пробуждённые объекты мира (постройки с карты). Нет в списке — объект спит. */
+    record WorldObject(String objectKey, String state) {
+    }
 
     /** Что растёт в саду игрока. Карта (общая для всех) — в /api/catalog. */
     record Garden(List<GardenObjectView> objects) {

@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import app.wheregrows.economy.InventoryItemRepository;
 import app.wheregrows.garden.GardenService;
 import app.wheregrows.habit.HabitService;
+import app.wheregrows.magic.MagicService;
 import app.wheregrows.player.GameCalendar;
 import app.wheregrows.player.PlayerProfile;
 import app.wheregrows.player.PlayerProfileRepository;
@@ -18,9 +19,11 @@ class GameStateService {
     private final HabitService habits;
     private final GameCalendar calendar;
     private final GardenService garden;
+    private final MagicService magic;
 
     GameStateService(PlayerProfileRepository profiles, InventoryItemRepository inventory, HabitService habits,
-                     GameCalendar calendar, GardenService garden) {
+                     GameCalendar calendar, GardenService garden, MagicService magic) {
+        this.magic = magic;
         this.profiles = profiles;
         this.inventory = inventory;
         this.habits = habits;
@@ -40,6 +43,9 @@ class GameStateService {
                         .toList(),
                 habits.list(profile),
                 habits.dailyRewards(profile),
-                new GameStateResponse.Garden(garden.objects(playerId)));
+                new GameStateResponse.Garden(garden.objects(playerId)),
+                magic.worldObjects(playerId).stream()
+                        .map(w -> new GameStateResponse.WorldObject(w.getObjectKey(), w.getState()))
+                        .toList());
     }
 }
