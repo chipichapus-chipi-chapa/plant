@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ApiError } from '../../api/client'
 import { plantSeed, weedBed } from '../../api/game'
 import type { Catalog, Door, GameState, GardenMap, Puzzle } from '../../api/types'
@@ -50,6 +50,10 @@ const NOBODY: Cell[] = []
 /** Где игрок сейчас: какая локация, где появиться и куда смотреть. */
 type Location = { key: string; start: Cell; facing: Facing }
 const START: Location = { key: HOME, start: PLAYER_SPOT, facing: 'down' }
+
+/** Сколько длится затемнение и проявление при переходе в другую локацию. */
+const FADE_MS = 350
+const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
 
 /** Фонарь на посохе Вереска — смещение от его ступней; в сумерках он светит тёплым пятном. */
 const MENTOR_LANTERN = { x: 13, y: -35, radius: 46, strength: 0.85 }
@@ -137,12 +141,18 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
   const facingRef = useRef<Cell | null>(null)
   const infoRef = useRef<HTMLDivElement>(null)
   // Отошёл или отвернулся — описание закрывается; новое откроется, когда нажмёшь на «!»
+  // Подошёл к двери и упёрся в неё — экран гаснет, и персонаж оказывается по ту сторону.
+  // Обработчик хода стабилен (useCallback без зависимостей), поэтому свежую карту и переход читает из ref.
+  const mapRef = useRef(map)
+  const travelRef = useRef<(door: Door) => void>(() => {})
   const onPlayerMove = useCallback((at: Cell, facing: Cell) => {
     setPlayerCell(at)
     facingRef.current = facing
     setFacing(facing)
     setSelected(null)
     setTooFar(false)
+    const door = propAt(mapRef.current, facing.x, facing.y)?.door
+    if (door) travelRef.current(door)
   }, [])
 
   const [dialogue, setDialogue] = useState<string | null>(null)
@@ -160,6 +170,27 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     setSelected(null)
     setTooFar(false)
   }
+
+  // Переход: затемнение → смена локации → проявление. Пока идёт — персонаж стоит.
+  const [fade, setFade] = useState<'none' | 'out' | 'in'>('none')
+  const fadeTimers = useRef<number[]>([])
+  useEffect(() => () => fadeTimers.current.forEach((t) => window.clearTimeout(t)), [])
+  const travel = (door: Door) => {
+    if (fade !== 'none') return
+    if (reducedMotion()) return enter(door)
+    setFade('out')
+    fadeTimers.current = [
+      window.setTimeout(() => {
+        enter(door)
+        setFade('in')
+      }, FADE_MS),
+      window.setTimeout(() => setFade('none'), FADE_MS * 2),
+    ]
+  }
+  useLayoutEffect(() => {
+    mapRef.current = map
+    travelRef.current = travel
+  })
 
   const isMentor = (cell: Cell) => home && sameCell(cell, MENTOR_SPOT)
 
@@ -242,7 +273,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
             onSelect={select}
             onPlayerMove={onPlayerMove}
             onAction={act}
-            inputEnabled={inputEnabled && dialogue === null && reading === null && lock === null}
+            inputEnabled={inputEnabled && dialogue === null && reading === null && lock === null && fade === 'none'}
             lightUp={!home}
           />
         ) : (
@@ -252,6 +283,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
             </p>
           </div>
         )}
+        {fade !== 'none' && <div className={`${styles.fade} ${fade === 'out' ? styles.fadeOut : styles.fadeIn}`} aria-hidden="true" />}
         {lock && atlas.status === 'ready' && (
           <LockOverlay puzzle={lock} catalog={catalog} atlas={atlas.atlas} onClose={() => setLock(null)} onChanged={onChanged} />
         )}
@@ -285,7 +317,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
             now={now}
             planting={planting}
             onPlant={plant}
-            onEnter={enter}
+            onEnter={travel}
             onRead={setReading}
             onLock={setLock}
             onChanged={onChanged}

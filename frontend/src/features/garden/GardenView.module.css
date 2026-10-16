@@ -87,3 +87,30 @@
 .stage {
   position: relative;
 }
+
+/* Переход между локациями: экран гаснет и снова проявляется, ступенями, как пиксельный свет */
+.fade {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: #070505;
+  pointer-events: none;
+}
+
+.fadeOut {
+  animation: fade-out 350ms steps(5) both;
+}
+
+.fadeIn {
+  animation: fade-in 350ms steps(5) both;
+}
+
+@keyframes fade-out {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fade-in {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
