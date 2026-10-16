@@ -6,8 +6,6 @@ import { TILE, tileFrame, type Cell } from './layout'
 export const CHARACTER_WIDTH = 32
 export const CHARACTER_HEIGHT = 48
 
-export type Highlights = { hover: Cell | null }
-
 /**
  * Персонаж: готовая картинка 32×48 и точка его ступней в логических пикселях.
  * flip — смотрит влево (боковой кадр нарисован вправо), lift — подпрыгивание при ходьбе.
@@ -54,7 +52,6 @@ export function drawGarden(
   map: GardenMap,
   atlas: Atlas,
   scene: Scene,
-  highlights: Highlights,
 ) {
   const { objects, awakened, sparkles, characters, bubbles, prompt, marker, time = 0 } = scene
   ctx.imageSmoothingEnabled = false
@@ -109,9 +106,6 @@ export function drawGarden(
     const bob = Math.round(Math.sin(time / 220) * 2)
     drawFrame(ctx, atlas, 'fx_arrow', Math.round(marker.x - 6), Math.round(marker.y - 13 + bob))
   }
-
-  // Лёгкие уголки под мышью — подсказка, куда придётся клик. Выбор клетки отдельно не рисуется.
-  if (highlights.hover) drawCorners(ctx, highlights.hover, 'rgba(242, 227, 194, 0.7)')
 }
 
 /** Источник света в логических пикселях: радиус и сила (0..1). */
@@ -232,21 +226,4 @@ function drawFrame(ctx: CanvasRenderingContext2D, atlas: Atlas, name: string, x:
   const f = atlas.frames[name]
   if (!f) return // нет кадра — пропускаем, а не ломаем весь кадр сцены
   ctx.drawImage(atlas.image, f.x, f.y, f.w, f.h, x, y, f.w, f.h)
-}
-
-/** Наведение: четыре уголка, как прицел. Не закрывает тайл целиком. */
-function drawCorners(ctx: CanvasRenderingContext2D, cell: Cell, color: string) {
-  const x = cell.x * TILE
-  const y = cell.y * TILE
-  const l = 6
-  ctx.fillStyle = color
-  for (const [cx, cy, dx, dy] of [
-    [x, y, 1, 1],
-    [x + TILE, y, -1, 1],
-    [x, y + TILE, 1, -1],
-    [x + TILE, y + TILE, -1, -1],
-  ]) {
-    ctx.fillRect(dx > 0 ? cx : cx - l, dy > 0 ? cy : cy - 2, l, 2)
-    ctx.fillRect(dx > 0 ? cx : cx - 2, dy > 0 ? cy : cy - l, 2, l)
-  }
 }

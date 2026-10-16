@@ -96,7 +96,6 @@ export function GardenCanvas(props: Props) {
   // Всё, что читает игровой цикл, лежит в ref: цикл не перезапускается на каждый рендер React
   const latest = useRef(props)
   const walkerRef = useRef<Walker>(walkerAt(player.start))
-  const hoverRef = useRef<Cell | null>(null)
   const keysRef = useRef(new Set<string>())
   const stickRef = useRef({ dx: 0, dy: 0 })
   const dirtyRef = useRef(true)
@@ -235,7 +234,7 @@ export function GardenCanvas(props: Props) {
           { px: w.x, py: w.y, ...frameFor(p.player.frames, w.facing, step), lift: step ? 1 : 0, light: PLAYER_AURA },
         ],
       }
-      drawGarden(bufferCtx, p.map, p.atlas, scene, { hover: hoverRef.current })
+      drawGarden(bufferCtx, p.map, p.atlas, scene)
 
       ctx.imageSmoothingEnabled = false
       ctx.clearRect(0, 0, canvas.width, canvas.height)
@@ -283,24 +282,13 @@ export function GardenCanvas(props: Props) {
             stickRef.current = { dx: 0, dy: 0 }
           }}
           onPointerMove={(e) => {
+            // ведёт палец — персонаж идёт; мышь клетки не подсвечивает: о клетке скажет «!» и табличка
             const t = touchRef.current
-            if (t && t.id === e.pointerId) {
-              const dx = e.clientX - t.x
-              const dy = e.clientY - t.y
-              if (Math.hypot(dx, dy) > DRAG_THRESHOLD) t.dragging = true
-              if (t.dragging) stickRef.current = { dx: dx / STICK_RADIUS, dy: dy / STICK_RADIUS }
-              return
-            }
-            const cell = cellFromEvent(e)
-            const hover = hoverRef.current
-            if (cell?.x !== hover?.x || cell?.y !== hover?.y) {
-              hoverRef.current = cell
-              dirtyRef.current = true
-            }
-          }}
-          onPointerLeave={() => {
-            hoverRef.current = null
-            dirtyRef.current = true
+            if (!t || t.id !== e.pointerId) return
+            const dx = e.clientX - t.x
+            const dy = e.clientY - t.y
+            if (Math.hypot(dx, dy) > DRAG_THRESHOLD) t.dragging = true
+            if (t.dragging) stickRef.current = { dx: dx / STICK_RADIUS, dy: dy / STICK_RADIUS }
           }}
           onClick={(e) => {
             // касания обрабатываются в onPointerUp (там отличаем ходьбу от касания клетки)
