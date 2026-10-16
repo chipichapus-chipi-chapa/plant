@@ -5,7 +5,7 @@ import { directionFor, type CharacterFrames } from './character'
 import { Fireflies } from './Fireflies'
 import { cellAtPoint, fitScale, inBounds, TILE, type Cell } from './layout'
 import { blockedCells, cellOf, facingCell, walk, walkerAt, type Facing, type Walker } from './movement'
-import { drawGarden, type Scene } from './renderer'
+import { drawGarden, LAMP_LIGHT_UP_MS, lampLevel, type Scene } from './renderer'
 import styles from './GardenCanvas.module.css'
 
 /** Сколько высоты экрана занято вокруг сада: шапка, табличка о клетке, панель кнопок. */
@@ -39,6 +39,8 @@ type Props = {
   onAction: () => void
   /** false — открыто окно или разговор: персонаж стоит, клавиши не перехватываются */
   inputEnabled: boolean
+  /** Помещение: при входе сначала темно, потом зажигается лампа */
+  lightUp?: boolean
 }
 
 const isTyping = (target: EventTarget | null) =>
@@ -167,6 +169,8 @@ export function GardenCanvas(props: Props) {
     let lastCell = cellOf(walkerRef.current)
     let lastFacing = facingCell(walkerRef.current)
     latest.current.onPlayerMove(lastCell, lastFacing)
+    // холст создаётся заново при входе в локацию — отсюда и отсчёт «зажигания лампы»
+    const enteredAt = performance.now()
 
     const tick = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000)
@@ -191,8 +195,9 @@ export function GardenCanvas(props: Props) {
         }
       }
 
-      // Стрелка задания покачивается — пока она видна, кадр перерисовывается постоянно
-      const animated = !!p.scene.marker
+      // «!» над целью задания покачивается — пока он виден, кадр перерисовывается постоянно
+      const lighting = !!p.lightUp && now - enteredAt < LAMP_LIGHT_UP_MS + 50
+      const animated = !!p.scene.marker || lighting
       if (moving || animated || dirtyRef.current) {
         dirtyRef.current = moving // после остановки нарисуем ещё один кадр — без подпрыгивания
         draw(moving ? WALK_CYCLE[Math.floor(now / STEP_MS) % WALK_CYCLE.length] : 0, now)
@@ -228,6 +233,7 @@ export function GardenCanvas(props: Props) {
       const scene: Scene = {
         ...p.scene,
         time,
+        lightLevel: p.lightUp ? lampLevel(time - enteredAt) : 1,
         // вокруг игрока мягкий ореол: в сумерках его всегда видно
         aura: { x: w.x, y: w.y },
         characters: [

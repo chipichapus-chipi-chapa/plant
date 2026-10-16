@@ -1,4 +1,4 @@
-// Значки поверх сцены: знак «!», стрелка задания, мерцание над тайником.
+// Значки поверх сцены: знак «!», мерцание над тайником, символы замка.
 
 import { Sprite } from './canvas.mjs'
 import { INK, P, R } from './palette.mjs'
@@ -14,17 +14,6 @@ function bang() {
   s.px(3, 8, R.lamp[3])
   s.px(3, 9, R.lamp[2])
   for (let y = 11; y < 14; y++) for (let i = 0; i < 3; i++) s.px(2 + i, y, tones[i])
-  s.outline(INK)
-  return s
-}
-
-/** Стрелка задания: смотрит вниз, на цель. */
-function questArrow() {
-  const s = new Sprite(13, 12)
-  const body = [[4, 0, 5, 5], [1, 5, 11, 2], [2, 7, 9, 1], [3, 8, 7, 1], [4, 9, 5, 1], [5, 10, 3, 1], [6, 11, 1, 1]]
-  for (const [x, y, w, h] of body) s.rect(x, y, w, h, R.lamp[3])
-  s.rect(5, 1, 1, 5, R.lamp[5])
-  s.rect(4, 7, 5, 1, R.lamp[1])
   s.outline(INK)
   return s
 }
@@ -69,7 +58,6 @@ export function uiFrames() {
   return {
     fx_bubble: bang(),
     fx_interact: bang(),
-    fx_arrow: questArrow(),
     fx_sparkle: sparkle(),
     ...Object.fromEntries(['drop', 'sun', 'moon', 'leaf'].map((k) => [`sym_${k}`, symbol(k)])),
   }

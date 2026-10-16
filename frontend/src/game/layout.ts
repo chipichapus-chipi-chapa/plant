@@ -78,10 +78,11 @@ export function tileFrame(map: GardenMap, x: number, y: number): string {
     case 'weeds':
       return `weeds_${variant(x, y, 3)}`
     case 'floor':
-      return `floor_${variant(x, y, 3)}`
+      // пол по соседям: у стен темнеет, в углах комнаты срезан — комната получается восьмиугольной
+      return `floor_${neighbourMask(map, x, y, 'floor')}`
     case 'wall':
-      // лицевая сторона стены видна, если под ней пол; иначе — тёмный верх стены
-      return tileAt(map, x, y + 1)?.type === 'floor' ? `wall_face_${variant(x, y, 2)}` : 'wall_top'
+      // стена — чёрная пустота, а со стороны пола у неё каменная кромка
+      return `wall_${neighbourMask(map, x, y, 'floor')}`
     case 'path':
     case 'soil':
     case 'overgrown':

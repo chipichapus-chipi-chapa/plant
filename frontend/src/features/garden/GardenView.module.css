@@ -82,3 +82,8 @@
   text-align: right;
   font-style: italic;
 }
+
+/* Сцена сада: поверх неё открывается замок крупным планом */
+.stage {
+  position: relative;
+}

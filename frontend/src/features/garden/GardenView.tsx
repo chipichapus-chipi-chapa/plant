@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApiError } from '../../api/client'
 import { plantSeed, weedBed } from '../../api/game'
-import type { Catalog, Door, GameState, GardenMap } from '../../api/types'
+import type { Catalog, Door, GameState, GardenMap, Puzzle } from '../../api/types'
 import { frameImage, loadAtlas, type Atlas } from '../../game/atlas'
 import { composeCharacterFrames } from '../../game/character'
 import { GardenCanvas } from '../../game/GardenCanvas'
@@ -26,7 +26,7 @@ import { Window } from '../../ui/Window'
 import { DialogueBox } from '../mentor/DialogueBox'
 import { useToast } from '../notifications/Toasts'
 import styles from './GardenView.module.css'
-import { PuzzleBlock } from './PuzzleBlock'
+import { LockOverlay } from './LockOverlay'
 import { RecipeBlock } from './RecipeBlock'
 import { SpotBlock } from './SpotBlock'
 
@@ -40,7 +40,7 @@ type Props = {
   onEditCharacter: () => void
   /** Можно ходить: не открыто ни одно окно */
   inputEnabled: boolean
-  /** Текущее задание от Вереска — над его целью в саду покачивается стрелка */
+  /** Текущее задание от Вереска — над его целью в саду покачивается «!» */
   objective: Objective | null
 }
 
@@ -67,6 +67,8 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
   }, [catalog, location.key, state.garden.weeded])
   // читаем письмо — текст в окне поверх сада
   const [reading, setReading] = useState<{ title: string; text: string } | null>(null)
+  // замок крупным планом поверх сада
+  const [lock, setLock] = useState<Puzzle | null>(null)
   const [atlas, setAtlas] = useState<AtlasLoad>({ status: 'loading' })
   // клетка перед персонажем: если с ней можно что-то сделать, над ней загорается «!»
   const [facing, setFacing] = useState<Cell | null>(null)
@@ -227,27 +229,33 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
 
   return (
     <section className={styles.garden} aria-label={map.name}>
-      {atlas.status === 'ready' && scene && playerFrames ? (
-        <GardenCanvas
-          // новая локация — новый холст: персонаж появляется у двери
-          key={map.key}
-          map={map}
-          scene={scene}
-          standing={home ? STANDING : NOBODY}
-          atlas={atlas.atlas}
-          player={{ frames: playerFrames, start: location.start, facing: location.facing }}
-          onSelect={select}
-          onPlayerMove={onPlayerMove}
-          onAction={act}
-          inputEnabled={inputEnabled && dialogue === null && reading === null}
-        />
-      ) : (
-        <div className={styles.placeholder} style={{ aspectRatio: `${map.width} / ${map.height}` }}>
-          <p className={styles.note}>
-            {atlas.status === 'loading' ? 'Раздвигаем ветки…' : 'Картинки сада не загрузились. Обновите страницу.'}
-          </p>
-        </div>
-      )}
+      <div className={styles.stage}>
+        {atlas.status === 'ready' && scene && playerFrames ? (
+          <GardenCanvas
+            // новая локация — новый холст: персонаж появляется у двери
+            key={map.key}
+            map={map}
+            scene={scene}
+            standing={home ? STANDING : NOBODY}
+            atlas={atlas.atlas}
+            player={{ frames: playerFrames, start: location.start, facing: location.facing }}
+            onSelect={select}
+            onPlayerMove={onPlayerMove}
+            onAction={act}
+            inputEnabled={inputEnabled && dialogue === null && reading === null && lock === null}
+            lightUp={!home}
+          />
+        ) : (
+          <div className={styles.placeholder} style={{ aspectRatio: `${map.width} / ${map.height}` }}>
+            <p className={styles.note}>
+              {atlas.status === 'loading' ? 'Раздвигаем ветки…' : 'Картинки сада не загрузились. Обновите страницу.'}
+            </p>
+          </div>
+        )}
+        {lock && atlas.status === 'ready' && (
+          <LockOverlay puzzle={lock} catalog={catalog} atlas={atlas.atlas} onClose={() => setLock(null)} onChanged={onChanged} />
+        )}
+      </div>
 
       <div className={styles.info} aria-live="polite" ref={infoRef}>
         {selected && isMentor(selected) ? (
@@ -274,12 +282,12 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
             map={map}
             state={state}
             catalog={catalog}
-            atlas={atlas.atlas}
             now={now}
             planting={planting}
             onPlant={plant}
             onEnter={enter}
             onRead={setReading}
+            onLock={setLock}
             onChanged={onChanged}
           />
         ) : tooFar ? (
@@ -320,16 +328,16 @@ type CellInfoProps = {
   map: GardenMap
   state: GameState
   catalog: Catalog
-  atlas: Atlas
   now: number
   planting: boolean
   onPlant: (cell: Cell, seedKey: string) => void
   onEnter: (door: Door) => void
   onRead: (letter: { title: string; text: string }) => void
+  onLock: (puzzle: Puzzle) => void
   onChanged: () => Promise<void>
 }
 
-function CellInfo({ cell, map, state, catalog, atlas, now, planting, onPlant, onEnter, onRead, onChanged }: CellInfoProps) {
+function CellInfo({ cell, map, state, catalog, now, planting, onPlant, onEnter, onRead, onLock, onChanged }: CellInfoProps) {
   const object = map.key === HOME ? objectAt(state.garden.objects, cell) : undefined
   if (object) {
     const name = catalog.species.find((s) => s.key === object.speciesKey)?.name ?? object.speciesKey
@@ -370,7 +378,13 @@ function CellInfo({ cell, map, state, catalog, atlas, now, planting, onPlant, on
         <p className={styles.text}>
           <strong>{info.name}.</strong> {info.description}
         </p>
-        <PuzzleBlock key={puzzle.key} puzzle={puzzle} state={state} catalog={catalog} atlas={atlas} onChanged={onChanged} />
+        {state.solvedPuzzles.includes(puzzle.key) ? (
+          <p className={styles.hint}>Замок открыт, ящик пуст — всё нужное уже у вас.</p>
+        ) : (
+          <div>
+            <Button onClick={() => onLock(puzzle)}>Осмотреть замок</Button>
+          </div>
+        )}
       </div>
     )
   }

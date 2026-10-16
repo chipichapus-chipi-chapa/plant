@@ -35,16 +35,18 @@ export type Scene = {
   bubbles: Cell[]
   /** Точка над объектом рядом с персонажем, с которым можно взаимодействовать (золотой «!») */
   prompt?: { x: number; y: number } | null
-  /** Точка над целью текущего задания (стрелка) */
+  /** Точка над целью текущего задания — там покачивается «!» */
   marker?: { x: number; y: number } | null
   /**
    * Состояние постройки → свой кадр: awakened (пробуждена, починена), searched (обыскана),
    * open (замок открыт). Нет такого кадра в атласе — рисуется обычный.
    */
   variants?: ReadonlyMap<string, string>
+  /** Насколько горят лампы (0..1): в помещении сначала темно, потом свет разгорается */
+  lightLevel?: number
   /** Ступни идущего игрока: вокруг него ореол, снимающий сумерки */
   aura?: { x: number; y: number } | null
-  /** Время в мс — для покачивания стрелки */
+  /** Время в мс — для покачивания «!» над целью задания */
   time?: number
 }
 
@@ -96,22 +98,25 @@ export function drawGarden(
     awakened,
     characters.flatMap((c) => (c.light ? [{ ...c.light, x: c.px + c.light.x, y: c.py + c.light.y }] : [])),
     scene.aura && { x: scene.aura.x, y: scene.aura.y + AURA.lift },
+    scene.lightLevel ?? 1,
   )
 
-  // Всё, что должно читаться в темноте, — после света: мерцание тайников, «!» и стрелка
+  // Всё, что должно читаться в темноте, — после света: мерцание тайников и знаки «!»
   for (const prop of map.props) {
     if (sparkles.has(prop.key)) {
       drawFrame(ctx, atlas, 'fx_sparkle', (prop.x + prop.width) * TILE - 10, prop.y * TILE + 1)
     }
   }
-  for (const cell of bubbles) {
-    drawFrame(ctx, atlas, 'fx_bubble', cell.x * TILE + 12, cell.y * TILE - (CHARACTER_HEIGHT - TILE) - 8)
-  }
-
-  if (prompt) drawFrame(ctx, atlas, 'fx_interact', Math.round(prompt.x - 3), Math.round(prompt.y - 15))
-  if (marker) {
+  // «!» — единственный знак в игре: новость у Вереска, предмет рядом и цель задания (она покачивается).
+  // Если цель совпадает с уже горящим «!», второй не рисуем.
+  const bangs = [
+    ...bubbles.map((cell) => ({ x: cell.x * TILE + 15, y: cell.y * TILE - (CHARACTER_HEIGHT - TILE) + 7 })),
+    ...(prompt ? [prompt] : []),
+  ]
+  for (const b of bangs) drawFrame(ctx, atlas, 'fx_interact', Math.round(b.x - 3), Math.round(b.y - 15))
+  if (marker && !bangs.some((b) => Math.abs(b.x - marker.x) < 16 && Math.abs(b.y - marker.y) < 24)) {
     const bob = Math.round(Math.sin(time / 220) * 2)
-    drawFrame(ctx, atlas, 'fx_arrow', Math.round(marker.x - 6), Math.round(marker.y - 13 + bob))
+    drawFrame(ctx, atlas, 'fx_interact', Math.round(marker.x - 3), Math.round(marker.y - 13 + bob))
   }
 }
 
@@ -130,7 +135,7 @@ const PROP_LIGHTS: Record<string, [number, number, number, number][]> = {
   ],
   basin_awakened: [[16, 14, 40, 0.8]],
   // в сарае: лампа на табурете и лунный свет из двери
-  lamp: [[16, 10, 70, 1]],
+  lamp: [[16, 10, 110, 1]],
   door_exit: [[16, 20, 34, 0.45]],
 }
 
@@ -147,8 +152,25 @@ const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => 
 const AMBIENT_CENTER = 0.32
 const AMBIENT_EDGE = 0.8
 
-type LightLayer = { key: string; dark: HTMLCanvasElement; work: HTMLCanvasElement }
+type LightLayer = { key: string; lit: HTMLCanvasElement; unlit: HTMLCanvasElement | null; work: HTMLCanvasElement[] }
 let layer: LightLayer | null = null
+
+/**
+ * Насколько разгорелась лампа через ms после входа в помещение: сначала темно,
+ * потом фитиль пару раз вспыхивает и гаснет — и свет разгорается ровно. 1 — горит полностью.
+ */
+export function lampLevel(ms: number): number {
+  if (ms < 450) return 0
+  if (ms < 520) return 0.7
+  if (ms < 600) return 0.15
+  if (ms < 700) return 0.9
+  if (ms < 760) return 0.4
+  if (ms < 1100) return 0.4 + ((ms - 760) / 340) * 0.6
+  return 1
+}
+
+/** Сколько длится «зажигание лампы» — пока оно идёт, кадр перерисовывается постоянно. */
+export const LAMP_LIGHT_UP_MS = 1100
 
 /**
  * Сумерки и свет. Темнота и тёплые ореолы ложатся ступенями через матрицу Байера —
@@ -157,22 +179,46 @@ let layer: LightLayer | null = null
  * Дорогая попиксельная часть считается один раз — пока не изменятся карта и неподвижный свет
  * (постройки, фонарь стоящего Вереска). Ореол идущего игрока — готовая картинка, которая каждый кадр
  * «вырезает» темноту вокруг него (destination-out): два drawImage вместо пересчёта всей карты.
+ *
+ * level < 1 — лампы ещё разгораются: поверх смешиваются слой «с огнями» и слой «в полной темноте».
  */
-function drawLighting(ctx: CanvasRenderingContext2D, map: GardenMap, awakened: ReadonlySet<string>, still: Light[], aura?: { x: number; y: number } | null) {
+function drawLighting(
+  ctx: CanvasRenderingContext2D,
+  map: GardenMap,
+  awakened: ReadonlySet<string>,
+  still: Light[],
+  aura: { x: number; y: number } | null | undefined,
+  level: number,
+) {
   const w = map.width * TILE
   const h = map.height * TILE
   const key = `${map.key}|${[...awakened].sort().join(',')}|${still.map((l) => `${l.x},${l.y},${l.radius}`).join(';')}`
-  if (layer?.key !== key) layer = { key, dark: bakeDarkness(w, h, [...propLights(map, awakened), ...still]), work: layer?.work ?? document.createElement('canvas') }
-
-  if (!aura) {
-    ctx.drawImage(layer.dark, 0, 0)
-    return
+  if (layer?.key !== key) {
+    layer = { key, lit: bakeDarkness(w, h, [...propLights(map, awakened), ...still]), unlit: null, work: layer?.work ?? [] }
   }
-  const { dark, work } = layer
+  if (level < 1) layer.unlit ??= bakeDarkness(w, h, [], DARK_ROOM)
+
+  const parts: [HTMLCanvasElement, number][] = level >= 1 ? [[layer.lit, 1]] : [[layer.lit, level], [layer.unlit!, 1 - level]]
+  parts.forEach(([dark, alpha], i) => {
+    if (alpha <= 0) return
+    const source = aura ? cutAura(dark, aura, layerWork(i, w, h)) : dark
+    ctx.globalAlpha = alpha
+    ctx.drawImage(source, 0, 0)
+  })
+  ctx.globalAlpha = 1
+}
+
+function layerWork(i: number, w: number, h: number): HTMLCanvasElement {
+  const work = (layer!.work[i] ??= document.createElement('canvas'))
   if (work.width !== w || work.height !== h) {
     work.width = w
     work.height = h
   }
+  return work
+}
+
+/** Копия слоя темноты с вырезанным ореолом вокруг игрока. */
+function cutAura(dark: HTMLCanvasElement, aura: { x: number; y: number }, work: HTMLCanvasElement): HTMLCanvasElement {
   const wctx = work.getContext('2d')!
   wctx.globalCompositeOperation = 'copy'
   wctx.drawImage(dark, 0, 0)
@@ -180,11 +226,14 @@ function drawLighting(ctx: CanvasRenderingContext2D, map: GardenMap, awakened: R
   const sprite = auraSprite()
   wctx.drawImage(sprite, Math.round(aura.x - sprite.width / 2), Math.round(aura.y - sprite.height / 2))
   wctx.globalCompositeOperation = 'source-over'
-  ctx.drawImage(work, 0, 0)
+  return work
 }
 
-/** Темнота с неподвижным светом — попиксельно, один раз на карту и набор огней. */
-function bakeDarkness(w: number, h: number, lights: Light[]): HTMLCanvasElement {
+/** Темнота в помещении, пока лампа не зажглась: почти ночь, видно только ореол вокруг игрока. */
+const DARK_ROOM = 0.86
+
+/** Темнота с неподвижным светом — попиксельно, один раз на карту и набор огней. darkness — ровная темнота вместо сумерек. */
+function bakeDarkness(w: number, h: number, lights: Light[], darkness?: number): HTMLCanvasElement {
   const light = new Float32Array(w * h)
   for (const l of lights) addLight(light, w, h, l)
   const image = new ImageData(w, h)
@@ -194,7 +243,7 @@ function bakeDarkness(w: number, h: number, lights: Light[]): HTMLCanvasElement 
       const nx = (x - w / 2) / (w / 2)
       const ny = (y - h * 0.45) / (h / 2)
       const edge = Math.min(1, Math.max(0, Math.hypot(nx * 0.85, ny) - 0.35) / 0.75)
-      const ambient = AMBIENT_CENTER + (AMBIENT_EDGE - AMBIENT_CENTER) * edge * edge
+      const ambient = darkness ?? AMBIENT_CENTER + (AMBIENT_EDGE - AMBIENT_CENTER) * edge * edge
       const i = y * w + x
       const lit = Math.min(1, light[i])
       const threshold = BAYER[(y & 3) * 4 + (x & 3)]
