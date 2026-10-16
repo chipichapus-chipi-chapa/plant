@@ -22,6 +22,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest(properties = {
         "telegram.bot-token=" + TelegramLoginApiTests.TOKEN,
+        // без адреса бот не регистрируется — тесты не ходят в настоящий Telegram
+        "telegram.public-url=",
         "game.cors.allowed-origins=https://example.github.io"})
 @AutoConfigureMockMvc
 class TelegramLoginApiTests {
