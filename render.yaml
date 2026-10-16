@@ -5,6 +5,8 @@ services:
     name: where-it-grows
     runtime: docker
     plan: free
+    # рядом с базой Neon (AWS us-east-2, Ohio): каждый запрос к базе — в пределах одного региона
+    region: ohio
     rootDir: backend
     dockerfilePath: ./Dockerfile
     healthCheckPath: /actuator/health
