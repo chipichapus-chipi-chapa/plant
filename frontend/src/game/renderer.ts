@@ -145,6 +145,8 @@ const PROP_LIGHTS: Record<string, [number, number, number, number][]> = {
   // в сарае: лампа на табурете и лунный свет из двери
   lamp: [[16, 10, 110, 1]],
   door_exit: [[16, 20, 34, 0.45]],
+  // кухня поместья: угли в печи еле тлеют
+  hearth: [[32, 20, 80, 0.75]],
 }
 
 function propLights(map: GardenMap, awakened: ReadonlySet<string>): Light[] {
