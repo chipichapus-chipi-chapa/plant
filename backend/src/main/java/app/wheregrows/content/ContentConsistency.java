@@ -73,6 +73,19 @@ class ContentConsistency implements ApplicationRunner {
                 throw new IllegalStateException("Цель шага " + step.key() + " — неизвестный тип клетки " + step.target().tile());
             }
         }
+        // поручения жителей: отдают и получают существующие предметы, показывают существующие находки
+        Set<String> spotKeys = spots.findAll().stream().map(DiscoverySpot::getKey).collect(Collectors.toSet());
+        for (var found : maps.errands()) {
+            var errand = found.errand();
+            java.util.stream.Stream.concat(errand.giveOrEmpty().stream(), errand.rewardOrEmpty().stream()).forEach(g -> {
+                if (!items.existsById(g.itemKey())) {
+                    throw new IllegalStateException("Поручение " + errand.key() + " — неизвестный предмет " + g.itemKey());
+                }
+            });
+            if (errand.spot() != null && !spotKeys.contains(errand.spot())) {
+                throw new IllegalStateException("Поручение " + errand.key() + " — неизвестная находка " + errand.spot());
+            }
+        }
         // подарки наставника — существующие предметы каталога
         mentor.content().dialogues().forEach((key, dialogue) -> dialogue.giftOrEmpty().forEach(gift -> {
             if (!items.existsById(gift.itemKey())) {

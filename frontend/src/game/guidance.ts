@@ -2,7 +2,7 @@
 // и с чем рядом можно взаимодействовать (тогда над объектом загорается «!»).
 // Всё считается для текущей локации (map): сад, сарай изнутри…
 
-import type { Catalog, GameState, GardenMap } from '../api/types'
+import type { Catalog, Door, GameState, GardenMap, Npc } from '../api/types'
 import { HOME, MENTOR_SPOT, objectAt, propAt, TILE, tileAt, type Cell } from './layout'
 import { CHARACTER_HEIGHT } from './renderer'
 
@@ -22,6 +22,16 @@ const has = (state: GameState, itemKey: string) => (state.inventory.find((e) => 
 const hasSeeds = (state: GameState, catalog: Catalog) => catalog.items.some((i) => i.kind === 'SEED' && has(state, i.key))
 
 const isMentor = (cell: Cell, map: GardenMap) => map.key === HOME && cell.x === MENTOR_SPOT.x && cell.y === MENTOR_SPOT.y
+
+/** Житель локации в клетке (мышь), если есть. */
+export function npcAt(map: GardenMap, cell: Cell): Npc | undefined {
+  return map.npcs?.find((n) => n.x === cell.x && n.y === cell.y)
+}
+
+/** Открыта ли дверь: у калитки в ежевике — только после пробуждения. */
+export function doorOpen(door: Door, state: GameState): boolean {
+  return !door.requires || state.worldObjects.some((w) => w.objectKey === door.requires)
+}
 
 /**
  * Текущее задание: сначала познакомиться с Вереском, потом шаги обучения и поручения по очереди.
@@ -87,10 +97,10 @@ function targetPoint(target: ObjectiveTarget, map: GardenMap, state: GameState):
 
 /** Есть ли в клетке то, с чем можно что-то сделать прямо сейчас. */
 export function isInteractive(cell: Cell, state: GameState, catalog: Catalog, map: GardenMap): boolean {
-  if (isMentor(cell, map)) return true
+  if (isMentor(cell, map) || npcAt(map, cell)) return true
   const prop = propAt(map, cell.x, cell.y)
   if (prop) {
-    if (prop.door || prop.read) return true
+    if ((prop.door && doorOpen(prop.door, state)) || prop.read) return true
     const spot = catalog.spots.find((s) => s.propKey === prop.key)
     if (spot && !state.searchedSpots.includes(spot.key)) return true
     const puzzle = catalog.puzzles.find((p) => p.propKey === prop.key)
@@ -109,7 +119,7 @@ export function isInteractive(cell: Cell, state: GameState, catalog: Catalog, ma
  * Трава, тропа, пол и стены молчат. Подойдёшь к такому — загорится «!», нажмёшь — откроется описание.
  */
 export function isClickable(cell: Cell, state: GameState, catalog: Catalog, map: GardenMap): boolean {
-  if (isMentor(cell, map)) return true
+  if (isMentor(cell, map) || npcAt(map, cell)) return true
   if (map.key === HOME && objectAt(state.garden.objects, cell)) return true
   if (propAt(map, cell.x, cell.y)) return true
   return isInteractive(cell, state, catalog, map)
@@ -142,6 +152,8 @@ export function promptPoint(cell: Cell, map: GardenMap): { x: number; y: number 
   if (isMentor(cell, map)) {
     return { x: cell.x * TILE + TILE / 2, y: (cell.y + 1) * TILE - CHARACTER_HEIGHT }
   }
+  // мышь маленькая — «!» прямо над ушами
+  if (npcAt(map, cell)) return { x: cell.x * TILE + TILE / 2, y: (cell.y + 1) * TILE - 26 }
   const prop = propAt(map, cell.x, cell.y)
   if (prop) return { x: (prop.x + prop.width / 2) * TILE, y: prop.y * TILE }
   return { x: cell.x * TILE + TILE / 2, y: cell.y * TILE + 4 }

@@ -19,6 +19,8 @@ export type CharacterSprite = {
   lift?: number
   /** Неподвижный свет у стоящего персонажа (фонарь Вереска) — смещение от ступней */
   light?: Light
+  /** Кадры «жизни на месте» (мышь шевелит ушами): [обычный, движение]; image — запасной */
+  idle?: CanvasImageSource[]
 }
 
 /** Персонаж, стоящий в клетке: ступни по центру у нижнего края. */
@@ -88,12 +90,13 @@ export function drawGarden(
   ].sort((a, b) => a.bottom - b.bottom)
   // Персонажи и постройки — по глубине: кто ниже на экране, тот ближе и рисуется позже
   const people = [...characters].sort((a, b) => a.py - b.py)
+  const drawPerson = (c: CharacterSprite) => drawCharacter(ctx, { ...c, image: idleImage(c, time) })
   let next = 0
   for (const sprite of sprites) {
-    while (next < people.length && people[next].py < sprite.bottom * TILE) drawCharacter(ctx, people[next++])
+    while (next < people.length && people[next].py < sprite.bottom * TILE) drawPerson(people[next++])
     drawFrame(ctx, atlas, sprite.frame, sprite.x, sprite.y)
   }
-  while (next < people.length) drawCharacter(ctx, people[next++])
+  while (next < people.length) drawPerson(people[next++])
 
   for (const effect of scene.effects ?? []) drawWeeding(ctx, atlas, effect, time - effect.at, scene.aura)
 
@@ -142,6 +145,8 @@ const PROP_LIGHTS: Record<string, [number, number, number, number][]> = {
   // в сарае: лампа на табурете и лунный свет из двери
   lamp: [[16, 10, 110, 1]],
   door_exit: [[16, 20, 34, 0.45]],
+  // кухня поместья: угли в печи еле тлеют
+  hearth: [[32, 20, 80, 0.75]],
 }
 
 function propLights(map: GardenMap, awakened: ReadonlySet<string>): Light[] {
@@ -301,6 +306,15 @@ function addLight(target: Float32Array, w: number, h: number, l: Light) {
       const d = Math.hypot(x - l.x, y - l.y) / l.radius
       if (d < 1) target[y * w + x] += (1 - d) * (1 - d) * 1.6 * l.strength
     }
+}
+
+/**
+ * Кадр стоящего персонажа: редкое движение (мышь дёрнула ушами, качнула хвостом) раз в пару секунд.
+ * Сдвиг по позиции — чтобы соседи не шевелились синхронно.
+ */
+function idleImage(c: CharacterSprite, time: number): CanvasImageSource {
+  if (!c.idle || c.idle.length < 2) return c.image
+  return (time + c.px * 37 + c.py * 11) % 2600 < 280 ? c.idle[1] : c.idle[0]
 }
 
 function drawCharacter(ctx: CanvasRenderingContext2D, c: CharacterSprite) {

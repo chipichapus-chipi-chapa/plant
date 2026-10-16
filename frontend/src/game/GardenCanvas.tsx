@@ -130,7 +130,8 @@ export function GardenCanvas(props: Props) {
   useEffect(() => {
     const wrap = wrapRef.current
     if (!wrap) return
-    const update = () => setScale(fitScale(wrap.clientWidth, map, window.innerHeight - RESERVED_HEIGHT))
+    // поле игры задаёт высоту обёртки; если её нет (старая раскладка) — берём высоту окна
+    const update = () => setScale(fitScale(wrap.clientWidth, map, wrap.clientHeight || window.innerHeight - RESERVED_HEIGHT))
     const observer = new ResizeObserver(update)
     observer.observe(wrap)
     window.addEventListener('resize', update)
@@ -205,7 +206,9 @@ export function GardenCanvas(props: Props) {
       // «!» над целью задания покачивается — пока он виден, кадр перерисовывается постоянно
       const lighting = !!p.lightUp && now - enteredAt < LAMP_LIGHT_UP_MS + 50
       const working = (p.scene.effects ?? []).some((e) => isPlaying(e, now))
-      const animated = !!p.scene.marker || lighting || working
+      // мыши иногда шевелят ушами — пока они в локации, кадр перерисовывается постоянно
+      const lively = p.scene.characters.some((c) => c.idle)
+      const animated = !!p.scene.marker || lighting || working || lively
       if (moving || animated || dirtyRef.current) {
         dirtyRef.current = moving // после остановки нарисуем ещё один кадр — без подпрыгивания
         draw(moving ? WALK_CYCLE[Math.floor(now / STEP_MS) % WALK_CYCLE.length] : 0, now)

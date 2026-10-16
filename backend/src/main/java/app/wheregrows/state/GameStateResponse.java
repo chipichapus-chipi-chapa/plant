@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+import app.wheregrows.errand.ErrandService;
 import app.wheregrows.garden.GardenObjectView;
 import app.wheregrows.garden.GardenService;
 import app.wheregrows.habit.HabitService.DailyRewards;
@@ -19,7 +20,7 @@ import app.wheregrows.mentor.MentorProgress;
 record GameStateResponse(Player player, LocalDate today, List<InventoryEntry> inventory, List<HabitView> habits,
                          DailyRewards dailyRewards, Garden garden, List<WorldObject> worldObjects,
                          List<String> searchedSpots, List<CollectedArtifact> artifacts, MentorProgress mentor,
-                         List<String> solvedPuzzles) {
+                         List<String> solvedPuzzles, List<ErrandService.ErrandState> errands) {
 
     /** Артефакт в коллекции: когда и где найден. Описание — в каталоге. */
     record CollectedArtifact(String key, Instant foundAt, String foundWhere) {

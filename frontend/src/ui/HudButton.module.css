@@ -3,8 +3,8 @@
   display: grid;
   justify-items: center;
   gap: var(--space-1);
-  min-width: 96px;
-  padding: var(--space-2) var(--space-3) var(--space-2);
+  min-width: 80px;
+  padding: var(--space-1) var(--space-2);
   border: 0;
   background: var(--c-wood);
   color: var(--c-parchment);
@@ -41,13 +41,14 @@
 .icon {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   background: var(--c-parchment);
   box-shadow: 0 0 0 var(--px) var(--c-bark);
 }
 
 .label {
+  font-size: 14px;
   font-weight: 600;
   text-shadow: 1px 1px 0 var(--c-bark);
 }
@@ -101,5 +102,17 @@
   .bang {
     transition: none;
     animation: none;
+  }
+}
+
+/* На телефоне — четыре кнопки в ряд без подписей шире экрана */
+@media (max-width: 420px) {
+  .button {
+    min-width: 0;
+    padding: var(--space-1);
+  }
+
+  .label {
+    font-size: 12px;
   }
 }
