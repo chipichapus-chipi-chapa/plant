@@ -7,8 +7,7 @@ import { GardenView } from '../features/garden/GardenView'
 import { HabitTracker } from '../features/habits/HabitTracker'
 import { InventoryPanel } from '../features/inventory/InventoryPanel'
 import { ToastProvider } from '../features/notifications/Toasts'
-import { ErrandList } from '../features/mentor/ErrandList'
-import { QuestTracker } from '../features/mentor/QuestTracker'
+import { QuestMenu } from '../features/mentor/QuestMenu'
 import { SettingsPanel } from '../features/settings/SettingsPanel'
 import { ShopPanel } from '../features/shop/ShopPanel'
 import { currentObjective } from '../game/guidance'
@@ -74,12 +73,7 @@ function Game() {
             objective={objective}
             hud={{
               top: game.state.player.onboarded ? (
-                <>
-                  {objective && (
-                    <QuestTracker objective={objective} speaker={game.catalog.mentor.speaker.name} onOpenHud={openHud} />
-                  )}
-                  <ErrandList state={game.state} catalog={game.catalog} />
-                </>
+                <QuestMenu objective={objective} state={game.state} catalog={game.catalog} onOpenHud={openHud} />
               ) : null,
               corner: <PlayerBadge state={game.state} />,
               toolbar: (

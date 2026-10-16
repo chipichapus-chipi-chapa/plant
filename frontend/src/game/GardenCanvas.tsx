@@ -4,14 +4,12 @@ import type { Atlas } from './atlas'
 import { directionFor, type CharacterFrames } from './character'
 import { useSettings } from '../app/settings'
 import { Fireflies } from './Fireflies'
-import { cellAtPoint, fitScale, inBounds, TILE, type Cell } from './layout'
+import { cameraAt, coverScale, inBounds, TILE, type Cell } from './layout'
 import { blockedCells, cellOf, facingCell, walk, walkerAt, type Facing, type Walker } from './movement'
 import { isPlaying, strikeLift } from './effects'
 import { drawGarden, LAMP_LIGHT_UP_MS, lampLevel, type Scene } from './renderer'
 import styles from './GardenCanvas.module.css'
 
-/** Сколько высоты экрана занято вокруг сада: шапка, табличка о клетке, панель кнопок. */
-const RESERVED_HEIGHT = 300
 
 const KEYS: Record<string, [number, number]> = {
   ArrowLeft: [-1, 0],
@@ -97,7 +95,11 @@ export function GardenCanvas(props: Props) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const bufferRef = useRef<HTMLCanvasElement | null>(null)
-  const [scale, setScale] = useState(1)
+  // размер поля в CSS-пикселях; масштаб — «на весь экран», лишнее показывает камера
+  const [size, setSize] = useState({ width: 0, height: 0 })
+  const scale = coverScale(size.width, size.height, map)
+  const cameraRef = useRef({ x: 0, y: 0 })
+  const sizeRef = useRef(size)
   const [touch] = useState(coarsePointer)
   // настройки вида: сумерки, строки монитора, светлячки — игровой цикл читает их из ref
   const { settings } = useSettings()
@@ -119,24 +121,24 @@ export function GardenCanvas(props: Props) {
     look.current = settings
     latest.current = props
     scaleRef.current = scale
+    sizeRef.current = size
     blockedRef.current = blocked
   })
 
   // Любое изменение входных данных — повод перерисовать кадр
   useEffect(() => {
     dirtyRef.current = true
-  }, [scene, atlas, scale, player.frames, settings])
+  }, [scene, atlas, scale, size, player.frames, settings])
 
   // Невидимый джойстик на телефоне: ведёшь пальцем по саду — персонаж идёт в ту сторону
   const touchRef = useRef<{ id: number; x: number; y: number; dragging: boolean } | null>(null)
   const lastPointerWasTouch = useRef(false)
 
-  // Масштаб под ширину контейнера и высоту окна
+  // Поле игры занимает всё окно: меряем его и подбираем масштаб так, чтобы сад заполнил экран
   useEffect(() => {
     const wrap = wrapRef.current
     if (!wrap) return
-    // поле игры задаёт высоту обёртки; если её нет (старая раскладка) — берём высоту окна
-    const update = () => setScale(fitScale(wrap.clientWidth, map, wrap.clientHeight || window.innerHeight - RESERVED_HEIGHT))
+    const update = () => setSize({ width: wrap.clientWidth, height: wrap.clientHeight })
     const observer = new ResizeObserver(update)
     observer.observe(wrap)
     window.addEventListener('resize', update)
@@ -228,9 +230,10 @@ export function GardenCanvas(props: Props) {
       if (!canvas || !ctx) return
       const s = scaleRef.current
       const dpr = window.devicePixelRatio || 1
-      const cssWidth = Math.floor(p.map.width * TILE * s)
-      const cssHeight = Math.floor(p.map.height * TILE * s)
-      if (canvas.width !== Math.round(cssWidth * dpr)) {
+      const cssWidth = Math.floor(sizeRef.current.width)
+      const cssHeight = Math.floor(sizeRef.current.height)
+      if (cssWidth === 0 || cssHeight === 0) return
+      if (canvas.width !== Math.round(cssWidth * dpr) || canvas.height !== Math.round(cssHeight * dpr)) {
         canvas.width = Math.round(cssWidth * dpr)
         canvas.height = Math.round(cssHeight * dpr)
         canvas.style.width = `${cssWidth}px`
@@ -261,9 +264,13 @@ export function GardenCanvas(props: Props) {
       }
       drawGarden(bufferCtx, p.map, p.atlas, scene)
 
+      // камера: видимая часть карты вокруг героя, не заезжая за края
+      const view = { width: cssWidth / s, height: cssHeight / s }
+      const camera = cameraAt({ x: w.x, y: w.y - TILE / 2 }, view, p.map)
+      cameraRef.current = camera
       ctx.imageSmoothingEnabled = false
       ctx.clearRect(0, 0, canvas.width, canvas.height)
-      ctx.drawImage(buffer, 0, 0, canvas.width, canvas.height)
+      ctx.drawImage(buffer, camera.x, camera.y, view.width, view.height, 0, 0, canvas.width, canvas.height)
       const lines = look.current.scanlines ? scanlines(ctx, Math.max(2, Math.round(dpr * 3))) : null
       if (lines) {
         ctx.fillStyle = lines
@@ -276,8 +283,11 @@ export function GardenCanvas(props: Props) {
   }, [])
 
   const cellFromEvent = (event: MouseEvent<HTMLCanvasElement>): Cell | null => {
+    // экранная точка → точка карты с учётом камеры → клетка
     const rect = event.currentTarget.getBoundingClientRect()
-    const cell = cellAtPoint(event.clientX - rect.left, event.clientY - rect.top, scale)
+    const x = cameraRef.current.x + (event.clientX - rect.left) / scale
+    const y = cameraRef.current.y + (event.clientY - rect.top) / scale
+    const cell = { x: Math.floor(x / TILE), y: Math.floor(y / TILE) }
     return inBounds(map, cell) ? cell : null
   }
 

@@ -1,0 +1,75 @@
+/* Задания: маленькая кнопка и выпадающий список под ней — поверх сада, не загораживая его */
+.menu {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+  max-width: min(380px, 48vw);
+}
+
+.toggle {
+  padding: 2px var(--space-2);
+  border: 0;
+  background: var(--paper-texture), var(--c-parchment);
+  background-size: var(--paper-size), auto;
+  color: var(--c-ink);
+  font: inherit;
+  font-size: 14px;
+  box-shadow: 0 0 0 2px var(--c-ink), 0 0 12px rgb(255 207 122 / 0.3);
+  cursor: pointer;
+}
+
+.toggle:focus-visible {
+  outline: 2px solid var(--c-sun);
+  outline-offset: 2px;
+}
+
+.list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: block;
+  width: 100%;
+  padding: 2px var(--space-2);
+  border: 0;
+  background: rgb(242 227 194 / 0.9);
+  color: var(--c-ink);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  box-shadow: 0 0 0 2px var(--c-ink);
+}
+
+button.item {
+  cursor: pointer;
+}
+
+button.item:hover {
+  background: var(--c-sun);
+}
+
+.main {
+  background: rgb(242 227 194 / 0.97);
+}
+
+.who {
+  color: #8e5568;
+}
+
+.progress {
+  color: var(--c-bark);
+}
+
+@media (max-height: 480px) {
+  .toggle {
+    font-size: 12px;
+  }
+
+  .item {
+    font-size: 11px;
+  }
+}
