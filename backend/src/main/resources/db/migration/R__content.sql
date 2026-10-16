@@ -83,7 +83,11 @@ INSERT INTO recipe_def (key, name, description, target_object_key, result_text, 
     ('repair_wheelbarrow', 'Починка тачки',
         'Поставить колесо на ось и забить новый шплинт. Ремонтный набор заперт в ящике в сарае.',
         'wheelbarrow',
-        'Колесо встало на место и больше не скрипит. Тачка стоит ровно — кажется, даже гордо.', 3, 'Починить')
+        'Колесо встало на место и больше не скрипит. Тачка стоит ровно — кажется, даже гордо.', 3, 'Починить'),
+    ('fill_barrel', 'Вода для бочки',
+        'Сапфир странствий помнит дорогу к роднику. Принесите его с прогулки — и бочка вспомнит, что такое вода.',
+        'barrel',
+        'Бочка до краёв полна прохладной воды. В ней отражается небо — даже ночью.', 4, 'Наполнить')
 ON CONFLICT (key) DO UPDATE SET
     name = EXCLUDED.name,
     description = EXCLUDED.description,
@@ -92,12 +96,13 @@ ON CONFLICT (key) DO UPDATE SET
     sort_order = EXCLUDED.sort_order,
     action_label = EXCLUDED.action_label;
 
-DELETE FROM recipe_ingredient WHERE recipe_key IN ('awaken_basin', 'open_east_gate', 'repair_wheelbarrow');
+DELETE FROM recipe_ingredient WHERE recipe_key IN ('awaken_basin', 'open_east_gate', 'repair_wheelbarrow', 'fill_barrel');
 INSERT INTO recipe_ingredient (recipe_key, item_key, quantity) VALUES
     ('awaken_basin', 'shard_emerald', 2),
     ('awaken_basin', 'shard_amethyst', 1),
     ('open_east_gate', 'sun_spark', 1),
-    ('repair_wheelbarrow', 'repair_kit', 1);
+    ('repair_wheelbarrow', 'repair_kit', 1),
+    ('fill_barrel', 'shard_sapphire', 1);
 
 -- Артефакты -------------------------------------------------------------------
 -- Лор раскрывается понемногу: через описание, легенду и подсказки к ещё не найденному.

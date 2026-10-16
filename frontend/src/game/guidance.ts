@@ -25,7 +25,8 @@ const isMentor = (cell: Cell, map: GardenMap) => map.key === HOME && cell.x === 
 
 /**
  * Текущее задание: сначала познакомиться с Вереском, потом шаги обучения и поручения по очереди.
- * Поручение сначала надо получить у Вереска; выполненный, но ещё не рассказанный шаг ведёт обратно к нему.
+ * Поручение сначала надо получить у Вереска (если дело ещё не сделано); выполненный, но ещё не рассказанный
+ * шаг ведёт обратно к нему.
  */
 export function currentObjective(state: GameState, catalog: Catalog): Objective | null {
   const mentor = catalog.mentor
@@ -33,8 +34,9 @@ export function currentObjective(state: GameState, catalog: Catalog): Objective 
 
   const progress = state.mentor.steps.find((s) => !s.acknowledged)
   if (!progress) return null
-  if (!progress.offered) return { text: mentor.offerGoal ?? mentor.meetGoal, target: { kind: 'mentor' } }
+  // сделанное дело ведёт к Вереску за благодарностью; несделанное без поручения — за поручением
   if (progress.done) return { text: mentor.reportGoal, target: { kind: 'mentor' } }
+  if (!progress.offered) return { text: mentor.offerGoal ?? mentor.meetGoal, target: { kind: 'mentor' } }
 
   const step = mentor.tutorial.find((t) => t.key === progress.key)
   if (!step) return null

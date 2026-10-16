@@ -85,9 +85,14 @@ describe('задание от Вереска', () => {
     expect(currentObjective(withSeeds, catalog)?.target).toEqual({ kind: 'tile', type: 'soil' })
   })
 
-  it('поручение сначала надо получить у Вереска — даже если дело уже сделано', () => {
-    const s = state({ mentor: { nextDialogue: 'offer_weed', hasNews: true, steps: steps(['weed', true, false, false]) } })
+  it('поручение сначала надо получить у Вереска', () => {
+    const s = state({ mentor: { nextDialogue: 'offer_weed', hasNews: true, steps: steps(['weed', false, false, false]) } })
     expect(currentObjective(s, catalog)).toEqual({ text: 'Вереск хочет попросить', target: { kind: 'mentor' } })
+  })
+
+  it('дело, сделанное до поручения, сразу ведёт к Вереску за благодарностью', () => {
+    const s = state({ mentor: { nextDialogue: 'done_weed', hasNews: true, steps: steps(['weed', true, false, false]) } })
+    expect(currentObjective(s, catalog)).toEqual({ text: 'Расскажите', target: { kind: 'mentor' } })
   })
 
   it('после обучения заданий нет', () => {
