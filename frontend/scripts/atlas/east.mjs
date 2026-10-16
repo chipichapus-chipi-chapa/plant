@@ -237,6 +237,44 @@ function dressed(kind, frame) {
   return s
 }
 
+/**
+ * Барсук Хмур — злой сторож тропы: коренастый, в рваном тёмном плаще, полосатая морда,
+ * маленькие красные глазки. Кадр 1 — недовольно переминается и щурится.
+ */
+function khmur(frame) {
+  const s = new Sprite(32, 48)
+  s.shadow(16, 46, 12, 2)
+  const b = new Sprite(32, 48)
+  const fur = ['#1c1b1c', '#2e2c2d', '#46433f', '#5f5b55']
+  // плащ: трапеция, рваный подол
+  for (let y = 26; y < 46; y++) {
+    const half = 8 + (y - 26) * 0.35
+    for (let x = Math.round(16 - half); x <= Math.round(16 + half); x++) {
+      if (y > 42 && (x + frame) % 4 === 0) continue
+      b.px(x, y, R.rust[(x < 12 ? 2 : x > 20 ? 0 : 1)])
+    }
+  }
+  for (let y = 30; y < 44; y += 4) b.rect(12 + (y % 8 ? 1 : 0), y, 2, 1, R.rust[0]) // заплатки и складки
+  // лапы из-под плаща
+  b.rect(10, 44, 4, 2, fur[1])
+  b.rect(18, 44, 4, 2, fur[1])
+  // голова: широкая, низко посаженная
+  b.shadedEllipse(16, 22, 9, 7.5, fur, { bias: 0.05 })
+  b.shadedEllipse(9, 16, 2.5, 2.5, fur)
+  b.shadedEllipse(23, 16, 2.5, 2.5, fur)
+  b.outline(INK)
+  s.stamp(b)
+  // полосатая морда: белая полоса посередине, тёмные — через глаза
+  for (let y = 15; y < 28; y++) for (let x = 14; x < 18; x++) if (s.filled(x, y)) s.px(x, y, y < 17 ? R.bone[2] : R.bone[3])
+  for (const x of [10, 19]) for (let y = 18; y < 24; y++) s.rect(x, y, 3, 1, fur[0])
+  const squint = frame ? 1 : 2
+  s.rect(11, 21, 2, squint === 2 ? 2 : 1, R.berry[4])
+  s.rect(20, 21, 2, squint === 2 ? 2 : 1, R.berry[4])
+  s.rect(15, 27, 2, 1, INK) // нос
+  s.rect(13, 29, 6, 1, fur[0]) // недовольная пасть
+  return s
+}
+
 export function eastFrames() {
   const frames = {}
   for (let m = 0; m < 16; m++) {
@@ -252,6 +290,7 @@ export function eastFrames() {
   frames.prop_signpost = signpost()
   frames.prop_thicket = thicket()
   for (const k of ['krupka', 'shorokh', 'vetosh']) for (const f of [0, 1]) frames[`npc_${k}_${f}`] = dressed(k, f)
+  for (const f of [0, 1]) frames[`npc_khmur_${f}`] = khmur(f)
   return frames
 }
 

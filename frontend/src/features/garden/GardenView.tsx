@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ApiError } from '../../api/client'
-import { plantSeed, weedBed } from '../../api/game'
-import type { Catalog, Door, GameState, GardenMap, Npc, Puzzle } from '../../api/types'
+import { acceptErrand, completeErrand, plantSeed, weedBed } from '../../api/game'
+import type { Catalog, Door, Errand, GameState, GardenMap, Npc, Puzzle } from '../../api/types'
 import { frameImage, loadAtlas, type Atlas } from '../../game/atlas'
 import { composeCharacterFrames } from '../../game/character'
 import { WEED_MS, type WeedEffect } from '../../game/effects'
@@ -21,6 +21,7 @@ import {
   withWeeded,
   type Cell,
 } from '../../game/layout'
+import { describeReward } from '../../lib/rewards'
 import { Button } from '../../ui/Button'
 import { SeedPacketIcon } from '../../ui/icons/SeedPacketIcon'
 import { Window } from '../../ui/Window'
@@ -43,6 +44,8 @@ type Props = {
   inputEnabled: boolean
   /** Текущее задание от Вереска — над его целью в саду покачивается «!» */
   objective: Objective | null
+  /** Интерфейс поверх поля: задание (сверху слева), счётчик (сверху справа), кнопки панели (снизу) */
+  hud: { top: ReactNode; corner: ReactNode; toolbar: ReactNode }
 }
 
 /** Портрет мыши: вся мышь целиком — она маленькая и сидит внизу кадра 32×48. */
@@ -80,22 +83,26 @@ const MENTOR_LANTERN = { x: 13, y: -35, radius: 46, strength: 0.85 }
 const sameCell = (a: Cell, b: Cell) => a.x === b.x && a.y === b.y
 
 /** Сад и другие локации (сарай изнутри), табличка о выбранном объекте, посадка, прополка, двери. */
-export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEnabled, objective }: Props) {
+export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEnabled, objective, hud }: Props) {
   const [location, setLocation] = useState<Location>(START)
   const home = location.key === HOME
-  // карта текущей локации; в саду — с учётом прополотых грядок
+  // разговор с жителем локации; accept — в конце разговора житель даёт поручение
+  const [chat, setChat] = useState<{ npc: Npc; dialogue: string; accept?: Errand } | null>(null)
+  // карта текущей локации; в саду — с учётом прополотых грядок. Сторож, чьё поручение выполнено,
+  // уходит с дороги (но договаривает благодарность до конца)
   const map = useMemo((): GardenMap => {
     const base = catalog.locations.find((l) => l.key === location.key) ?? catalog.garden
-    return base.key === HOME ? withWeeded(base, state.garden.weeded) : base
-  }, [catalog, location.key, state.garden.weeded])
+    const map = base.key === HOME ? withWeeded(base, state.garden.weeded) : base
+    const gone = (n: Npc) =>
+      !!n.errand?.leaves && !!state.errands.find((e) => e.key === n.errand!.key)?.done && chat?.npc.key !== n.key
+    return map.npcs?.some(gone) ? { ...map, npcs: map.npcs.filter((n) => !gone(n)) } : map
+  }, [catalog, location.key, state.garden.weeded, state.errands, chat])
   // читаем письмо — текст в окне поверх сада
   const [reading, setReading] = useState<{ title: string; text: string } | null>(null)
   // замок крупным планом поверх сада
   const [lock, setLock] = useState<Puzzle | null>(null)
   // идёт прополка: анимация мотыги, персонаж стоит
   const [weeding, setWeeding] = useState<WeedEffect | null>(null)
-  // разговор с жителем локации (мышью)
-  const [chat, setChat] = useState<{ npc: Npc; dialogue: string } | null>(null)
   // помещение (есть стены): при входе сначала темно, потом зажигается лампа
   const indoor = Object.values(map.tiles).some((t) => t.type === 'wall')
   // кто стоит в клетках и не пускает пройти: Вереск в саду, жители в своих локациях
@@ -183,7 +190,11 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
   // Обработчик хода стабилен (useCallback без зависимостей), поэтому свежую карту и переход читает из ref.
   const mapRef = useRef(map)
   const travelRef = useRef<(door: Door) => void>(() => {})
+  // подсказка про управление — пока игрок ни разу не прошёлся (первый вызов — при появлении на карте)
+  const [showHint, setShowHint] = useState(true)
+  const moves = useRef(0)
   const onPlayerMove = useCallback((at: Cell, facing: Cell) => {
+    if (++moves.current > 2) setShowHint(false)
     setPlayerCell(at)
     facingRef.current = facing
     setFacing(facing)
@@ -230,6 +241,18 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     travelRef.current = travel
   })
 
+  /**
+   * Заговорить с жителем: если у него поручение и он ещё не просил — просьба (в конце поручение берётся);
+   * взято, но не сделано — напоминание; иначе — обычная болтовня.
+   */
+  const talkTo = (npc: Npc) => {
+    const errand = npc.errand
+    const status = errand && state.errands.find((e) => e.key === errand.key)
+    if (errand && !status?.offered) return setChat({ npc, dialogue: errand.offer, accept: errand })
+    if (errand && !status?.done) return setChat({ npc, dialogue: errand.waiting })
+    setChat({ npc, dialogue: nextTalk(npc) })
+  }
+
   const isMentor = (cell: Cell) => home && sameCell(cell, MENTOR_SPOT)
 
   /** Описание объекта перед персонажем: открыть (если над ним горит «!»). */
@@ -252,7 +275,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     }
     const npc = npcAt(map, facing)
     if (npc) {
-      setChat({ npc, dialogue: nextTalk(npc) })
+      talkTo(npc)
       return
     }
     if (!isClickable(facing, state, catalog, map)) return
@@ -302,88 +325,97 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
   }
 
   return (
-    <section className={styles.garden} aria-label={map.name}>
-      <div className={styles.stage}>
-        {atlas.status === 'ready' && scene && playerFrames ? (
-          <GardenCanvas
-            // новая локация — новый холст: персонаж появляется у двери
-            key={map.key}
-            map={map}
-            scene={scene}
-            standing={standing}
-            atlas={atlas.atlas}
-            player={{ frames: playerFrames, start: location.start, facing: location.facing }}
-            onSelect={select}
-            onPlayerMove={onPlayerMove}
-            onAction={act}
-            inputEnabled={inputEnabled && dialogue === null && reading === null && lock === null && fade === 'none' && weeding === null && chat === null}
-            lightUp={indoor}
-          />
-        ) : (
-          <div className={styles.placeholder} style={{ aspectRatio: `${map.width} / ${map.height}` }}>
-            <p className={styles.note}>
-              {atlas.status === 'loading' ? 'Раздвигаем ветки…' : 'Картинки сада не загрузились. Обновите страницу.'}
-            </p>
-          </div>
-        )}
-        {fade !== 'none' && <div className={`${styles.fade} ${fade === 'out' ? styles.fadeOut : styles.fadeIn}`} aria-hidden="true" />}
-        {lock && atlas.status === 'ready' && (
-          <LockOverlay puzzle={lock} catalog={catalog} atlas={atlas.atlas} onClose={() => setLock(null)} onChanged={onChanged} />
-        )}
+    <section className={styles.screen} aria-label={map.name}>
+      <div className={styles.field}>
+        <div className={styles.stage}>
+          {atlas.status === 'ready' && scene && playerFrames ? (
+            <GardenCanvas
+              // новая локация — новый холст: персонаж появляется у двери
+              key={map.key}
+              map={map}
+              scene={scene}
+              standing={standing}
+              atlas={atlas.atlas}
+              player={{ frames: playerFrames, start: location.start, facing: location.facing }}
+              onSelect={select}
+              onPlayerMove={onPlayerMove}
+              onAction={act}
+              inputEnabled={inputEnabled && dialogue === null && reading === null && lock === null && fade === 'none' && weeding === null && chat === null}
+              lightUp={indoor}
+            />
+          ) : (
+            <div className={styles.placeholder} style={{ aspectRatio: `${map.width} / ${map.height}` }}>
+              <p className={styles.note}>
+                {atlas.status === 'loading' ? 'Раздвигаем ветки…' : 'Картинки сада не загрузились. Обновите страницу.'}
+              </p>
+            </div>
+          )}
+          {fade !== 'none' && <div className={`${styles.fade} ${fade === 'out' ? styles.fadeOut : styles.fadeIn}`} aria-hidden="true" />}
+          {lock && atlas.status === 'ready' && (
+            <LockOverlay puzzle={lock} catalog={catalog} atlas={atlas.atlas} onClose={() => setLock(null)} onChanged={onChanged} />
+          )}
+        </div>
       </div>
 
-      <div className={styles.info} aria-live="polite" ref={infoRef}>
-        {selected && isMentor(selected) ? (
-          <div className={styles.cell}>
-            <p className={styles.text}>
-              <strong>{catalog.mentor.speaker.name}.</strong> Опирается на посох и делает вид, что не ждёт, когда с ним заговорят.
-            </p>
-            <div>
-              <Button onClick={talk}>Поговорить</Button>
+      <div className={styles.top}>
+        <div className={styles.topLeft}>{hud.top}</div>
+        <div className={styles.topRight}>{hud.corner}</div>
+      </div>
+
+      <div className={styles.bottom}>
+        <div className={selected || tooFar || showHint ? styles.info : styles.infoHidden} aria-live="polite" ref={infoRef}>
+          {selected && isMentor(selected) ? (
+            <div className={styles.cell}>
+              <p className={styles.text}>
+                <strong>{catalog.mentor.speaker.name}.</strong> Опирается на посох и делает вид, что не ждёт, когда с ним заговорят.
+              </p>
+              <div>
+                <Button onClick={talk}>Поговорить</Button>
+              </div>
             </div>
-          </div>
-        ) : selected && npcAt(map, selected) ? (
-          <div className={styles.cell}>
-            <p className={styles.text}>
-              <strong>{npcAt(map, selected)!.name}.</strong> {npcAt(map, selected)!.description}
-            </p>
-            <div>
-              <Button onClick={() => setChat({ npc: npcAt(map, selected)!, dialogue: nextTalk(npcAt(map, selected)!) })}>
-                Поговорить
-              </Button>
+          ) : selected && npcAt(map, selected) ? (
+            <div className={styles.cell}>
+              <p className={styles.text}>
+                <strong>{npcAt(map, selected)!.name}.</strong> {npcAt(map, selected)!.description}
+              </p>
+              <div>
+                <Button onClick={() => talkTo(npcAt(map, selected)!)}>Поговорить</Button>
+              </div>
+              <ErrandInfo npc={npcAt(map, selected)!} state={state} catalog={catalog} onDone={(npc) => setChat({ npc, dialogue: npc.errand!.thanks })} onChanged={onChanged} />
             </div>
-          </div>
-        ) : selected && sameCell(selected, playerCell) ? (
-          <div className={styles.cell}>
-            <p className={styles.text}>
-              <strong>{state.player.displayName}.</strong> Это вы. Сад, кажется, уже привык к вашим шагам.
-            </p>
-            <div>
-              <Button onClick={onEditCharacter}>Изменить облик</Button>
+          ) : selected && sameCell(selected, playerCell) ? (
+            <div className={styles.cell}>
+              <p className={styles.text}>
+                <strong>{state.player.displayName}.</strong> Это вы. Сад, кажется, уже привык к вашим шагам.
+              </p>
+              <div>
+                <Button onClick={onEditCharacter}>Изменить облик</Button>
+              </div>
             </div>
-          </div>
-        ) : selected && isClickable(selected, state, catalog, map) && atlas.status === 'ready' ? (
-          <CellInfo
-            cell={selected}
-            map={map}
-            state={state}
-            catalog={catalog}
-            now={now}
-            planting={planting}
-            onPlant={plant}
-            onEnter={travel}
-            onRead={setReading}
-            onLock={setLock}
-            onWeeding={setWeeding}
-            onChanged={onChanged}
-          />
-        ) : tooFar ? (
-          <span className={styles.hint}>Подойдите поближе: когда над ним загорится «!», нажмите на него.</span>
-        ) : (
-          <span className={styles.hint}>
-            Стрелки или WASD — идти. Подойдите к предмету — загорится «!»: нажмите на него или E, чтобы рассмотреть.
-          </span>
-        )}
+          ) : selected && isClickable(selected, state, catalog, map) && atlas.status === 'ready' ? (
+            <CellInfo
+              cell={selected}
+              map={map}
+              state={state}
+              catalog={catalog}
+              now={now}
+              planting={planting}
+              onPlant={plant}
+              onEnter={travel}
+              onRead={setReading}
+              onLock={setLock}
+              onWeeding={setWeeding}
+              onChanged={onChanged}
+            />
+          ) : tooFar ? (
+            <span className={styles.hint}>Подойдите поближе: когда над ним загорится «!», нажмите на него.</span>
+          ) : showHint ? (
+            <span className={styles.hint}>
+              Стрелки или WASD — идти. Подойдите к предмету — загорится «!»: нажмите на него или E, чтобы рассмотреть.
+            </span>
+          ) : null}
+        </div>
+        {hud.toolbar}
       </div>
 
       {reading && (
@@ -402,7 +434,16 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
           speaker={{ name: chat.npc.name, frame: `npc_${chat.npc.kind}_0`, crop: MOUSE_CROP }}
           dialogue={chat.npc.dialogues[chat.dialogue]}
           atlas={atlas.atlas}
-          onEnd={() => undefined}
+          onEnd={async () => {
+            if (!chat.accept) return
+            try {
+              await acceptErrand(chat.accept.key)
+              toast({ message: `Новое поручение: ${chat.accept.goal}.` })
+              await onChanged()
+            } catch {
+              toast({ message: 'Не получилось взять поручение. Поговорите ещё раз.' })
+            }
+          }}
           onClose={() => setChat(null)}
         />
       )}
@@ -604,5 +645,54 @@ function WeedInfo({ cell, name, description, state, onWeeding, onChanged }: {
         <p className={styles.hint}>Лопата и грабли висят на северном заборе.</p>
       )}
     </div>
+  )
+}
+
+/**
+ * Поручение жителя в табличке: что просили и кнопка «Отдать…» / «Показать находку».
+ * Вещи списывает сервер вместе с наградой; не хватает — ничего не списано.
+ */
+function ErrandInfo({ npc, state, catalog, onDone, onChanged }: {
+  npc: Npc
+  state: GameState
+  catalog: Catalog
+  onDone: (npc: Npc) => void
+  onChanged: () => Promise<void>
+}) {
+  const [busy, setBusy] = useState(false)
+  const toast = useToast()
+  const errand = npc.errand
+  const status = errand && state.errands.find((e) => e.key === errand.key)
+  if (!errand || !status?.offered || status.done) return null
+
+  const nameOf = (key: string) => catalog.items.find((i) => i.key === key)?.name ?? key
+  const have = (key: string) => state.inventory.find((e) => e.itemKey === key)?.quantity ?? 0
+  const give = errand.give ?? []
+  const enough = errand.kind === 'SHOW' ? state.searchedSpots.includes(errand.spot ?? '') : give.every((g) => have(g.itemKey) >= g.quantity)
+  const label = errand.kind === 'SHOW' ? 'Показать находку' : `Отдать: ${give.map((g) => `${nameOf(g.itemKey)} ×${g.quantity}`).join(', ')}`
+
+  const complete = async () => {
+    setBusy(true)
+    try {
+      const result = await completeErrand(errand.key)
+      if (result.reward.length) toast({ message: `${npc.name} благодарит.`, reward: describeReward(result.reward, catalog) })
+      onDone(npc)
+      await onChanged()
+    } catch (e) {
+      toast({ message: e instanceof ApiError ? (e.detail ?? e.title) : 'Не получилось. Попробуйте ещё раз.' })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <>
+      <p className={styles.hint}>Поручение: {errand.goal}.</p>
+      <div>
+        <Button onClick={() => void complete()} disabled={busy || !enough}>
+          {label}
+        </Button>
+      </div>
+    </>
   )
 }

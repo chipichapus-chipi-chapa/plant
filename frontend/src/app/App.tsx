@@ -23,8 +23,9 @@ import { useGame } from './useGame'
 type OpenWindow = 'habits' | 'shop' | 'bag' | 'collection' | 'character' | null
 
 /**
- * Главный экран: сад в центре, под ним панель действий. Привычки, лавка и сумка
- * открываются окнами поверх сада — сад всегда остаётся главным.
+ * Главный экран — игровое поле во весь экран: сад в центре, всё остальное лежит поверх него, как в игре.
+ * Сверху — задание от Вереска и счётчик семян, снизу — кнопки панели; описания, разговоры и замок —
+ * тоже в поле. Привычки, лавка и сумка открываются окнами поверх сада.
  */
 export function App() {
   const { game, reload, refresh } = useGame()
@@ -38,55 +39,49 @@ export function App() {
 
   return (
     <ToastProvider>
-      <div className={styles.shell}>
-        <header className={styles.header}>
-          <h1 className={styles.logo}>Там, где растёт</h1>
-          {game.status === 'ready' && <PlayerBadge state={game.state} />}
-        </header>
-
+      <div className={styles.screen}>
         {game.status === 'error' ? (
           <LoadError error={game.error} onRetry={reload} />
+        ) : game.status === 'ready' ? (
+          <GardenView
+            state={game.state}
+            catalog={game.catalog}
+            onChanged={refresh}
+            onEditCharacter={() => setOpen('character')}
+            inputEnabled={open === null && game.state.player.onboarded}
+            objective={objective}
+            hud={{
+              top:
+                objective && game.state.player.onboarded ? (
+                  <QuestTracker objective={objective} speaker={game.catalog.mentor.speaker.name} onOpenHud={openHud} />
+                ) : null,
+              corner: <PlayerBadge state={game.state} />,
+              toolbar: (
+                <nav className={styles.toolbar} aria-label="Действия">
+                  <HudButton
+                    icon={<TrackerIcon />}
+                    label="Привычки"
+                    onClick={() => setOpen('habits')}
+                    badge={habitsBadge(game.state)}
+                    highlight={isTarget('habits')}
+                  />
+                  <HudButton icon={<ShopIcon />} label="Лавка" onClick={() => setOpen('shop')} highlight={isTarget('shop')} />
+                  <HudButton icon={<BagIcon />} label="Сумка" onClick={() => setOpen('bag')} highlight={isTarget('bag')} />
+                  <HudButton
+                    icon={<CollectionIcon />}
+                    label="Коллекция"
+                    onClick={() => setOpen('collection')}
+                    highlight={isTarget('collection')}
+                    badge={game.state.artifacts.length > 0 ? String(game.state.artifacts.length) : undefined}
+                  />
+                </nav>
+              ),
+            }}
+          />
         ) : (
-          <main className={styles.stage}>
-            {game.status === 'ready' && objective && game.state.player.onboarded && (
-              <QuestTracker objective={objective} speaker={game.catalog.mentor.speaker.name} onOpenHud={openHud} />
-            )}
-            {game.status === 'ready' ? (
-              <GardenView
-                state={game.state}
-                catalog={game.catalog}
-                onChanged={refresh}
-                onEditCharacter={() => setOpen('character')}
-                inputEnabled={open === null && game.state.player.onboarded}
-                objective={objective}
-              />
-            ) : (
-              <div className={styles.garden} aria-busy="true">
-                <p className={styles.gardenNote}>Отворяем калитку…</p>
-              </div>
-            )}
-
-            {game.status === 'ready' && (
-              <nav className={styles.toolbar} aria-label="Действия">
-                <HudButton
-                  icon={<TrackerIcon />}
-                  label="Привычки"
-                  onClick={() => setOpen('habits')}
-                  badge={habitsBadge(game.state)}
-                  highlight={isTarget('habits')}
-                />
-                <HudButton icon={<ShopIcon />} label="Лавка" onClick={() => setOpen('shop')} highlight={isTarget('shop')} />
-                <HudButton icon={<BagIcon />} label="Сумка" onClick={() => setOpen('bag')} highlight={isTarget('bag')} />
-                <HudButton
-                  icon={<CollectionIcon />}
-                  label="Коллекция"
-                  onClick={() => setOpen('collection')}
-                  highlight={isTarget('collection')}
-                  badge={game.state.artifacts.length > 0 ? String(game.state.artifacts.length) : undefined}
-                />
-              </nav>
-            )}
-          </main>
+          <div className={styles.loading} aria-busy="true">
+            <p className={styles.gardenNote}>Отворяем калитку…</p>
+          </div>
         )}
 
         {game.status === 'ready' && open === 'habits' && (
@@ -130,8 +125,6 @@ export function App() {
             />
           </Window>
         )}
-
-        <footer className={styles.footer}>Локальный режим разработки: без входа, данные хранятся на этом компьютере.</footer>
       </div>
     </ToastProvider>
   )
@@ -147,8 +140,8 @@ function PlayerBadge({ state }: { state: GameState }) {
   const quantity = (key: string) => state.inventory.find((entry) => entry.itemKey === key)?.quantity ?? 0
   const sparks = quantity(SUN_SPARK)
   return (
-    <div className={styles.badge}>
-      <span>{state.player.displayName}</span>
+    <div className={styles.badge} title="Локальный режим: без входа, данные хранятся на этом компьютере">
+      <span className={styles.name}>{state.player.displayName}</span>
       <span className={styles.coins} title="Семена жизни">
         <LifeSeedIcon />
         {quantity(LIFE_SEED)}
