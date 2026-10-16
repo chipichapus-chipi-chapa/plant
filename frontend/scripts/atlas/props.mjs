@@ -141,7 +141,19 @@ export function tools() {
   return s
 }
 
-export function barrel() {
+/** Инструменты сняты: на заборе пустые гвозди и светлые пятна там, где висели ручки. */
+export function toolsTaken() {
+  const s = new Sprite(2 * T, T)
+  for (const [x, top, bottom] of [[10, 3, 26], [24, 5, 26], [41, 3, 26]]) {
+    for (let y = top; y < bottom; y++) if (checker(x, y)) s.px(x, y, R.oldWood[4], 160)
+    s.px(x, top, R.silver[3])
+    s.px(x, top + 1, R.silver[0])
+  }
+  return s
+}
+
+/** Бочка; наполнена — до краёв вода, в ней отражается небо. */
+export function barrel(full = false) {
   const s = new Sprite(T, T)
   s.shadow(17, 29, 11, 2.5)
   const b = new Sprite(T, T)
@@ -155,30 +167,48 @@ export function barrel() {
   for (let x = 10; x < 24; x += 4) for (let y = 8; y < 28; y++) b.px(x, y, R.wood[1]) // клёпки
   for (const y of [11, 23]) for (let x = 7; x < 25; x++) b.px(x, y, pick(R.stone.slice(0, 4), 0.9 - (x - 7) / 18, x, y))
   b.ellipse(16, 7, 8, 2.5, R.wood[2])
-  b.ellipse(16, 7.5, 6.5, 1.5, P.dark)
-  b.px(14, 7, R.leaf[2])
-  b.px(17, 7, R.straw[2])
+  if (full) {
+    b.ellipse(16, 7.5, 6.5, 1.5, R.dew[2])
+    b.rect(12, 7, 3, 1, R.dew[4]) // блик неба на воде
+    b.px(19, 8, R.dew[1])
+  } else {
+    b.ellipse(16, 7.5, 6.5, 1.5, P.dark)
+    b.px(14, 7, R.leaf[2])
+    b.px(17, 7, R.straw[2])
+  }
   b.outline(INK)
   s.stamp(b)
   return s
 }
 
-export function wheelbarrow() {
+/** Тачка. Сломана — завалилась набок, колесо соскочило и лежит рядом; починена — стоит ровно, колесо на оси. */
+export function wheelbarrow(repaired) {
   const s = new Sprite(T, T)
   s.shadow(16, 28, 13, 2.5)
   const w = new Sprite(T, T)
+  // наклон кузова: у сломанной тачки нос уткнулся в землю
+  const tilt = repaired ? 0 : 0.35
   for (let y = 10; y < 21; y++)
-    for (let x = 3 + (y - 10) / 3; x < 26 - (y - 10) / 4; x++) w.px(x, y, pick(R.rust.slice(1), 1 - (y - 10) / 11, Math.floor(x), y))
+    for (let x = 3 + (y - 10) / 3; x < 26 - (y - 10) / 4; x++) {
+      const yy = Math.round(y + (x - 14) * tilt * 0.4)
+      w.px(x, yy, pick(R.rust.slice(1), 1 - (y - 10) / 11, Math.floor(x), y))
+    }
   w.rect(6, 12, 17, 5, R.soil[2])
   w.rect(6, 12, 17, 1, R.soil[4])
-  w.line(24, 13, 31, 11, R.wood[4])
-  w.line(24, 14, 31, 12, R.wood[2])
-  w.rect(21, 20, 2, 6, R.wood[2])
+  w.line(24, 13, 31, repaired ? 11 : 17, R.wood[4])
+  w.line(24, 14, 31, repaired ? 12 : 18, R.wood[2])
+  w.rect(21, 20, 2, repaired ? 6 : 5, R.wood[2])
   w.outline(INK)
   s.stamp(w)
   const wheel = new Sprite(T, T)
-  wheel.shadedEllipse(9, 23, 4.5, 4.5, R.oldWood.slice(1))
-  wheel.ellipse(9, 23, 1.5, 1.5, R.silver[1])
+  if (repaired) {
+    wheel.shadedEllipse(9, 23, 4.5, 4.5, R.oldWood.slice(1))
+    wheel.ellipse(9, 23, 1.5, 1.5, R.silver[3])
+  } else {
+    // колесо лежит плашмя в траве
+    wheel.shadedEllipse(6, 27, 4.5, 2, R.oldWood.slice(1))
+    wheel.ellipse(6, 27, 1.5, 0.8, R.silver[1])
+  }
   wheel.outline(INK)
   s.stamp(wheel)
   return s
@@ -237,7 +267,10 @@ export function propFrames() {
     prop_shed: shed(),
     prop_tools: tools(),
     prop_barrel: barrel(),
-    prop_wheelbarrow: wheelbarrow(),
+    prop_barrel_awakened: barrel(true),
+    prop_wheelbarrow: wheelbarrow(false),
+    prop_wheelbarrow_awakened: wheelbarrow(true),
+    prop_tools_searched: toolsTaken(),
     prop_rock: rock(),
     prop_basin: basin(false),
     prop_basin_awakened: basin(true),

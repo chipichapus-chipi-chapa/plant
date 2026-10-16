@@ -1,13 +1,26 @@
 import { useEffect, useRef, useState } from 'react'
 import { ApiError } from '../../api/client'
 import { finishDialogue } from '../../api/game'
-import type { Catalog } from '../../api/types'
+import type { Catalog, Dialogue } from '../../api/types'
 import { frameImage, type Atlas } from '../../game/atlas'
 import { describeReward } from '../../lib/rewards'
 import { useToast } from '../notifications/Toasts'
 import styles from './DialogueBox.module.css'
 
+/** Кто говорит: имя и кадр атласа, из которого вырезается портрет (32×32 с точки crop). */
+export type Speaker = { name: string; frame: string; crop: [number, number] }
+
 type Props = {
+  speaker: Speaker
+  dialogue: Dialogue
+  atlas: Atlas
+  /** Разговор дочитан (до последней реплики) */
+  onEnd: () => Promise<void> | void
+  /** Закрыть окно: после onEnd или по Escape */
+  onClose: () => void
+}
+
+type MentorProps = {
   dialogueKey: string
   catalog: Catalog
   atlas: Atlas
@@ -15,23 +28,53 @@ type Props = {
   onChanged: () => Promise<void>
 }
 
+/** Портрет Вереска — капюшон, лицо и борода из спрайта 32×48. */
+const VERESHK_CROP: [number, number] = [0, 4]
+
+/**
+ * Разговор с Мастером Вереском: в конце сервер ставит флаг разговора и (один раз) выдаёт подарок.
+ */
+export function MentorDialogue({ dialogueKey, catalog, atlas, onClose, onChanged }: MentorProps) {
+  const toast = useToast()
+  const finish = async () => {
+    try {
+      const result = await finishDialogue(dialogueKey)
+      if (result.gift.length > 0) {
+        toast({ message: `${catalog.mentor.speaker.name} протягивает подарок.`, reward: describeReward(result.gift, catalog) })
+      }
+      await onChanged()
+    } catch (e) {
+      // Разговор не к месту (например, открыт в двух вкладках) — просто закрываем, ничего не потеряно
+      if (!(e instanceof ApiError && e.status === 409)) {
+        toast({ message: 'Вереск задумался и потерял мысль. Попробуйте поговорить ещё раз.' })
+      }
+    }
+  }
+  return (
+    <DialogueBox
+      speaker={{ name: catalog.mentor.speaker.name, frame: 'npc_vereshk', crop: VERESHK_CROP }}
+      dialogue={catalog.mentor.dialogues[dialogueKey]}
+      atlas={atlas}
+      onEnd={finish}
+      onClose={onClose}
+    />
+  )
+}
+
 const SPEED_MS = 22
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
 
 /**
- * Разговор с наставником внизу экрана: портрет, имя, текст по буквам.
- * Клик или Enter/Пробел — показать реплику целиком, затем дальше. В конце сервер ставит флаг
- * разговора и (один раз) выдаёт подарок.
+ * Разговор внизу экрана: портрет, имя, текст по буквам. Один и тот же для Вереска и жителей тропы.
+ * Клик или Enter/Пробел — показать реплику целиком, затем дальше; варианты ответа ведут по графу реплик.
  */
-export function DialogueBox({ dialogueKey, catalog, atlas, onClose, onChanged }: Props) {
-  const dialogue = catalog.mentor.dialogues[dialogueKey]
+export function DialogueBox({ speaker, dialogue, atlas, onEnd, onClose }: Props) {
   const [nodeId, setNodeId] = useState(dialogue.start)
   // сколько букв текущей реплики уже напечатано; при смене реплики счёт начинается заново
   const [typed, setTyped] = useState({ node: dialogue.start, count: 0 })
   const [finishing, setFinishing] = useState(false)
   const portraitRef = useRef<HTMLCanvasElement>(null)
   const boxRef = useRef<HTMLDivElement>(null)
-  const toast = useToast()
   const node = dialogue.nodes[nodeId]
   const instant = reducedMotion()
   const shown = instant ? node.text.length : typed.node === nodeId ? typed.count : 0
@@ -39,12 +82,11 @@ export function DialogueBox({ dialogueKey, catalog, atlas, onClose, onChanged }:
 
   useEffect(() => {
     const ctx = portraitRef.current?.getContext('2d')
-    const image = frameImage(atlas, 'npc_vereshk')
+    const image = frameImage(atlas, speaker.frame)
     if (!ctx || !image) return
     ctx.clearRect(0, 0, 32, 32)
-    // портрет — капюшон, лицо и борода из спрайта 32×48
-    ctx.drawImage(image, 0, 4, 32, 32, 0, 0, 32, 32)
-  }, [atlas])
+    ctx.drawImage(image, speaker.crop[0], speaker.crop[1], 32, 32, 0, 0, 32, 32)
+  }, [atlas, speaker.frame, speaker.crop])
 
   // Текст печатается по буквам; при «уменьшить движение» появляется сразу
   useEffect(() => {
@@ -60,16 +102,7 @@ export function DialogueBox({ dialogueKey, catalog, atlas, onClose, onChanged }:
   const finish = async () => {
     setFinishing(true)
     try {
-      const result = await finishDialogue(dialogueKey)
-      if (result.gift.length > 0) {
-        toast({ message: `${catalog.mentor.speaker.name} протягивает подарок.`, reward: describeReward(result.gift, catalog) })
-      }
-      await onChanged()
-    } catch (e) {
-      // Разговор не к месту (например, открыт в двух вкладках) — просто закрываем, ничего не потеряно
-      if (!(e instanceof ApiError && e.status === 409)) {
-        toast({ message: 'Вереск задумался и потерял мысль. Попробуйте поговорить ещё раз.' })
-      }
+      await onEnd()
     } finally {
       onClose()
     }
@@ -92,7 +125,7 @@ export function DialogueBox({ dialogueKey, catalog, atlas, onClose, onChanged }:
         ref={boxRef}
         className={styles.box}
         role="dialog"
-        aria-label={`Разговор: ${catalog.mentor.speaker.name}`}
+        aria-label={`Разговор: ${speaker.name}`}
         tabIndex={-1}
         onClick={advance}
         onKeyDown={(e) => {
@@ -107,7 +140,7 @@ export function DialogueBox({ dialogueKey, catalog, atlas, onClose, onChanged }:
           <canvas ref={portraitRef} width={32} height={32} className={styles.face} aria-hidden="true" />
         </div>
         <div className={styles.speech}>
-          <span className={styles.name}>{catalog.mentor.speaker.name}</span>
+          <span className={styles.name}>{speaker.name}</span>
           <p className={styles.text} aria-live="polite">
             {node.text.slice(0, shown)}
             <span className={styles.ghost} aria-hidden="true">

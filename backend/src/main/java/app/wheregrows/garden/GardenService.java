@@ -19,13 +19,20 @@ import app.wheregrows.content.ItemKind;
 import app.wheregrows.content.PlantSpecies;
 import app.wheregrows.content.PlantSpeciesRepository;
 import app.wheregrows.economy.Inventory;
+import app.wheregrows.economy.InventoryItemRepository;
 import app.wheregrows.player.PlayerProfileRepository;
 
 /**
- * Сад игрока: что где растёт и посадка. Клетку, наличие семян и рост проверяет и считает сервер.
+ * Сад игрока: что где растёт, посадка и прополка. Клетку, наличие семян и инструментов, рост
+ * проверяет и считает сервер.
  */
 @Service
 public class GardenService {
+
+    /** Чем полоть: лопата и грабли с забора. Не тратятся. */
+    public static final String WEEDING_TOOLS = "garden_tools";
+    static final String OVERGROWN = "overgrown";
+    static final String SOIL = "soil";
 
     private final GardenObjectRepository objects;
     private final GardenMaps maps;
@@ -33,10 +40,15 @@ public class GardenService {
     private final PlantSpeciesRepository species;
     private final PlayerProfileRepository players;
     private final Inventory inventory;
+    private final InventoryItemRepository inventoryItems;
+    private final PlayerTileRepository tiles;
     private final Clock clock;
 
     GardenService(GardenObjectRepository objects, GardenMaps maps, ItemDefinitionRepository items,
-                  PlantSpeciesRepository species, PlayerProfileRepository players, Inventory inventory, Clock clock) {
+                  PlantSpeciesRepository species, PlayerProfileRepository players, Inventory inventory,
+                  InventoryItemRepository inventoryItems, PlayerTileRepository tiles, Clock clock) {
+        this.inventoryItems = inventoryItems;
+        this.tiles = tiles;
         this.objects = objects;
         this.maps = maps;
         this.items = items;
@@ -72,7 +84,7 @@ public class GardenService {
         if (prop != null) {
             throw new InvalidRequestException("Здесь стоит «" + prop.name() + "». Сажать можно только на грядку.");
         }
-        GardenMap.TileType tile = map.tileAt(x, y);
+        GardenMap.TileType tile = tileFor(playerId, map, x, y);
         if (!tile.plantable()) {
             throw new InvalidRequestException("«" + tile.name() + "» — не грядка. Сажать можно только на грядку.");
         }
@@ -90,6 +102,52 @@ public class GardenService {
         GardenObject planted = objects.saveAndFlush(
                 GardenObject.plant(playerId, map.key(), x, y, plant.getKey(), now));
         return view(planted, plant, now);
+    }
+
+    /** Прополотые клетки домашнего сада: на них заросшая грядка уже стала обычной. */
+    @Transactional(readOnly = true)
+    public List<Cell> weeded(long playerId) {
+        return tiles.findByIdPlayerIdAndIdGardenKey(playerId, maps.home().key()).stream()
+                .map(t -> new Cell(t.getX(), t.getY()))
+                .sorted(java.util.Comparator.comparingInt(Cell::y).thenComparingInt(Cell::x))
+                .toList();
+    }
+
+    public record Cell(int x, int y) {
+    }
+
+    /**
+     * Прополоть заросшую грядку. Нужны лопата и грабли в сумке (они не тратятся).
+     * Прополотая клетка становится обычной грядкой — на ней можно сажать.
+     */
+    @Transactional
+    public WeedResult weed(long playerId, int x, int y) {
+        players.lockById(playerId).orElseThrow(() -> new NotFoundException("Игрок не найден."));
+        GardenMap map = maps.home();
+        if (!map.contains(x, y)) {
+            throw new InvalidRequestException("Такой клетки в саду нет.");
+        }
+        if (!map.tileAt(x, y).type().equals(OVERGROWN) || map.propAt(x, y) != null) {
+            throw new InvalidRequestException("Здесь нечего полоть.");
+        }
+        if (tiles.existsById(new PlayerTile.Id(playerId, map.key(), (short) x, (short) y))) {
+            throw new ConflictException("Эта грядка уже прополота.");
+        }
+        if (inventoryItems.quantityOf(playerId, WEEDING_TOOLS) < 1) {
+            throw new ConflictException("Голыми руками эти сорняки не взять. Лопата и грабли висят на заборе.");
+        }
+        tiles.saveAndFlush(new PlayerTile(playerId, map.key(), x, y, PlayerTile.WEEDED, clock.instant()));
+        int remaining = map.cellsOfType(OVERGROWN).size() - weeded(playerId).size();
+        return new WeedResult(x, y, remaining);
+    }
+
+    /** Тайл клетки с учётом изменений игрока: прополотая заросшая грядка — уже обычная грядка. */
+    private GardenMap.TileType tileFor(long playerId, GardenMap map, int x, int y) {
+        GardenMap.TileType tile = map.tileAt(x, y);
+        if (tile.type().equals(OVERGROWN) && tiles.existsById(new PlayerTile.Id(playerId, map.key(), (short) x, (short) y))) {
+            return map.tiles().values().stream().filter(t -> t.type().equals(SOIL)).findFirst().orElse(tile);
+        }
+        return tile;
     }
 
     private static GardenObjectView view(GardenObject object, PlantSpecies plant, Instant now) {

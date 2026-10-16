@@ -103,7 +103,7 @@ class MagicApiTests {
 
         cast("awaken_basin")
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.detail").value("«Каменная чаша» уже пробуждена. Повторно тратить ничего не нужно."));
+                .andExpect(jsonPath("$.detail").value("Здесь уже всё сделано: «Каменная чаша». Повторно тратить ничего не нужно."));
 
         assertThat(quantity("shard_emerald")).isEqualTo(2);
         assertThat(quantity("shard_amethyst")).isEqualTo(1);

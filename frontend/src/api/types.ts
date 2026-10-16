@@ -1,6 +1,6 @@
 // Формы ответов backend. Держим их рядом с клиентом и меняем вместе с API.
 
-export type ItemKind = 'CURRENCY' | 'SHARD' | 'SEED' | 'DECOR'
+export type ItemKind = 'CURRENCY' | 'SHARD' | 'SEED' | 'DECOR' | 'TOOL'
 
 export type CrystalCategory = { key: string; name: string; color: string; meaning: string }
 
@@ -25,9 +25,56 @@ export type GardenProp = {
   height: number
   name: string
   description: string
+  /** Дверь в другую локацию */
+  door?: Door | null
+  /** Текст, который можно прочитать (письмо) */
+  read?: string | null
 }
 
-/** Карта сада: строки символов, легенда символов и постройки поверх тайлов */
+/** Дверь: на какую карту, в какую клетку и куда персонаж будет смотреть; label — надпись на кнопке */
+export type Door = {
+  map: string
+  x: number
+  y: number
+  facing: 'up' | 'down' | 'left' | 'right'
+  label: string
+  /** Постройка, которую сначала надо пробудить (калитка в ежевике) */
+  requires?: string | null
+}
+
+/** Житель локации (мышь): стоит в клетке, разговаривает; первый разговор — talks[0], дальше — случайный из остальных */
+export type Npc = {
+  key: string
+  name: string
+  /** Какой спрайт: кадры атласа npc_<kind>_0/1 */
+  kind: string
+  x: number
+  y: number
+  description: string
+  talks: string[]
+  dialogues: Record<string, Dialogue>
+  /** Поручение жителя, если есть */
+  errand?: Errand | null
+}
+
+/**
+ * Поручение жителя: GIVE — отдать вещи, SHOW — показать находку (spot обыскан).
+ * offer — просьба, waiting — пока не сделано, thanks — благодарность. leaves — житель уходит с дороги.
+ */
+export type Errand = {
+  key: string
+  kind: 'GIVE' | 'SHOW'
+  goal: string
+  give: ItemGrant[] | null
+  spot: string | null
+  reward: ItemGrant[] | null
+  offer: string
+  waiting: string
+  thanks: string
+  leaves: boolean
+}
+
+/** Карта локации (сад, сарай изнутри): строки символов, легенда символов и постройки поверх тайлов */
 export type GardenMap = {
   key: string
   name: string
@@ -36,6 +83,8 @@ export type GardenMap = {
   tiles: Record<string, TileType>
   rows: string[]
   props: GardenProp[]
+  /** Жители локации */
+  npcs?: Npc[] | null
 }
 
 /** Магический рецепт: ингредиенты пробуждают постройку с карты (targetObjectKey) */
@@ -45,8 +94,13 @@ export type Recipe = {
   description: string
   targetObjectKey: string
   resultText: string
+  /** Надпись на кнопке: «Пробудить», «Починить»… */
+  actionLabel: string
   ingredients: ItemGrant[]
 }
+
+/** Замок с колёсиками. Правильную комбинацию знает только сервер. */
+export type Puzzle = { key: string; propKey: string; prompt: string; dials: number; symbols: { key: string; name: string }[] }
 
 /** Уникальный коллекционный кристалл */
 export type Artifact = {
@@ -73,7 +127,7 @@ export type DialogueNode = { text: string; next: string | null; choices: { text:
 export type Dialogue = { start: string; onEnd: string | null; gift: ItemGrant[] | null; nodes: Record<string, DialogueNode> }
 
 /** Реплики наставника и обучение — контент с сервера */
-/** Цель стрелки шага: кнопка панели, постройка карты или тип клетки — задано ровно одно */
+/** Цель шага (над ней горит «!»): кнопка панели, постройка карты или тип клетки — задано ровно одно */
 export type TutorialTarget = { hud: string | null; prop: string | null; tile: string | null }
 
 export type MentorContent = {
@@ -81,10 +135,12 @@ export type MentorContent = {
   intro: string
   idle: string[]
   dialogues: Record<string, Dialogue>
-  tutorial: { key: string; goal: string; target: TutorialTarget }[]
-  /** строка задания до знакомства и после выполненного шага */
+  /** offer — разговор, в котором Вереск сам даёт поручение */
+  tutorial: { key: string; goal: string; target: TutorialTarget; offer: string | null }[]
+  /** строка задания до знакомства, после выполненного шага и когда Вереск хочет дать поручение */
   meetGoal: string
   reportGoal: string
+  offerGoal: string | null
 }
 
 export type Catalog = {
@@ -93,7 +149,11 @@ export type Catalog = {
   crystals: CrystalCategory[]
   species: { key: string; name: string; stageMinutes: number[] }[]
   items: CatalogItem[]
+  /** Домашний сад (он же первая из locations) */
   garden: GardenMap
+  /** Все локации: сад, сарай изнутри… */
+  locations: GardenMap[]
+  puzzles: Puzzle[]
   recipes: Recipe[]
   artifacts: Artifact[]
   /** Места находок: к какой постройке привязаны. Содержимое — секрет сервера. */
@@ -132,7 +192,12 @@ export type GameState = {
   inventory: ItemGrant[]
   habits: Habit[]
   dailyRewards: { used: number; limit: number }
-  garden: { objects: GardenObject[] }
+  /** Что растёт в саду и какие заросшие грядки уже прополоты (стали обычными) */
+  garden: { objects: GardenObject[]; weeded: { x: number; y: number }[] }
+  /** Разгаданные загадки */
+  solvedPuzzles: string[]
+  /** Поручения жителей: попросили ли и сделано ли */
+  errands: { key: string; offered: boolean; done: boolean }[]
   /** Пробуждённые объекты мира; нет в списке — объект спит */
   worldObjects: { objectKey: string; state: 'AWAKENED' }[]
   /** Обысканные места находок */
@@ -142,9 +207,10 @@ export type GameState = {
   /** Что наставник скажет при следующем разговоре; null — только случайные фразы */
   mentor: {
     nextDialogue: string | null
-    /** над наставником горит «!» — знакомство или выполненный шаг */
+    /** над наставником горит «!» — знакомство, поручение или выполненный шаг */
     hasNews: boolean
-    steps: { key: string; done: boolean; acknowledged: boolean }[]
+    /** offered — поручение уже дано (у шагов без поручения всегда true) */
+    steps: { key: string; done: boolean; acknowledged: boolean; offered: boolean }[]
   }
 }
 
@@ -207,3 +273,12 @@ export type HabitHistory = {
 }
 
 export type DayCompletionResult = CompletionResult & { historyOnly: boolean }
+
+/** Итог прополки: сколько заросших клеток осталось */
+export type WeedResult = { x: number; y: number; remaining: number }
+
+/** Итог попытки открыть замок: solved — открыт (сейчас или раньше), reward — что получено этой попыткой */
+export type AttemptResult = { puzzleKey: string; solved: boolean; text: string; reward: ItemGrant[] }
+
+/** Итог поручения: что отдано и что получено */
+export type ErrandResult = { key: string; given: ItemGrant[]; reward: ItemGrant[] }

@@ -5,7 +5,8 @@ import { directionFor, type CharacterFrames } from './character'
 import { Fireflies } from './Fireflies'
 import { cellAtPoint, fitScale, inBounds, TILE, type Cell } from './layout'
 import { blockedCells, cellOf, facingCell, walk, walkerAt, type Facing, type Walker } from './movement'
-import { drawGarden, type Scene } from './renderer'
+import { isPlaying, strikeLift } from './effects'
+import { drawGarden, LAMP_LIGHT_UP_MS, lampLevel, type Scene } from './renderer'
 import styles from './GardenCanvas.module.css'
 
 /** Сколько высоты экрана занято вокруг сада: шапка, табличка о клетке, панель кнопок. */
@@ -31,7 +32,7 @@ type Props = {
   standing: Cell[]
   atlas: Atlas
   /** Кадры игрока по направлениям и фазам шага */
-  player: { frames: CharacterFrames; start: Cell }
+  player: { frames: CharacterFrames; start: Cell; facing?: Facing }
   onSelect: (cell: Cell | null) => void
   /** Персонаж перешёл в другую клетку или повернулся к другой клетке */
   onPlayerMove: (at: Cell, facing: Cell) => void
@@ -39,6 +40,8 @@ type Props = {
   onAction: () => void
   /** false — открыто окно или разговор: персонаж стоит, клавиши не перехватываются */
   inputEnabled: boolean
+  /** Помещение: при входе сначала темно, потом зажигается лампа */
+  lightUp?: boolean
 }
 
 const isTyping = (target: EventTarget | null) =>
@@ -55,13 +58,16 @@ const STICK_RADIUS = 48
 const WALK_CYCLE = [1, 0, 2, 0] as const
 const STEP_MS = 130
 
-/** Мягкий ореол вокруг игрока: в сумерках его всегда видно. */
-const PLAYER_AURA = { x: 0, y: -14, radius: 44, strength: 0.5 }
-
 /** Кадр под направление взгляда: влево — боковой кадр, отражённый. */
 function frameFor(frames: CharacterFrames, facing: Facing, step: number) {
   const { direction, flip } = directionFor(facing)
   return { image: frames[direction][step], flip }
+}
+
+/** Пока персонаж полет, он приседает в такт ударам мотыги. */
+function workLift(scene: Scene, time: number): number {
+  const effect = scene.effects?.find((e) => isPlaying(e, time))
+  return effect ? strikeLift(time - effect.at) : 0
 }
 
 const scanlineCache = new Map<number, CanvasPattern | null>()
@@ -95,7 +101,7 @@ export function GardenCanvas(props: Props) {
 
   // Всё, что читает игровой цикл, лежит в ref: цикл не перезапускается на каждый рендер React
   const latest = useRef(props)
-  const walkerRef = useRef<Walker>(walkerAt(player.start))
+  const walkerRef = useRef<Walker>(walkerAt(player.start, player.facing))
   const keysRef = useRef(new Set<string>())
   const stickRef = useRef({ dx: 0, dy: 0 })
   const dirtyRef = useRef(true)
@@ -124,7 +130,8 @@ export function GardenCanvas(props: Props) {
   useEffect(() => {
     const wrap = wrapRef.current
     if (!wrap) return
-    const update = () => setScale(fitScale(wrap.clientWidth, map, window.innerHeight - RESERVED_HEIGHT))
+    // поле игры задаёт высоту обёртки; если её нет (старая раскладка) — берём высоту окна
+    const update = () => setScale(fitScale(wrap.clientWidth, map, wrap.clientHeight || window.innerHeight - RESERVED_HEIGHT))
     const observer = new ResizeObserver(update)
     observer.observe(wrap)
     window.addEventListener('resize', update)
@@ -170,6 +177,8 @@ export function GardenCanvas(props: Props) {
     let lastCell = cellOf(walkerRef.current)
     let lastFacing = facingCell(walkerRef.current)
     latest.current.onPlayerMove(lastCell, lastFacing)
+    // холст создаётся заново при входе в локацию — отсюда и отсчёт «зажигания лампы»
+    const enteredAt = performance.now()
 
     const tick = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000)
@@ -194,8 +203,12 @@ export function GardenCanvas(props: Props) {
         }
       }
 
-      // Стрелка задания покачивается — пока она видна, кадр перерисовывается постоянно
-      const animated = !!p.scene.marker
+      // «!» над целью задания покачивается — пока он виден, кадр перерисовывается постоянно
+      const lighting = !!p.lightUp && now - enteredAt < LAMP_LIGHT_UP_MS + 50
+      const working = (p.scene.effects ?? []).some((e) => isPlaying(e, now))
+      // мыши иногда шевелят ушами — пока они в локации, кадр перерисовывается постоянно
+      const lively = p.scene.characters.some((c) => c.idle)
+      const animated = !!p.scene.marker || lighting || working || lively
       if (moving || animated || dirtyRef.current) {
         dirtyRef.current = moving // после остановки нарисуем ещё один кадр — без подпрыгивания
         draw(moving ? WALK_CYCLE[Math.floor(now / STEP_MS) % WALK_CYCLE.length] : 0, now)
@@ -219,8 +232,11 @@ export function GardenCanvas(props: Props) {
         canvas.style.height = `${cssHeight}px`
       }
       const buffer = (bufferRef.current ??= document.createElement('canvas'))
-      buffer.width = p.map.width * TILE
-      buffer.height = p.map.height * TILE
+      // размер задаём только при смене карты: присваивание width пересоздаёт холст и стоит заметно
+      if (buffer.width !== p.map.width * TILE || buffer.height !== p.map.height * TILE) {
+        buffer.width = p.map.width * TILE
+        buffer.height = p.map.height * TILE
+      }
       const bufferCtx = buffer.getContext('2d')
       if (!bufferCtx) return
 
@@ -228,10 +244,13 @@ export function GardenCanvas(props: Props) {
       const scene: Scene = {
         ...p.scene,
         time,
+        lightLevel: p.lightUp ? lampLevel(time - enteredAt) : 1,
+        // вокруг игрока мягкий ореол: в сумерках его всегда видно
+        aura: { x: w.x, y: w.y },
         characters: [
           ...p.scene.characters,
           // на шаге тело чуть приподнимается — походка пружинит
-          { px: w.x, py: w.y, ...frameFor(p.player.frames, w.facing, step), lift: step ? 1 : 0, light: PLAYER_AURA },
+          { px: w.x, py: w.y, ...frameFor(p.player.frames, w.facing, step), lift: step ? 1 : workLift(p.scene, time) },
         ],
       }
       drawGarden(bufferCtx, p.map, p.atlas, scene)

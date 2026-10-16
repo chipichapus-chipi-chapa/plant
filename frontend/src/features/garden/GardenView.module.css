@@ -1,8 +1,60 @@
-.garden {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
+/*
+ * Игровое поле во весь экран. Сад — в середине (между полосами интерфейса),
+ * задание и счётчик — сверху, описание и кнопки — снизу, поверх темноты вокруг сада.
+ */
+.screen {
+  --hud-top: 64px;
+  --hud-bottom: 92px;
+  position: absolute;
+  inset: 0;
+}
+
+.field {
+  position: absolute;
+  inset: var(--hud-top) var(--space-2) var(--hud-bottom);
+}
+
+.top {
+  position: absolute;
+  inset: var(--space-2) var(--space-3) auto;
+  z-index: 3;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   gap: var(--space-3);
+  pointer-events: none;
+}
+
+.topLeft,
+.topRight {
+  pointer-events: auto;
   min-width: 0;
+}
+
+.topRight {
+  flex: none;
+}
+
+.bottom {
+  position: absolute;
+  inset: auto var(--space-3) var(--space-2);
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  pointer-events: none;
+}
+
+.bottom > * {
+  pointer-events: auto;
+}
+
+/* На узком экране сад выше и уже — кнопкам и заданию хватает места сверху и снизу */
+@media (max-width: 560px) {
+  .screen {
+    --hud-top: 88px;
+    --hud-bottom: 84px;
+  }
 }
 
 .placeholder {
@@ -20,9 +72,11 @@
   box-shadow: 0 0 0 var(--px) var(--c-ink);
 }
 
-/* Подпись под садом — табличка из пергамента */
+/* Табличка о выбранном объекте — над кнопками, поверх нижнего края сада */
 .info {
-  min-height: 3.2em;
+  width: min(640px, 100%);
+  max-height: 40vh;
+  overflow-y: auto;
   padding: var(--space-2) var(--space-3);
   background: var(--paper-texture), var(--c-parchment);
   background-size: var(--paper-size), auto;
@@ -63,4 +117,60 @@
 
 .count {
   color: var(--c-bark);
+}
+
+/* Письмо: бумажные абзацы с отступом, как от руки */
+.letter {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 34em;
+  font-size: var(--text-m);
+  line-height: 1.5;
+}
+
+.letter p {
+  margin: 0;
+}
+
+.letter p:last-child {
+  text-align: right;
+  font-style: italic;
+}
+
+/* Сцена сада: заполняет поле, канвас — по центру; поверх открывается замок крупным планом */
+.stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.infoHidden {
+  display: none;
+}
+
+/* Переход между локациями: экран гаснет и снова проявляется, ступенями, как пиксельный свет */
+.fade {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  background: #070505;
+  pointer-events: none;
+}
+
+.fadeOut {
+  animation: fade-out 350ms steps(5) both;
+}
+
+.fadeIn {
+  animation: fade-in 350ms steps(5) both;
+}
+
+@keyframes fade-out {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fade-in {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }

@@ -5,7 +5,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+import app.wheregrows.errand.ErrandService;
 import app.wheregrows.garden.GardenObjectView;
+import app.wheregrows.garden.GardenService;
 import app.wheregrows.habit.HabitService.DailyRewards;
 import app.wheregrows.habit.HabitView;
 import app.wheregrows.mentor.MentorProgress;
@@ -17,7 +19,8 @@ import app.wheregrows.mentor.MentorProgress;
  */
 record GameStateResponse(Player player, LocalDate today, List<InventoryEntry> inventory, List<HabitView> habits,
                          DailyRewards dailyRewards, Garden garden, List<WorldObject> worldObjects,
-                         List<String> searchedSpots, List<CollectedArtifact> artifacts, MentorProgress mentor) {
+                         List<String> searchedSpots, List<CollectedArtifact> artifacts, MentorProgress mentor,
+                         List<String> solvedPuzzles, List<ErrandService.ErrandState> errands) {
 
     /** Артефакт в коллекции: когда и где найден. Описание — в каталоге. */
     record CollectedArtifact(String key, Instant foundAt, String foundWhere) {
@@ -27,8 +30,11 @@ record GameStateResponse(Player player, LocalDate today, List<InventoryEntry> in
     record WorldObject(String objectKey, String state) {
     }
 
-    /** Что растёт в саду игрока. Карта (общая для всех) — в /api/catalog. */
-    record Garden(List<GardenObjectView> objects) {
+    /**
+     * Что растёт в саду игрока и какие заросшие грядки он уже прополол (они стали обычными).
+     * Карта (общая для всех) — в /api/catalog.
+     */
+    record Garden(List<GardenObjectView> objects, List<GardenService.Cell> weeded) {
     }
 
     /**

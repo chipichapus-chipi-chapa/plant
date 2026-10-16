@@ -29,6 +29,18 @@ class GardenController {
             @NotBlank(message = "Выберите, что посадить.") String seedItemKey) {
     }
 
+    record WeedingRequest(
+            @Min(value = 0, message = "Такой клетки в саду нет.") int x,
+            @Min(value = 0, message = "Такой клетки в саду нет.") int y) {
+    }
+
+    /** Прополоть заросшую грядку (x, y). 201 — прополота; в ответе — сколько заросших клеток осталось. */
+    @PostMapping("/api/garden/weedings")
+    @ResponseStatus(HttpStatus.CREATED)
+    WeedResult weed(@Valid @RequestBody WeedingRequest request) {
+        return service.weed(currentPlayer.id(), request.x(), request.y());
+    }
+
     /** Посадить семя из сумки на грядку (x, y). 201 — посажено; ответ содержит растение со стадией роста. */
     @PostMapping("/api/garden/plantings")
     @ResponseStatus(HttpStatus.CREATED)
