@@ -51,11 +51,11 @@ class PuzzleApiTests {
     @Test
     void catalogShowsTheLockButNotTheAnswer() throws Exception {
         mvc.perform(get("/api/catalog"))
-                .andExpect(jsonPath("$.puzzles", hasSize(1)))
-                .andExpect(jsonPath("$.puzzles[0].propKey").value("toolbox"))
-                .andExpect(jsonPath("$.puzzles[0].dials").value(3))
-                .andExpect(jsonPath("$.puzzles[0].symbols", hasSize(4)))
-                .andExpect(jsonPath("$.puzzles[0].answer").doesNotExist());
+                .andExpect(jsonPath("$.puzzles", hasSize(3)))
+                .andExpect(jsonPath("$.puzzles[?(@.key == 'toolbox_lock')].propKey").value("toolbox"))
+                .andExpect(jsonPath("$.puzzles[?(@.key == 'toolbox_lock')].dials").value(3))
+                .andExpect(jsonPath("$.puzzles[?(@.key == 'season_box')].dials").value(4))
+                .andExpect(jsonPath("$.puzzles[*].answer").isEmpty());
     }
 
     @Test
@@ -83,6 +83,15 @@ class PuzzleApiTests {
                 .andExpect(jsonPath("$.reward").isEmpty());
         assertThat(quantity("repair_kit")).isEqualTo(1);
         mvc.perform(get("/api/state")).andExpect(jsonPath("$.solvedPuzzles[0]").value("toolbox_lock"));
+    }
+
+    @Test
+    void musicBoxGivesALilyBulbThatCanBePlanted() throws Exception {
+        mvc.perform(post("/api/puzzles/season_box/attempts").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"answer\":[\"drop\",\"sun\",\"leaf\",\"moon\"]}"))
+                .andExpect(jsonPath("$.solved").value(true))
+                .andExpect(jsonPath("$.reward[0].itemKey").value("seed_lily"));
+        assertThat(quantity("seed_lily")).isEqualTo(1);
     }
 
     @Test

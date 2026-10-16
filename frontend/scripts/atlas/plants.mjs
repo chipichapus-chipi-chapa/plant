@@ -110,11 +110,38 @@ export function sunflower(stage) {
   return base
 }
 
+/** Розовая лилия из шкатулки поместья: листья с бутоном, потом раскрытый розовый цветок. */
+export function lily(stage) {
+  if (stage === 0) return sprout()
+  const s = new Sprite(PW, PH)
+  const PINK = ['#8f3a62', '#c25a8a', '#e486ad', '#f6b4cf']
+  const top = stage === 1 ? GROUND - 16 : GROUND - 26
+  stem(s, 15, top, GROUND)
+  leaf(s, 10, GROUND - 6, 5, 1.6, 0.1)
+  leaf(s, 21, GROUND - 10, 5, 1.6)
+  if (stage === 1) {
+    s.shadedEllipse(16, top - 2, 2.5, 5, PINK)
+  } else {
+    for (let a = 0; a < 6; a++) {
+      const ang = (a / 6) * Math.PI * 2 - Math.PI / 2
+      for (let t = 0; t <= 1; t += 0.1) s.shadedEllipse(16 + Math.cos(ang) * t * 8, top + Math.sin(ang) * t * 6, 2, 1.6, PINK, { bias: 0.1 - t * 0.2 })
+    }
+    s.shadedEllipse(16, top, 2, 1.6, PINK.slice(0, 2))
+    s.px(15, top - 2, R.lamp[4])
+    s.px(17, top - 2, R.lamp[4])
+  }
+  s.outline(INK)
+  const base = canvas()
+  base.stamp(s)
+  return base
+}
+
 export function plantFrames() {
   const frames = {}
   for (const i of [0, 1, 2]) frames[`plant_radish_${i}`] = radish(i)
   for (const i of [0, 1, 2]) frames[`plant_chamomile_${i}`] = chamomile(i)
   for (const i of [0, 1, 2, 3]) frames[`plant_sunflower_${i}`] = sunflower(i)
+  for (const i of [0, 1, 2]) frames[`plant_lily_${i}`] = lily(i)
   return frames
 }
 
