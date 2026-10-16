@@ -3,7 +3,7 @@ import { ApiError } from '../../api/client'
 import { plantSeed } from '../../api/game'
 import type { Catalog, GameState } from '../../api/types'
 import { frameImage, loadAtlas, type Atlas } from '../../game/atlas'
-import { composeCharacter } from '../../game/character'
+import { composeCharacterFrames } from '../../game/character'
 import { GardenCanvas } from '../../game/GardenCanvas'
 import { isInteractive, markerPoint, promptPoint, type Objective } from '../../game/guidance'
 import { standingAt, type Scene } from '../../game/renderer'
@@ -40,6 +40,9 @@ type Props = {
 }
 
 const STANDING: Cell[] = [MENTOR_SPOT]
+
+/** Фонарь на посохе Вереска — смещение от его ступней; в сумерках он светит тёплым пятном. */
+const MENTOR_LANTERN = { x: 13, y: -35, radius: 46, strength: 0.85 }
 
 const sameCell = (a: Cell, b: Cell) => a.x === b.x && a.y === b.y
 
@@ -87,15 +90,15 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
       objects: state.garden.objects,
       awakened: new Set(state.worldObjects.map((w) => w.objectKey)),
       sparkles: new Set(catalog.spots.filter((spot) => !searched.has(spot.key)).map((spot) => spot.propKey)),
-      characters: mentorImage ? [standingAt(MENTOR_SPOT, mentorImage)] : [],
+      characters: mentorImage ? [standingAt(MENTOR_SPOT, mentorImage, MENTOR_LANTERN)] : [],
       bubbles: state.mentor.hasNews ? [MENTOR_SPOT] : [],
       prompt: facing && isInteractive(facing, state, catalog) ? promptPoint(facing, map) : null,
       marker: objective ? markerPoint(objective.target, map, state) : null,
     }
   }, [atlas, state, catalog, facing, objective, map])
 
-  const playerImage = useMemo(
-    () => (atlas.status === 'ready' ? composeCharacter(atlas.atlas, state.player.appearance, catalog.appearance) : null),
+  const playerFrames = useMemo(
+    () => (atlas.status === 'ready' ? composeCharacterFrames(atlas.atlas, state.player.appearance, catalog.appearance) : null),
     [atlas, state.player.appearance, catalog.appearance],
   )
 
@@ -159,13 +162,13 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
 
   return (
     <section className={styles.garden} aria-label={map.name}>
-      {atlas.status === 'ready' && scene && playerImage ? (
+      {atlas.status === 'ready' && scene && playerFrames ? (
         <GardenCanvas
           map={map}
           scene={scene}
           standing={STANDING}
           atlas={atlas.atlas}
-          player={{ image: playerImage, start: PLAYER_SPOT }}
+          player={{ frames: playerFrames, start: PLAYER_SPOT }}
           onSelect={select}
           onPlayerMove={onPlayerMove}
           onAction={act}

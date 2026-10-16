@@ -2,21 +2,29 @@ import type { GardenMap, GardenObject } from '../api/types'
 import type { Atlas } from './atlas'
 import { TILE, tileFrame, type Cell } from './layout'
 
-/** Кадр персонажа: 40×64, низ — по низу клетки. */
-export const CHARACTER_WIDTH = 40
-export const CHARACTER_HEIGHT = 64
+/** Кадр персонажа: 32×48, низ — по низу клетки. */
+export const CHARACTER_WIDTH = 32
+export const CHARACTER_HEIGHT = 48
 
 export type Highlights = { hover: Cell | null }
 
 /**
- * Персонаж: готовая картинка 32×56 и точка его ступней в логических пикселях.
- * flip — смотрит влево (спрайт нарисован вполоборота вправо), lift — подпрыгивание при ходьбе.
+ * Персонаж: готовая картинка 32×48 и точка его ступней в логических пикселях.
+ * flip — смотрит влево (боковой кадр нарисован вправо), lift — подпрыгивание при ходьбе.
  */
-export type CharacterSprite = { px: number; py: number; image: CanvasImageSource; flip?: boolean; lift?: number }
+export type CharacterSprite = {
+  px: number
+  py: number
+  image: CanvasImageSource
+  flip?: boolean
+  lift?: number
+  /** Свет, который персонаж несёт с собой (фонарь, ореол), — смещение от ступней */
+  light?: Light
+}
 
 /** Персонаж, стоящий в клетке: ступни по центру у нижнего края. */
-export function standingAt(cell: Cell, image: CanvasImageSource): CharacterSprite {
-  return { px: cell.x * TILE + TILE / 2, py: cell.y * TILE + TILE - 2, image }
+export function standingAt(cell: Cell, image: CanvasImageSource, light?: Light): CharacterSprite {
+  return { px: cell.x * TILE + TILE / 2, py: cell.y * TILE + TILE - 2, image, light }
 }
 
 /** Всё, что меняется у игрока: растения, пробуждённые объекты, мерцания, персонажи. */
@@ -38,7 +46,8 @@ export type Scene = {
 /**
  * Рисует сад в логических пикселях (1 тайл = 32). Масштаб задаётся трансформацией контекста,
  * сглаживание выключено — пиксели остаются чёткими.
- * Порядок слоёв: земля → постройки и растения (сверху вниз, чтобы нижние перекрывали верхние) → подсветка.
+ * Порядок слоёв: земля → постройки, растения и персонажи (сверху вниз, чтобы нижние перекрывали верхние)
+ * → сумерки и свет → значки, которые должны читаться в темноте.
  */
 export function drawGarden(
   ctx: CanvasRenderingContext2D,
@@ -56,8 +65,6 @@ export function drawGarden(
       drawFrame(ctx, atlas, tileFrame(map, x, y), x * TILE, y * TILE)
     }
   }
-
-  ctx.drawImage(groundLight(map), 0, 0)
 
   // Постройки и растения рисуем вместе, по нижнему краю: что ближе к зрителю — поверх
   const sprites = [
@@ -80,21 +87,24 @@ export function drawGarden(
   }
   while (next < people.length) drawCharacter(ctx, people[next++])
 
-  // Мерцание над постройками, где ещё что-то спрятано: подсказка «здесь стоит поискать»
+  drawLighting(
+    ctx,
+    map,
+    awakened,
+    characters.flatMap((c) => (c.light ? [{ ...c.light, x: c.px + c.light.x, y: c.py + c.light.y }] : [])),
+  )
+
+  // Всё, что должно читаться в темноте, — после света: мерцание тайников, «!» и стрелка
   for (const prop of map.props) {
     if (sparkles.has(prop.key)) {
       drawFrame(ctx, atlas, 'fx_sparkle', (prop.x + prop.width) * TILE - 10, prop.y * TILE + 1)
     }
   }
-
-  drawEveningLight(ctx, map)
-
-  // «!» рисуем после света, чтобы облачко не тонуло в вечерних тенях
   for (const cell of bubbles) {
-    drawFrame(ctx, atlas, 'fx_bubble', cell.x * TILE + 18, cell.y * TILE - (CHARACTER_HEIGHT - TILE) + 2)
+    drawFrame(ctx, atlas, 'fx_bubble', cell.x * TILE + 12, cell.y * TILE - (CHARACTER_HEIGHT - TILE) - 8)
   }
 
-  if (prompt) drawFrame(ctx, atlas, 'fx_interact', Math.round(prompt.x - 5), Math.round(prompt.y - 15))
+  if (prompt) drawFrame(ctx, atlas, 'fx_interact', Math.round(prompt.x - 3), Math.round(prompt.y - 15))
   if (marker) {
     const bob = Math.round(Math.sin(time / 220) * 2)
     drawFrame(ctx, atlas, 'fx_arrow', Math.round(marker.x - 6), Math.round(marker.y - 13 + bob))
@@ -104,74 +114,104 @@ export function drawGarden(
   if (highlights.hover) drawCorners(ctx, highlights.hover, 'rgba(242, 227, 194, 0.7)')
 }
 
+/** Источник света в логических пикселях: радиус и сила (0..1). */
+export type Light = { x: number; y: number; radius: number; strength: number }
+
 /**
- * «Ламповый» вечерний свет поверх сцены: тёплая подкраска и мягкое затемнение к краям.
- * Рисуется до подсветки клеток, чтобы рамки выбора оставались чёткими.
+ * Свет у построек — смещения от левого верхнего угла постройки. Сарай светится окном и дверью,
+ * у двери свет ещё и падает на землю; пробуждённая чаша мерцает сама.
  */
-function drawEveningLight(ctx: CanvasRenderingContext2D, map: GardenMap) {
-  const w = map.width * TILE
-  const h = map.height * TILE
-  ctx.save()
-  ctx.globalCompositeOperation = 'soft-light'
-  ctx.fillStyle = 'rgba(255, 176, 96, 0.35)'
-  ctx.fillRect(0, 0, w, h)
-  ctx.globalCompositeOperation = 'source-over'
-  const vignette = ctx.createRadialGradient(w * 0.55, h * 0.4, h * 0.25, w / 2, h / 2, w * 0.62)
-  vignette.addColorStop(0, 'rgba(255, 207, 122, 0.06)')
-  vignette.addColorStop(0.6, 'rgba(36, 27, 19, 0)')
-  vignette.addColorStop(1, 'rgba(36, 27, 19, 0.38)')
-  ctx.fillStyle = vignette
-  ctx.fillRect(0, 0, w, h)
-  ctx.restore()
+const PROP_LIGHTS: Record<string, [number, number, number, number][]> = {
+  shed: [
+    [29, 63, 40, 0.85],
+    [83, 72, 50, 1],
+    [83, 102, 38, 0.75],
+  ],
+  basin_awakened: [[16, 14, 40, 0.8]],
 }
 
-const groundCache = new Map<string, HTMLCanvasElement>()
+function propLights(map: GardenMap, awakened: ReadonlySet<string>): Light[] {
+  return map.props.flatMap((p) => {
+    const key = awakened.has(p.key) ? `${p.kind}_awakened` : p.kind
+    return (PROP_LIGHTS[key] ?? []).map(([dx, dy, radius, strength]) => ({ x: p.x * TILE + dx, y: p.y * TILE + dy, radius, strength }))
+  })
+}
+
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => (v + 0.5) / 16)
+
+/** Темнота без света: в середине сада сумерки, к краям — почти ночь, как в лесу Inscryption. */
+const AMBIENT_CENTER = 0.32
+const AMBIENT_EDGE = 0.8
+
+type StaticLight = { key: string; ambient: Float32Array; light: Float32Array; canvas: HTMLCanvasElement; image: ImageData }
+let staticLight: StaticLight | null = null
 
 /**
- * Крупные мягкие пятна света и тени по всему саду, как солнце сквозь листву на референсе.
- * Считаются один раз на карту; дизеринг 4×4 вместо прозрачности сохраняет пиксельность.
+ * Сумерки и свет. Темнота и тёплые ореолы ложатся ступенями через матрицу Байера —
+ * без плавных градиентов, чтобы свет оставался пиксельным. Неподвижный свет считается один раз,
+ * подвижный (фонарь в руке, ореол игрока) добавляется каждый кадр только в своём квадрате.
  */
-function groundLight(map: GardenMap): HTMLCanvasElement {
-  const cached = groundCache.get(map.key)
-  if (cached) return cached
+function drawLighting(ctx: CanvasRenderingContext2D, map: GardenMap, awakened: ReadonlySet<string>, moving: Light[]) {
   const w = map.width * TILE
   const h = map.height * TILE
-  const canvas = document.createElement('canvas')
-  canvas.width = w
-  canvas.height = h
-  const ctx = canvas.getContext('2d')!
-  const img = ctx.createImageData(w, h)
-  const bayer = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
+  const key = `${map.key}|${[...awakened].sort().join(',')}`
+  if (staticLight?.key !== key) {
+    const ambient = new Float32Array(w * h)
+    const light = new Float32Array(w * h)
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++) {
+        const nx = (x - w / 2) / (w / 2)
+        const ny = (y - h * 0.45) / (h / 2)
+        const edge = Math.min(1, Math.max(0, Math.hypot(nx * 0.85, ny) - 0.35) / 0.75)
+        ambient[y * w + x] = AMBIENT_CENTER + (AMBIENT_EDGE - AMBIENT_CENTER) * edge * edge
+      }
+    for (const l of propLights(map, awakened)) addLight(light, w, h, l)
+    const canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+    staticLight = { key, ambient, light, canvas, image: new ImageData(w, h) }
+  }
+  const { ambient, light, canvas, image } = staticLight
+  const total = moving.length ? light.slice() : light
+  for (const l of moving) addLight(total, w, h, l)
+
+  const data = image.data
   for (let y = 0; y < h; y++)
     for (let x = 0; x < w; x++) {
-      const n = smoothNoise(x / 70, y / 55) * 0.7 + smoothNoise(x / 23 + 40, y / 19) * 0.3
-      const threshold = (bayer[(y % 4) * 4 + (x % 4)] + 0.5) / 16
-      const i = (y * w + x) * 4
-      if (n > 0.62 && (n - 0.62) * 4 > threshold) {
-        img.data.set([255, 236, 170, 38], i) // солнечное пятно
-      } else if (n < 0.36 && (0.36 - n) * 4 > threshold) {
-        img.data.set([30, 34, 14, 40], i) // тень от невидимых деревьев
+      const i = y * w + x
+      const lit = Math.min(1, total[i])
+      const threshold = BAYER[(y & 3) * 4 + (x & 3)]
+      // темнота: 5 ступеней, свет её съедает
+      const dark = Math.floor(ambient[i] * (1 - lit) * 4 + threshold) / 4
+      const o = i * 4
+      if (lit > 0.35 && Math.floor((lit - 0.35) * 3 + threshold) > 0) {
+        data[o] = 255
+        data[o + 1] = 168
+        data[o + 2] = 72
+        data[o + 3] = 34 // тёплый отсвет лампы
+      } else {
+        data[o] = 8
+        data[o + 1] = 7
+        data[o + 2] = 12
+        data[o + 3] = Math.round(dark * 0.92 * 255)
       }
     }
-  ctx.putImageData(img, 0, 0)
-  groundCache.set(map.key, canvas)
-  return canvas
+  const lctx = canvas.getContext('2d')!
+  lctx.putImageData(image, 0, 0)
+  ctx.drawImage(canvas, 0, 0)
 }
 
-function smoothNoise(x: number, y: number): number {
-  const hash = (i: number, j: number) => {
-    let h = (i * 374761393 + j * 668265263) >>> 0
-    h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0
-    return ((h ^ (h >>> 16)) >>> 0) / 4294967296
-  }
-  const x0 = Math.floor(x)
-  const y0 = Math.floor(y)
-  const s = (t: number) => t * t * (3 - 2 * t)
-  const tx = s(x - x0)
-  const ty = s(y - y0)
-  const a = hash(x0, y0) + (hash(x0 + 1, y0) - hash(x0, y0)) * tx
-  const b = hash(x0, y0 + 1) + (hash(x0 + 1, y0 + 1) - hash(x0, y0 + 1)) * tx
-  return a + (b - a) * ty
+/** Прибавить свет одного источника: мягкий спад к краю радиуса. */
+function addLight(target: Float32Array, w: number, h: number, l: Light) {
+  const x0 = Math.max(0, Math.floor(l.x - l.radius))
+  const x1 = Math.min(w - 1, Math.ceil(l.x + l.radius))
+  const y0 = Math.max(0, Math.floor(l.y - l.radius))
+  const y1 = Math.min(h - 1, Math.ceil(l.y + l.radius))
+  for (let y = y0; y <= y1; y++)
+    for (let x = x0; x <= x1; x++) {
+      const d = Math.hypot(x - l.x, y - l.y) / l.radius
+      if (d < 1) target[y * w + x] += (1 - d) * (1 - d) * 1.6 * l.strength
+    }
 }
 
 function drawCharacter(ctx: CanvasRenderingContext2D, c: CharacterSprite) {

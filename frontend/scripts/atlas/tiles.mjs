@@ -1,8 +1,8 @@
-// Земля 32×32: трава, сорняки, тропа и грядки с краями по соседям, забор и калитка.
-// Края: маска соседей того же типа — N=1, E=2, S=4, W=8. Где соседа нет, трава наползает на тропу,
-// а у грядки появляется бортик. Так тропа и грядки выглядят цельными, а не набором квадратов.
+// Земля 32×32 в духе Inscryption: тёмная трава горизонтальными штрихами, утоптанная земля тропы
+// с голубыми камешками, грядки в деревянном бортике. Края — по маске соседей того же типа
+// (N=1, E=2, S=4, W=8): где соседа нет, трава рваной кромкой наползает на тропу, а у грядки бортик.
 
-import { bayer, noise, pick, rng, Sprite } from './canvas.mjs'
+import { checker, noise, pick, rng, Sprite } from './canvas.mjs'
 import { INK, P, R } from './palette.mjs'
 
 export const T = 32
@@ -11,39 +11,73 @@ const E = 2
 const S = 4
 const W = 8
 
-// --- Трава --------------------------------------------------------------------------------
+const hash = (x, y, seed) => {
+  let h = (x * 374761393 + y * 668265263 + seed * 2246822519) >>> 0
+  h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296
+}
 
-/** Заливка травой: мелкая фактура + пучки травинок + редкие цветочки и камешки. */
-export function grassFill(s, seed, { flowers = true } = {}) {
+/**
+ * Штрихи травы: каждая строка разбита на отрезки со своим тоном, отрезки соседних строк сдвинуты.
+ * Всё с периодом 32 — тайлы стыкуются без шва.
+ */
+function streak(x, y, seed) {
+  const row = ((y % T) + T) % T
+  const shift = Math.floor(hash(row, 0, seed) * T)
+  const a = Math.floor(((((x + shift) % T) + T) % T) / 4)
+  const b = Math.floor(((((x + shift * 3) % T) + T) % T) / 8)
+  return hash(a, row, seed + 1) * 0.6 + hash(b, row, seed + 2) * 0.4
+}
+
+/** Пучок травинок «ʌʌ»: тёмный корень, светлые кончики, свой контур — читается на тёмной траве. */
+export function tuft(s, x, y, r, ramp = R.weed, size = 1) {
+  const t = new Sprite(s.w, s.h)
+  const blades = 3 + Math.floor(r() * 2) + size
+  for (let i = 0; i < blades; i++) {
+    const bx = Math.round(x + (i - blades / 2) * 1.5)
+    const h = 2 + Math.floor(r() * 2) + size + (i % 2 ? 0 : 1)
+    const lean = i < blades / 2 ? -1 : 1
+    for (let k = 0; k < h; k++) {
+      const px = bx + (k === h - 1 ? lean : 0)
+      t.px(px, y - k, k === h - 1 ? ramp[ramp.length - 1] : k === 0 ? ramp[1] : ramp[ramp.length - 2])
+    }
+  }
+  t.outline(INK)
+  s.stamp(t)
+}
+
+/** Заливка травой: штрихи + редкие пучки, бледные цветочки и камешки. */
+export function grassFill(s, seed, { extras = true } = {}) {
   const r = rng(seed)
   for (let y = 0; y < T; y++)
     for (let x = 0; x < T; x++) {
-      // основа общая для всех вариантов и бесшовная (период 32) — на стыках клеток нет шахматки
-      const n = noise(x, y, 8, 100, T) * 0.65 + noise(x, y, 16, 101, T) * 0.35
-      s.px(x, y, pick(R.grass.slice(2, 5), Math.min(0.999, Math.max(0, (n - 0.2) * 1.4)), x, y))
+      const v = streak(x, y, 100)
+      const tone = v > 0.8 ? 3 : v > 0.62 ? 2 : v < 0.14 ? 0 : 1
+      // на границе тонов — шахматка, как в листве Inscryption
+      const edge = v > 0.56 && v <= 0.62 && checker(x, y)
+      s.px(x, y, R.grass[edge ? 2 : tone])
     }
-  // пучки: 2–3 травинки, тёмное основание, светлый кончик
-  for (let i = 0; i < 9; i++) {
-    const x = Math.floor(r() * T)
-    const y = Math.floor(r() * (T - 4)) + 4
-    for (let b = 0; b < 3; b++) {
-      const bx = x + b - 1
-      const h = 2 + Math.floor(r() * 3)
-      for (let k = 0; k < h; k++) s.px(bx + (k === h - 1 && b !== 1 ? (b === 0 ? -1 : 1) : 0), y - k, k === 0 ? R.grass[0] : k === h - 1 ? R.grass[5] : R.grass[2])
-    }
-  }
-  if (flowers && r() > 0.45) {
+  if (!extras) return
+  for (let i = 0; i < 2; i++) tuft(s, 4 + r() * 24, 8 + r() * 20, r, R.grass, 0)
+  if (r() > 0.5) {
     const fx = 4 + Math.floor(r() * 24)
     const fy = 4 + Math.floor(r() * 24)
-    s.px(fx, fy, r() > 0.5 ? '#efe4b0' : '#e7c86a')
-    s.px(fx, fy + 1, R.grass[1])
+    s.px(fx, fy, r() > 0.5 ? R.bone[2] : R.lamp[3])
+    s.px(fx, fy + 1, R.grass[0])
   }
-  if (r() > 0.6) {
-    const px = 3 + Math.floor(r() * 26)
-    const py = 3 + Math.floor(r() * 26)
-    s.px(px, py, R.stone[4])
-    s.px(px + 1, py, R.stone[3])
-    s.px(px, py + 1, R.stone[1])
+  if (r() > 0.55) pebble(s, 3 + Math.floor(r() * 26), 3 + Math.floor(r() * 26))
+}
+
+/** Камешек: голубоватый, светлый верх, тёмный низ — как на тропах Inscryption. */
+function pebble(s, x, y, big = false) {
+  s.px(x, y, R.stone[4])
+  s.px(x + 1, y, R.stone[3])
+  s.px(x, y + 1, R.stone[2])
+  s.px(x + 1, y + 1, R.stone[1])
+  if (big) {
+    s.px(x + 2, y, R.stone[3])
+    s.px(x + 2, y + 1, R.stone[1])
+    s.px(x + 1, y - 1, R.stone[5])
   }
 }
 
@@ -53,34 +87,20 @@ export function grass(seed) {
   return s
 }
 
-/** Высокий пучок сорняка: веер травинок с наклоном, тень у корня, семенные головки. */
-export function weedClump(s, x, y, r, ramp = R.weed) {
-  s.ellipse(x, y + 1, 4, 1.4, '#1f2412', 70)
-  const blades = 5 + Math.floor(r() * 3)
-  for (let i = 0; i < blades; i++) {
-    const lean = (i - blades / 2) * 0.45 + (r() - 0.5)
-    const h = 5 + Math.floor(r() * 6)
-    for (let k = 0; k < h; k++) {
-      const t = k / h
-      s.px(x + lean * t * 3, y - k, ramp[Math.min(ramp.length - 1, Math.floor(t * ramp.length))])
-    }
-    if (r() > 0.6) s.px(x + lean * 3, y - h, R.grass[5])
-  }
-}
-
 export function weeds(seed) {
-  const s = grass(seed)
+  const s = new Sprite(T, T)
+  grassFill(s, seed, { extras: false })
   const r = rng(seed * 7 + 3)
-  for (let i = 0; i < 3; i++) weedClump(s, 5 + r() * 22, 10 + r() * 20, r)
+  for (let i = 0; i < 4; i++) tuft(s, 5 + r() * 22, 8 + r() * 22, r, R.weed, 1 + Math.floor(r() * 2))
   return s
 }
 
 // --- Края по соседям ----------------------------------------------------------------------
 
-/** Насколько глубоко трава наползает на клетку у края без соседа (0 — края нет). */
+/** Насколько глубоко трава наползает на клетку у края без соседа (−∞ — края нет). */
 function edgeDepth(x, y, mask, seed) {
-  const wobble = (v) => 3 + Math.floor(noise(v, 0, 3, seed, T) * 3)
-  let d = -Infinity // нет открытых краёв — нет и травы/бортика
+  const wobble = (v) => 2 + Math.floor(noise(v, 0, 3, seed, T) * 4)
+  let d = -Infinity
   if (!(mask & N)) d = Math.max(d, wobble(x) - y)
   if (!(mask & S)) d = Math.max(d, wobble(x + 40) - (T - 1 - y))
   if (!(mask & W)) d = Math.max(d, wobble(y + 80) - x)
@@ -88,165 +108,133 @@ function edgeDepth(x, y, mask, seed) {
   return d
 }
 
-/** Тропа: утоптанная земля с камешками; у краёв без соседей — наползающая трава. */
+const pixelOf = (sprite, x, y) => {
+  const i = (y * sprite.w + x) * 4
+  return '#' + [0, 1, 2].map((k) => sprite.data[i + k].toString(16).padStart(2, '0')).join('')
+}
+
+/** Тропа: утоптанная тёмная земля пятнами, камешки; у краёв без соседей — рваная кромка травы. */
 export function path(mask, seed = 300) {
   const s = new Sprite(T, T)
   const r = rng(seed + mask)
   for (let y = 0; y < T; y++)
     for (let x = 0; x < T; x++) {
-      const n = noise(x, y, 5, seed, T) * 0.6 + noise(x, y, 2, seed + 9, T) * 0.4
-      s.px(x, y, pick(R.path.slice(1, 5), n, x, y))
+      const n = noise(x, y, 6, seed, T) * 0.7 + noise(x, y, 3, seed + 9, T) * 0.3
+      s.px(x, y, pick(R.dirt.slice(2, 5), n * 0.9, x, y))
     }
-  // колея посередине чуть темнее
-  for (let i = 0; i < 6; i++) {
-    const x = 3 + r() * 26
-    const y = 3 + r() * 26
-    s.px(x, y, R.stone[4])
-    s.px(x + 1, y, R.stone[3])
-    s.px(x, y + 1, R.path[0])
-    s.px(x + 1, y + 1, R.path[1])
-  }
-  // трава по краям
+  for (let i = 0; i < 3; i++) pebble(s, 4 + Math.floor(r() * 23), 4 + Math.floor(r() * 23), r() > 0.6)
   const grassLayer = new Sprite(T, T)
-  grassFill(grassLayer, seed + 50 + mask, { flowers: false })
+  grassFill(grassLayer, seed + 50 + mask, { extras: false })
   for (let y = 0; y < T; y++)
     for (let x = 0; x < T; x++) {
       const d = edgeDepth(x, y, mask, seed)
-      if (d > 0) {
-        const i = (y * T + x) * 4
-        const hex = '#' + [0, 1, 2].map((k) => grassLayer.data[i + k].toString(16).padStart(2, '0')).join('')
-        s.px(x, y, hex)
-      } else if (d > -2) {
-        s.px(x, y, R.path[0], 90) // тень под кромкой травы
-      }
+      if (d > 1) s.px(x, y, pixelOf(grassLayer, x, y))
+      else if (d > 0) s.px(x, y, checker(x, y) ? pixelOf(grassLayer, x, y) : R.dirt[1])
+      else if (d > -2) s.px(x, y, R.dirt[1]) // тень под кромкой травы
     }
   return s
 }
 
-/** Грядка: борозды с гребнями и комьями; у краёв без соседей — бортик и трава снаружи. */
+/** Грядка: тёмные борозды; у краёв без соседей — деревянный бортик с контуром. */
 export function soil(mask, overgrown = false, seed = 400) {
   const s = new Sprite(T, T)
   const r = rng(seed + mask * 3 + (overgrown ? 99 : 0))
   for (let y = 0; y < T; y++)
     for (let x = 0; x < T; x++) {
-      const row = (y + 2) % 8
-      // гребень: светлый верх, тёмная ложбина
-      const base = row < 1 ? 5 : row < 3 ? 4 : row < 6 ? 3 : 2
+      const row = (y + 1) % 6
+      const tone = row === 0 ? 4 : row < 3 ? 3 : row < 4 ? 2 : 1
+      // гребни неровные: изредка комок светлее или ямка темнее
       const n = noise(x, y, 3, seed, T)
-      s.px(x, y, R.soil[Math.max(1, Math.min(5, base + (n > 0.75 ? 1 : n < 0.2 ? -1 : 0)))])
+      s.px(x, y, R.soil[Math.max(0, Math.min(4, tone + (n > 0.8 ? 1 : n < 0.15 ? -1 : 0)))])
     }
-  for (let i = 0; i < 10; i++) {
-    const x = r() * 30
-    const y = r() * 30
-    s.px(x, y, R.soil[5])
-    s.px(x + 1, y + 1, R.soil[1])
-  }
-  // бортик и трава снаружи
-  const grassLayer = new Sprite(T, T)
-  grassFill(grassLayer, seed + 70 + mask, { flowers: false })
+  // бортик: доски по краям, где нет соседней грядки
+  const B = 4
+  const horizontalEdge = (y) => (!(mask & N) && y < B) || (!(mask & S) && y >= T - B)
+  const border = (x, y) => horizontalEdge(y) || (!(mask & W) && x < B) || (!(mask & E) && x >= T - B)
   for (let y = 0; y < T; y++)
     for (let x = 0; x < T; x++) {
-      const d = edgeDepth(x, y, mask, seed + 5)
-      if (d > 1) {
-        const i = (y * T + x) * 4
-        s.px(x, y, '#' + [0, 1, 2].map((k) => grassLayer.data[i + k].toString(16).padStart(2, '0')).join(''))
-      } else if (d > -1) {
-        // бортик: светлый сверху-слева, тёмный снизу-справа
-        const top = !(mask & N) && y < 8
-        const left = !(mask & W) && x < 8
-        s.px(x, y, top || left ? R.soil[5] : R.soil[0])
-      }
+      if (!border(x, y)) continue
+      const top = (!(mask & N) && y === 0) || (!(mask & W) && x === 0)
+      const outer = (!(mask & N) && y === 0) || (!(mask & S) && y === T - 1) || (!(mask & W) && x === 0) || (!(mask & E) && x === T - 1)
+      const inner = (!(mask & N) && y === B - 1) || (!(mask & S) && y === T - B) || (!(mask & W) && x === B - 1) || (!(mask & E) && x === T - B)
+      const seam = (horizontalEdge(y) ? x : y) % 16 === 15
+      s.px(x, y, outer ? INK : inner || seam ? R.wood[1] : top ? R.wood[4] : R.wood[3])
     }
-  if (overgrown) {
-    for (let i = 0; i < 90; i++) {
-      const x = r() * T
-      const y = r() * T
-      s.px(x, y, pick(R.weed, r(), Math.floor(x), Math.floor(y)))
+  // тень бортика на землю
+  for (let y = 0; y < T; y++)
+    for (let x = 0; x < T; x++) {
+      if (border(x, y)) continue
+      if ((!(mask & N) && y === B) || (!(mask & W) && x === B)) s.px(x, y, R.soil[0])
     }
-    for (let i = 0; i < 6; i++) weedClump(s, 4 + r() * 24, 7 + r() * 24, r)
-  }
+  if (overgrown) for (let i = 0; i < 5; i++) tuft(s, 7 + r() * 18, 9 + r() * 18, r, R.weed, 1 + Math.floor(r() * 2))
+  else if (r() > 0.5) s.px(6 + r() * 20, 6 + r() * 20, R.stone[3])
   return s
 }
 
 // --- Забор и калитка -----------------------------------------------------------------------
 
-/** Доска штакетника с волокнами, гвоздём и мхом у земли. */
+/** Доска штакетника: заострённый верх, тёмная трещина, иногда мох у земли. */
 function plank(s, x, top, bottom, r) {
-  const ramp = R.oldWood
   for (let y = top; y <= bottom; y++)
-    for (let i = 0; i < 4; i++) {
-      const tone = i === 0 ? 4 : i === 3 ? 1 : 3 - (noise(x + i, y, 3, 77, 1e9) > 0.6 ? 1 : 0)
-      s.px(x + i, y, ramp[tone])
-    }
-  // заострённый срез сверху
+    for (let i = 0; i < 4; i++) s.px(x + i, y, R.oldWood[i === 0 ? 4 : i === 3 ? 1 : 3 - (noise(x + i, y, 3, 77, 1e9) > 0.65 ? 1 : 0)])
   s.clear(x, top)
   s.clear(x + 3, top)
-  s.px(x + 1, top - 1, ramp[4])
-  s.px(x + 2, top - 1, ramp[3])
-  // волокна
-  for (let k = 0; k < 2; k++) {
-    const gy = top + 4 + Math.floor(r() * (bottom - top - 8))
-    s.px(x + 1 + Math.floor(r() * 2), gy, ramp[1])
-    s.px(x + 1 + Math.floor(r() * 2), gy + 1, ramp[1])
-  }
+  s.px(x + 1, top - 1, R.oldWood[4])
+  s.px(x + 2, top - 1, R.oldWood[3])
+  const crack = top + 4 + Math.floor(r() * (bottom - top - 8))
+  s.rect(x + 1 + Math.floor(r() * 2), crack, 1, 3, R.oldWood[0])
   if (r() > 0.55) s.rect(x, bottom - 2, 4, 3, R.weed[2])
-  if (r() > 0.7) s.px(x + 1, top + 6, R.rust[2])
 }
 
 export function fenceHorizontal(seed = 600) {
   const s = new Sprite(T, T)
-  grassFill(s, seed)
+  grassFill(s, seed, { extras: false })
   const r = rng(seed)
   const pickets = new Sprite(T, T)
   for (let x = 0; x < T; x += 6) plank(pickets, x + 1, 4 + Math.floor(r() * 3), 27, r)
-  // поперечина с тенью
   for (let x = 0; x < T; x++) {
     pickets.px(x, 12, R.oldWood[4])
     pickets.px(x, 13, R.oldWood[2])
     pickets.px(x, 14, R.oldWood[1])
   }
-  for (let x = 2; x < T; x += 6) pickets.px(x + 1, 13, R.stone[4]) // гвозди
   pickets.outline(INK)
-  s.shadow(16, 29, 16, 2, 90)
+  s.shadow(16, 29, 16, 2)
   s.stamp(pickets)
   return s
 }
 
 export function fenceVertical(seed = 601) {
   const s = new Sprite(T, T)
-  grassFill(s, seed)
+  grassFill(s, seed, { extras: false })
   const post = new Sprite(T, T)
   for (let y = 0; y < T; y++)
     for (let x = 13; x < 19; x++) post.px(x, y, R.oldWood[x === 13 ? 4 : x === 18 ? 1 : 3 - ((y + x) % 7 === 0 ? 1 : 0)])
-  for (let y = 4; y < T; y += 10) {
-    post.rect(13, y, 6, 1, R.oldWood[0])
-    post.px(15, y + 1, R.stone[4])
-  }
+  for (let y = 4; y < T; y += 10) post.rect(13, y, 6, 1, R.oldWood[0])
   post.outline(INK)
-  s.ellipse(20, 16, 3, 16, '#1f2412', 70)
+  s.ellipse(20, 16, 3, 16, '#050403', 120)
   s.stamp(post)
   return s
 }
 
 export function fencePost(seed = 602) {
   const s = new Sprite(T, T)
-  grassFill(s, seed)
+  grassFill(s, seed, { extras: false })
   const post = new Sprite(T, T)
-  for (let y = 3; y < 28; y++) for (let x = 11; x < 21; x++) post.px(x, y, R.oldWood[x < 13 ? 5 : x > 18 ? 1 : 3])
-  post.rect(11, 3, 10, 2, R.oldWood[5])
+  for (let y = 3; y < 28; y++) for (let x = 11; x < 21; x++) post.px(x, y, R.oldWood[x < 13 ? 4 : x > 18 ? 1 : 3])
+  post.rect(11, 3, 10, 2, R.oldWood[4])
   post.rect(12, 26, 8, 2, R.weed[2])
   post.outline(INK)
-  s.shadow(18, 28, 8, 2, 90)
+  s.shadow(18, 28, 8, 2)
   s.stamp(post)
   return s
 }
 
-/** Калитка: створка поперёк столба; закрыта — оплетена ежевикой с ягодами. */
+/** Калитка: створка поперёк столба; закрыта — оплетена ежевикой с алыми ягодами. */
 export function gate(open, seed = 700) {
   const s = fenceVertical(seed)
   const r = rng(seed + (open ? 1 : 0))
   if (open) {
-    for (let y = 6; y < 28; y++) for (let x = 12; x < 20; x++) s.px(x, y, pick(R.path.slice(2), noise(x, y, 3, 5, T), x, y))
+    for (let y = 6; y < 28; y++) for (let x = 12; x < 20; x++) s.px(x, y, pick(R.dirt.slice(2), noise(x, y, 3, 5, T), x, y))
     const leaf = new Sprite(T, T)
     for (let y = 3; y < 29; y++) for (let x = 21; x < 26; x++) leaf.px(x, y, R.oldWood[x === 21 ? 4 : x === 25 ? 1 : 3])
     leaf.outline(INK)
@@ -261,23 +249,31 @@ export function gate(open, seed = 700) {
   door.rect(7, 21, 18, 1, R.oldWood[1])
   door.outline(INK)
   s.stamp(door)
-  // ежевика: плети, листья, ягоды
-  for (let i = 0; i < 6; i++) {
+  // ежевика: колючие плети, листья, ягоды
+  const bramble = new Sprite(T, T)
+  for (let i = 0; i < 7; i++) {
     let x = 4 + r() * 24
     let y = 4 + r() * 24
-    for (let k = 0; k < 9; k++) {
-      s.px(x, y, R.bramble[k % 2 ? 1 : 2])
+    for (let k = 0; k < 10; k++) {
+      bramble.px(x, y, R.bramble[3])
       x += r() * 2 - 1
       y += r() * 2 - 1
     }
   }
-  for (let i = 0; i < 14; i++) s.px(4 + r() * 24, 4 + r() * 24, R.leaf[r() > 0.5 ? 2 : 3])
+  for (let i = 0; i < 16; i++) {
+    const x = 4 + r() * 24
+    const y = 4 + r() * 24
+    bramble.px(x, y, R.leaf[3])
+    bramble.px(x + 1, y, R.leaf[2])
+  }
+  bramble.outline(INK)
+  s.stamp(bramble)
   for (let i = 0; i < 7; i++) {
     const x = 6 + r() * 20
     const y = 6 + r() * 20
-    s.px(x, y, R.berry[1])
-    s.px(x + 1, y, R.berry[2])
-    s.px(x, y - 1, R.berry[3])
+    s.px(x, y, R.berry[2])
+    s.px(x + 1, y, R.berry[3])
+    s.px(x, y - 1, R.berry[4])
   }
   return s
 }
@@ -300,4 +296,4 @@ export function tileFrames() {
   return frames
 }
 
-export { bayer, P }
+export { P }

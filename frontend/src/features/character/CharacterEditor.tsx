@@ -3,7 +3,8 @@ import { ApiError } from '../../api/client'
 import { saveProfile } from '../../api/game'
 import type { Catalog, GameState } from '../../api/types'
 import { loadAtlas, type Atlas } from '../../game/atlas'
-import { composeCharacter, type Appearance } from '../../game/character'
+import { composeCharacter, type Appearance, type Direction } from '../../game/character'
+import { CHARACTER_HEIGHT, CHARACTER_WIDTH } from '../../game/renderer'
 import { Button } from '../../ui/Button'
 import styles from './CharacterEditor.module.css'
 
@@ -16,6 +17,14 @@ type Props = {
   onCancel: () => void
 }
 
+/** Повороты превью по кругу: лицом, правым боком, спиной, левым боком. */
+const TURNS: { direction: Direction; flip: boolean }[] = [
+  { direction: 'down', flip: false },
+  { direction: 'side', flip: false },
+  { direction: 'up', flip: false },
+  { direction: 'side', flip: true },
+]
+
 /** Создание и изменение персонажа: живое превью, имя, варианты по слотам из каталога. */
 export function CharacterEditor({ state, catalog, firstTime, onDone, onCancel }: Props) {
   const [name, setName] = useState(firstTime ? '' : state.player.displayName)
@@ -24,6 +33,7 @@ export function CharacterEditor({ state, catalog, firstTime, onDone, onCancel }:
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const previewRef = useRef<HTMLCanvasElement>(null)
+  const [turn, setTurn] = useState(0)
 
   useEffect(() => {
     let active = true
@@ -36,9 +46,16 @@ export function CharacterEditor({ state, catalog, firstTime, onDone, onCancel }:
   useEffect(() => {
     const ctx = previewRef.current?.getContext('2d')
     if (!ctx || !atlas) return
-    ctx.clearRect(0, 0, 40, 64)
-    ctx.drawImage(composeCharacter(atlas, look, catalog.appearance), 0, 0)
-  }, [atlas, look, catalog.appearance])
+    const { direction, flip } = TURNS[turn]
+    ctx.clearRect(0, 0, CHARACTER_WIDTH, CHARACTER_HEIGHT)
+    ctx.save()
+    if (flip) {
+      ctx.translate(CHARACTER_WIDTH, 0)
+      ctx.scale(-1, 1)
+    }
+    ctx.drawImage(composeCharacter(atlas, look, catalog.appearance, { direction, step: 0 }), 0, 0)
+    ctx.restore()
+  }, [atlas, look, catalog.appearance, turn])
 
   const choose = (slot: string, option: string) => setLook((current) => ({ ...current, [slot]: option }))
 
@@ -82,10 +99,21 @@ export function CharacterEditor({ state, catalog, firstTime, onDone, onCancel }:
       )}
       <div className={styles.layout}>
         <div className={styles.preview}>
-          <canvas ref={previewRef} width={40} height={64} className={styles.canvas} aria-label="Как выглядит персонаж" />
-          <Button onClick={randomize} className={styles.random}>
-            Случайный облик
-          </Button>
+          <canvas
+            ref={previewRef}
+            width={CHARACTER_WIDTH}
+            height={CHARACTER_HEIGHT}
+            className={styles.canvas}
+            aria-label="Как выглядит персонаж"
+          />
+          <div className={styles.previewButtons}>
+            <Button onClick={() => setTurn((t) => (t + 1) % TURNS.length)} className={styles.random}>
+              Повернуть
+            </Button>
+            <Button onClick={randomize} className={styles.random}>
+              Случайный облик
+            </Button>
+          </div>
         </div>
 
         <div className={styles.fields}>

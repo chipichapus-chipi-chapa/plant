@@ -9,7 +9,7 @@
   display: grid;
   place-items: center;
   width: 100%;
-  background: var(--w-withered-grass);
+  background: radial-gradient(ellipse at 50% 45%, var(--c-night-grass), var(--c-night) 75%);
   box-shadow: 0 0 0 var(--px) var(--c-ink);
 }
 

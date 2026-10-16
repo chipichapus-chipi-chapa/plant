@@ -1,4 +1,5 @@
 // Сборка персонажа из слоёв атласа: тело → одежда → волосы → аксессуар.
+// У каждого слоя свой кадр на направление (к зрителю, спиной, вбок) и фазу шага.
 // Слои нарисованы маркерными цветами (см. scripts/build-placeholder-atlas.mjs),
 // здесь они перекрашиваются в цвета, выбранные игроком. Так 3 одежды × 6 причёсок × 6 цветов
 // дают сотни обликов без отдельной картинки на каждый.
@@ -65,26 +66,56 @@ export function recolor(data: Uint8ClampedArray, color: Rgb): void {
 
 export type Appearance = Record<string, string>
 
-type Layer = { frame: (a: Appearance) => string | null; colorSlot?: string }
+/** Куда смотрит спрайт: к зрителю, спиной или вбок (вправо; влево — тот же кадр, отражённый). */
+export type Direction = 'down' | 'up' | 'side'
+
+/** Направление и фаза шага: 0 — стоит, 1 и 2 — шаг левой и правой ногой. */
+export type Pose = { direction: Direction; step: 0 | 1 | 2 }
+
+/** Все кадры персонажа: по три фазы шага на каждое направление. */
+export type CharacterFrames = Record<Direction, HTMLCanvasElement[]>
+
+type Layer = { frame: (a: Appearance, p: Pose) => string | null; colorSlot?: string }
 
 /**
  * Слои персонажа снизу вверх и какой цветовой слот их красит.
- * Новый вариант причёски или одежды — новый кадр атласа; новый слот — новая строка здесь.
+ * Шаг меняет только тело и одежду (ноги, руки); волосы и аксессуары зависят лишь от направления.
+ * Новый вариант причёски или одежды — новые кадры атласа; новый слот — новая строка здесь.
  */
 const LAYERS: Layer[] = [
-  // задний слой волос (длинные, каре, кудри) — за спиной; у коротких причёсок кадра нет
-  { frame: (a) => `char_hairback_${a.hair}`, colorSlot: 'hair_color' },
-  { frame: () => 'char_body', colorSlot: 'skin' },
-  { frame: (a) => `char_outfit_${a.outfit}`, colorSlot: 'outfit_color' },
-  { frame: (a) => `char_hair_${a.hair}`, colorSlot: 'hair_color' },
-  { frame: (a) => (a.accessory && a.accessory !== 'none' ? `char_acc_${a.accessory}` : null) },
+  // задний слой волос (длинные, каре, кудри) — за спиной, виден только спереди
+  { frame: (a, p) => `char_hairback_${a.hair}_${p.direction}`, colorSlot: 'hair_color' },
+  { frame: (_, p) => `char_body_${p.direction}_${p.step}`, colorSlot: 'skin' },
+  { frame: (a, p) => `char_outfit_${a.outfit}_${p.direction}_${p.step}`, colorSlot: 'outfit_color' },
+  { frame: (a, p) => `char_hair_${a.hair}_${p.direction}`, colorSlot: 'hair_color' },
+  { frame: (a, p) => (a.accessory && a.accessory !== 'none' ? `char_acc_${a.accessory}_${p.direction}` : null) },
 ]
+
+const STANDING: Pose = { direction: 'down', step: 0 }
+
+/** Какой кадр показать, когда персонаж смотрит в эту сторону: влево — боковой, отражённый. */
+export function directionFor(facing: 'up' | 'down' | 'left' | 'right'): { direction: Direction; flip: boolean } {
+  if (facing === 'left' || facing === 'right') return { direction: 'side', flip: facing === 'left' }
+  return { direction: facing, flip: false }
+}
+
+/** Кадры для всех направлений и фаз шага — то, что нужно персонажу, чтобы ходить и разворачиваться. */
+export function composeCharacterFrames(atlas: Atlas, appearance: Appearance, slots: AppearanceSlot[]): CharacterFrames {
+  const steps = (direction: Direction) =>
+    ([0, 1, 2] as const).map((step) => composeCharacter(atlas, appearance, slots, { direction, step }))
+  return { down: steps('down'), up: steps('up'), side: steps('side') }
+}
 
 const cache = new Map<string, HTMLCanvasElement>()
 
-/** Готовый спрайт персонажа 40×64 (кэшируется по облику). */
-export function composeCharacter(atlas: Atlas, appearance: Appearance, slots: AppearanceSlot[]): HTMLCanvasElement {
-  const key = JSON.stringify(appearance)
+/** Готовый спрайт персонажа 32×48 в нужной позе (кэшируется по облику и позе). */
+export function composeCharacter(
+  atlas: Atlas,
+  appearance: Appearance,
+  slots: AppearanceSlot[],
+  pose: Pose = STANDING,
+): HTMLCanvasElement {
+  const key = `${JSON.stringify(appearance)}|${pose.direction}|${pose.step}`
   const cached = cache.get(key)
   if (cached) return cached
 
@@ -104,7 +135,7 @@ export function composeCharacter(atlas: Atlas, appearance: Appearance, slots: Ap
   const sctx = scratch.getContext('2d', { willReadFrequently: true })!
 
   for (const layer of LAYERS) {
-    const name = layer.frame(appearance)
+    const name = layer.frame(appearance, pose)
     const f = name ? atlas.frames[name] : undefined
     if (!f) continue
     sctx.clearRect(0, 0, CHARACTER_WIDTH, CHARACTER_HEIGHT)

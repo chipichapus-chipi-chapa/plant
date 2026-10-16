@@ -1,9 +1,10 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import type { GardenMap } from '../api/types'
 import type { Atlas } from './atlas'
+import { directionFor, type CharacterFrames } from './character'
 import { Fireflies } from './Fireflies'
 import { cellAtPoint, fitScale, inBounds, TILE, type Cell } from './layout'
-import { blockedCells, cellOf, facingCell, walk, walkerAt, type Walker } from './movement'
+import { blockedCells, cellOf, facingCell, walk, walkerAt, type Facing, type Walker } from './movement'
 import { drawGarden, type Scene } from './renderer'
 import styles from './GardenCanvas.module.css'
 
@@ -29,7 +30,8 @@ type Props = {
   /** Клетки, где стоят неподвижные персонажи: сквозь них не пройти */
   standing: Cell[]
   atlas: Atlas
-  player: { image: CanvasImageSource; start: Cell }
+  /** Кадры игрока по направлениям и фазам шага */
+  player: { frames: CharacterFrames; start: Cell }
   onSelect: (cell: Cell | null) => void
   /** Персонаж перешёл в другую клетку или повернулся к другой клетке */
   onPlayerMove: (at: Cell, facing: Cell) => void
@@ -48,6 +50,35 @@ const coarsePointer = () => window.matchMedia?.('(pointer: coarse)').matches ?? 
 const DRAG_THRESHOLD = 10
 /** Отклонение пальца, при котором персонаж идёт в полную скорость. */
 const STICK_RADIUS = 48
+
+/** Цикл шага: левая — стоит — правая — стоит; фаза длится STEP_MS. */
+const WALK_CYCLE = [1, 0, 2, 0] as const
+const STEP_MS = 130
+
+/** Мягкий ореол вокруг игрока: в сумерках его всегда видно. */
+const PLAYER_AURA = { x: 0, y: -14, radius: 44, strength: 0.5 }
+
+/** Кадр под направление взгляда: влево — боковой кадр, отражённый. */
+function frameFor(frames: CharacterFrames, facing: Facing, step: number) {
+  const { direction, flip } = directionFor(facing)
+  return { image: frames[direction][step], flip }
+}
+
+const scanlineCache = new Map<number, CanvasPattern | null>()
+
+/** Строки «старого монитора» поверх сцены, как в Inscryption: тонкая тёмная линия через каждые 3 экранных пикселя. */
+function scanlines(ctx: CanvasRenderingContext2D, period: number): CanvasPattern | null {
+  if (!scanlineCache.has(period)) {
+    const tile = document.createElement('canvas')
+    tile.width = 1
+    tile.height = period
+    const t = tile.getContext('2d')!
+    t.fillStyle = 'rgba(0, 0, 0, 0.22)'
+    t.fillRect(0, period - 1, 1, 1)
+    scanlineCache.set(period, ctx.createPattern(tile, 'repeat'))
+  }
+  return scanlineCache.get(period) ?? null
+}
 
 /**
  * Канвас сада с игровым циклом. Каждый кадр: ввод (клавиатура или джойстик) → шаг ходьбы
@@ -84,7 +115,7 @@ export function GardenCanvas(props: Props) {
   // Любое изменение входных данных — повод перерисовать кадр
   useEffect(() => {
     dirtyRef.current = true
-  }, [scene, atlas, scale, player.image])
+  }, [scene, atlas, scale, player.frames])
 
   // Невидимый джойстик на телефоне: ведёшь пальцем по саду — персонаж идёт в ту сторону
   const touchRef = useRef<{ id: number; x: number; y: number; dragging: boolean } | null>(null)
@@ -168,12 +199,12 @@ export function GardenCanvas(props: Props) {
       const animated = !!p.scene.marker
       if (moving || animated || dirtyRef.current) {
         dirtyRef.current = moving // после остановки нарисуем ещё один кадр — без подпрыгивания
-        draw(moving ? Math.floor(now / 140) % 2 : 0, now)
+        draw(moving ? WALK_CYCLE[Math.floor(now / STEP_MS) % WALK_CYCLE.length] : 0, now)
       }
       frame = requestAnimationFrame(tick)
     }
 
-    const draw = (lift: number, time: number) => {
+    const draw = (step: number, time: number) => {
       const p = latest.current
       const canvas = canvasRef.current
       const ctx = canvas?.getContext('2d')
@@ -200,7 +231,8 @@ export function GardenCanvas(props: Props) {
         time,
         characters: [
           ...p.scene.characters,
-          { px: w.x, py: w.y, image: p.player.image, flip: w.facing === 'left', lift },
+          // на шаге тело чуть приподнимается — походка пружинит
+          { px: w.x, py: w.y, ...frameFor(p.player.frames, w.facing, step), lift: step ? 1 : 0, light: PLAYER_AURA },
         ],
       }
       drawGarden(bufferCtx, p.map, p.atlas, scene, { hover: hoverRef.current })
@@ -208,6 +240,11 @@ export function GardenCanvas(props: Props) {
       ctx.imageSmoothingEnabled = false
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       ctx.drawImage(buffer, 0, 0, canvas.width, canvas.height)
+      const lines = scanlines(ctx, Math.max(2, Math.round(dpr * 3)))
+      if (lines) {
+        ctx.fillStyle = lines
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+      }
     }
 
     frame = requestAnimationFrame(tick)

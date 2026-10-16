@@ -71,8 +71,8 @@ export class Sprite {
   }
 
   /** Мягкая тень под объектом. */
-  shadow(cx, cy, rx, ry, alpha = 80) {
-    this.ellipse(cx, cy, rx, ry, '#1f2412', alpha)
+  shadow(cx, cy, rx, ry, alpha = 150) {
+    this.ellipse(cx, cy, rx, ry, '#050403', alpha)
   }
 
   /**
@@ -116,13 +116,22 @@ export class Sprite {
   }
 }
 
-/** Оттенок из рампы по освещённости 0..1, с дизерингом между соседними тонами. */
+/**
+ * Оттенок из рампы по освещённости 0..1. Тона лежат плоскими полосами, а на узкой границе
+ * между ними — шахматка через пиксель (приём Inscryption), без плавных градиентов.
+ */
 export function pick(ramp, lit, x, y) {
   const v = Math.max(0, Math.min(0.9999, lit)) * ramp.length
   const i = Math.floor(v)
   const frac = v - i
-  return frac > bayer(x, y) && i + 1 < ramp.length ? ramp[i + 1] : ramp[i]
+  if (i + 1 >= ramp.length) return ramp[i]
+  if (frac > 0.68) return ramp[i + 1]
+  if (frac > 0.38 && (x + y) % 2 === 0) return ramp[i + 1]
+  return ramp[i]
 }
+
+/** Шахматка: true в каждом втором пикселе. */
+export const checker = (x, y) => ((x + y) & 1) === 0
 
 /** Детерминированный генератор: одинаковые спрайты при каждом запуске. */
 export function rng(seed) {

@@ -42,8 +42,8 @@ export function DialogueBox({ dialogueKey, catalog, atlas, onClose, onChanged }:
     const image = frameImage(atlas, 'npc_vereshk')
     if (!ctx || !image) return
     ctx.clearRect(0, 0, 32, 32)
-    // портрет — голова и плечи из спрайта 40×64
-    ctx.drawImage(image, 4, 12, 32, 32, 0, 0, 32, 32)
+    // портрет — капюшон, лицо и борода из спрайта 32×48
+    ctx.drawImage(image, 0, 4, 32, 32, 0, 0, 32, 32)
   }, [atlas])
 
   // Текст печатается по буквам; при «уменьшить движение» появляется сразу

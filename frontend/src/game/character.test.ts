@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hexToRgb, lightOf, MASK, mix, recolor, shadeOf } from './character'
+import { directionFor, hexToRgb, lightOf, MASK, mix, recolor, shadeOf } from './character'
 
 describe('перекраска персонажа', () => {
   it('разбирает hex', () => {
@@ -30,5 +30,13 @@ describe('перекраска персонажа', () => {
     expect(Array.from(data.slice(4, 7))).toEqual(shadeOf(color))
     expect(Array.from(data.slice(8, 11))).toEqual([36, 27, 19])
     expect(Array.from(data.slice(12, 15))).toEqual(MASK.base)
+  })
+
+  it('разворачивается по направлению ходьбы', () => {
+    expect(directionFor('down')).toEqual({ direction: 'down', flip: false })
+    expect(directionFor('up')).toEqual({ direction: 'up', flip: false })
+    expect(directionFor('right')).toEqual({ direction: 'side', flip: false })
+    // влево — тот же боковой кадр, отражённый
+    expect(directionFor('left')).toEqual({ direction: 'side', flip: true })
   })
 })
