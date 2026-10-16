@@ -56,8 +56,10 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
      * Житель локации (мышь): стоит в клетке, разговаривает; description — что видно, если рассмотреть. Разговоры — тот же граф реплик, что у Вереска,
      * но без наград и флагов: первый разговор — знакомство (talks[0]), дальше — случайный из остальных.
      */
+    /** secrets — пасхалки: «слот:вариант» облика игрока → особый разговор. */
     public record Npc(String key, String name, String kind, int x, int y, String description, List<String> talks,
-                      Map<String, app.wheregrows.mentor.MentorContent.Dialogue> dialogues, Errand errand) {
+                      Map<String, app.wheregrows.mentor.MentorContent.Dialogue> dialogues, Errand errand,
+                      Map<String, String> secrets) {
     }
 
     /**
@@ -122,6 +124,9 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
             require(contains(npc.x(), npc.y()) && propAt(npc.x(), npc.y()) == null, "житель " + npc.key() + " стоит вне карты или в постройке");
             require(npc.talks() != null && !npc.talks().isEmpty(), "житель " + npc.key() + " молчит: нет talks");
             npc.talks().forEach(t -> require(npc.dialogues().containsKey(t), "у жителя " + npc.key() + " нет разговора " + t));
+            if (npc.secrets() != null) {
+                npc.secrets().values().forEach(t -> require(npc.dialogues().containsKey(t), "у жителя " + npc.key() + " нет секретного разговора " + t));
+            }
             Errand errand = npc.errand();
             if (errand != null) {
                 for (String d : java.util.Arrays.asList(errand.offer(), errand.waiting(), errand.thanks())) {

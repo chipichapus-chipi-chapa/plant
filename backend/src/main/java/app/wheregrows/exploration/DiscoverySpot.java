@@ -42,6 +42,14 @@ public class DiscoverySpot {
     @Column(name = "artifact_key")
     private String artifactKey;
 
+    /** Секретка: над постройкой нет мерцания, догадаться надо самому. */
+    @Column(nullable = false)
+    private boolean hidden;
+
+    /** Надпись на кнопке: «Осмотреть», «Подвести стрелки», «Покачаться»… */
+    @Column(name = "action_label", nullable = false)
+    private String actionLabel;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "discovery_spot_reward", joinColumns = @JoinColumn(name = "spot_key"))
     private List<Reward> rewards = new ArrayList<>();
@@ -75,6 +83,14 @@ public class DiscoverySpot {
 
     public String getLockedText() {
         return lockedText;
+    }
+
+    public boolean isHidden() {
+        return hidden;
+    }
+
+    public String getActionLabel() {
+        return actionLabel;
     }
 
     public String getArtifactKey() {

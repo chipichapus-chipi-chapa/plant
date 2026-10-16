@@ -64,6 +64,8 @@ export type Npc = {
   dialogues: Record<string, Dialogue>
   /** Поручение жителя, если есть */
   errand?: Errand | null
+  /** Пасхалки: «слот:вариант» облика игрока → особый разговор */
+  secrets?: Record<string, string> | null
 }
 
 /**
@@ -152,6 +154,8 @@ export type MentorContent = {
   meetGoal: string
   reportGoal: string
   offerGoal: string | null
+  /** Пасхалки: «слот:вариант» облика игрока → особый разговор */
+  secrets?: Record<string, string> | null
 }
 
 export type Catalog = {
@@ -168,7 +172,8 @@ export type Catalog = {
   recipes: Recipe[]
   artifacts: Artifact[]
   /** Места находок: к какой постройке привязаны. Содержимое — секрет сервера. */
-  spots: { key: string; propKey: string }[]
+  /** hidden — секретка (без мерцания); actionLabel — надпись на кнопке */
+  spots: { key: string; propKey: string; hidden: boolean; actionLabel: string }[]
 }
 
 export type Habit = { id: number; title: string; crystalCategory: string | null; doneToday: boolean }

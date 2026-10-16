@@ -327,6 +327,18 @@
               "text": "Держи, это тебе. Я берёг для особого случая. Это — особый."
             }
           }
+        },
+        "shorokh_wizard": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Ты волшебник?! Настоящий?!",
+              "next": "b"
+            },
+            "b": {
+              "text": "Наколдуй мне сыра! Ну пожалуйста! Маленький кусочек! Ладно, большой."
+            }
+          }
         }
       },
       "errand": {
@@ -344,6 +356,9 @@
         "waiting": "shorokh_wait",
         "thanks": "shorokh_thanks",
         "leaves": false
+      },
+      "secrets": {
+        "accessory:wizard_hat": "shorokh_wizard"
       }
     },
     {
@@ -422,6 +437,18 @@
               "text": "В чаще без света нельзя. А кто-то там, на тропе, боится темноты больше, чем ты. Но это я тебе не говорила."
             }
           }
+        },
+        "vetosh_glasses": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "О, очки. Значит, ты тоже из тех, кто читает мелкие буквы на указателях.",
+              "next": "b"
+            },
+            "b": {
+              "text": "Уважаю. Мы с тобой многое замечаем."
+            }
+          }
         }
       },
       "errand": {
@@ -444,6 +471,9 @@
         "waiting": "vetosh_wait",
         "thanks": "vetosh_thanks",
         "leaves": false
+      },
+      "secrets": {
+        "accessory:glasses": "vetosh_glasses"
       }
     },
     {
