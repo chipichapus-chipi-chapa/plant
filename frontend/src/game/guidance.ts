@@ -79,18 +79,37 @@ export function isInteractive(cell: Cell, state: GameState, catalog: Catalog): b
 }
 
 /**
- * Есть ли у клетки табличка: только у того, с чем вообще можно иметь дело, — Вереск, тайники,
- * объекты с заклинанием, растения, грядка под посадку. Трава, тропа и декорации молчат.
- * В отличие от isInteractive, тайник остаётся кликабельным и после поиска — можно перечитать находку.
+ * Можно ли «потыкать» клетку: у всего, что стоит в саду, есть описание — Вереск, постройки
+ * и предметы, растения; пустая грядка — когда есть что посадить. Трава, тропа и забор молчат.
+ * Подойдёшь к такому — над ним загорится «!», нажмёшь — откроется описание.
  */
 export function isClickable(cell: Cell, state: GameState, catalog: Catalog): boolean {
   if (cell.x === MENTOR_SPOT.x && cell.y === MENTOR_SPOT.y) return true
   if (objectAt(state.garden.objects, cell)) return true
-  const prop = propAt(catalog.garden, cell.x, cell.y)
-  if (prop) {
-    return catalog.spots.some((s) => s.propKey === prop.key) || catalog.recipes.some((r) => r.targetObjectKey === prop.key)
-  }
+  if (propAt(catalog.garden, cell.x, cell.y)) return true
   return isInteractive(cell, state, catalog)
+}
+
+/** Одна ли это вещь: та же клетка или клетки одной постройки (сарай занимает 4×3). */
+export function sameThing(a: Cell, b: Cell, map: GardenMap): boolean {
+  if (a.x === b.x && a.y === b.y) return true
+  const prop = propAt(map, a.x, a.y)
+  return !!prop && prop === propAt(map, b.x, b.y)
+}
+
+/** Стоит ли персонаж вплотную к вещи (по соседней клетке с любой её клеткой), куда бы ни смотрел. */
+export function isNear(cell: Cell, at: Cell, map: GardenMap): boolean {
+  const prop = propAt(map, cell.x, cell.y)
+  const cells = prop
+    ? Array.from({ length: prop.width * prop.height }, (_, i) => ({ x: prop.x + (i % prop.width), y: prop.y + Math.floor(i / prop.width) }))
+    : [cell]
+  return cells.some((c) => Math.abs(c.x - at.x) + Math.abs(c.y - at.y) === 1)
+}
+
+/** Клетка, в которой нарисован «!» над объектом, — по ней тоже можно нажать. */
+export function promptCell(cell: Cell, map: GardenMap): Cell {
+  const p = promptPoint(cell, map)
+  return { x: Math.floor(p.x / TILE), y: Math.floor((p.y - 8) / TILE) }
 }
 
 /** Где рисовать «!» над клеткой: над головой персонажа, над постройкой или над самой клеткой. */

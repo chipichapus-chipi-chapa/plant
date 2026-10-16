@@ -5,7 +5,7 @@ import type { Catalog, GameState } from '../../api/types'
 import { frameImage, loadAtlas, type Atlas } from '../../game/atlas'
 import { composeCharacterFrames } from '../../game/character'
 import { GardenCanvas } from '../../game/GardenCanvas'
-import { isClickable, isInteractive, markerPoint, promptPoint, type Objective } from '../../game/guidance'
+import { isClickable, isNear, markerPoint, promptCell, promptPoint, sameThing, type Objective } from '../../game/guidance'
 import { standingAt, type Scene } from '../../game/renderer'
 import {
   describeCell,
@@ -52,7 +52,10 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
   const [atlas, setAtlas] = useState<AtlasLoad>({ status: 'loading' })
   // клетка перед персонажем: если с ней можно что-то сделать, над ней загорается «!»
   const [facing, setFacing] = useState<Cell | null>(null)
+  // открытое описание: только после нажатия на объект с «!» (или клавиши действия)
   const [selected, setSelected] = useState<Cell | null>(null)
+  // нажали на объект издалека — подсказываем подойти
+  const [tooFar, setTooFar] = useState(false)
   const [planting, setPlanting] = useState(false)
   // «Сейчас» для подписей вроде «через 5 мин»: обновляется раз в 30 секунд
   const [now, setNow] = useState(() => Date.now())
@@ -92,7 +95,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
       sparkles: new Set(catalog.spots.filter((spot) => !searched.has(spot.key)).map((spot) => spot.propKey)),
       characters: mentorImage ? [standingAt(MENTOR_SPOT, mentorImage, MENTOR_LANTERN)] : [],
       bubbles: state.mentor.hasNews ? [MENTOR_SPOT] : [],
-      prompt: facing && isInteractive(facing, state, catalog) ? promptPoint(facing, map) : null,
+      prompt: facing && isClickable(facing, state, catalog) ? promptPoint(facing, map) : null,
       marker: objective ? markerPoint(objective.target, map, state) : null,
     }
   }, [atlas, state, catalog, facing, objective, map])
@@ -106,12 +109,13 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
   const [playerCell, setPlayerCell] = useState<Cell>(PLAYER_SPOT)
   const facingRef = useRef<Cell | null>(null)
   const infoRef = useRef<HTMLDivElement>(null)
+  // Отошёл или отвернулся — описание закрывается; новое откроется, когда нажмёшь на «!»
   const onPlayerMove = useCallback((at: Cell, facing: Cell) => {
     setPlayerCell(at)
     facingRef.current = facing
     setFacing(facing)
-    setSelected(facing)
-    setNow(Date.now())
+    setSelected(null)
+    setTooFar(false)
   }, [])
 
   const [dialogue, setDialogue] = useState<string | null>(null)
@@ -120,11 +124,27 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     setDialogue(state.mentor.nextDialogue ?? idle[Math.floor(Math.random() * idle.length)])
   }
 
-  /** Действие — «нажать главную кнопку таблички» о клетке перед персонажем. С наставником — заговорить. */
+  /** Описание объекта перед персонажем: открыть (если над ним горит «!»). */
+  const open = (cell: Cell) => {
+    setSelected(cell)
+    setTooFar(false)
+    setNow(Date.now())
+  }
+
+  /**
+   * Действие (E / пробел / ✋): с наставником — заговорить; у объекта с «!» первое нажатие
+   * открывает описание, следующее — нажимает его главную кнопку (обыскать, пробудить, посадить).
+   */
   const act = () => {
     const facing = facingRef.current
-    if (facing && sameCell(facing, MENTOR_SPOT)) {
+    if (!facing) return
+    if (sameCell(facing, MENTOR_SPOT)) {
       talk()
+      return
+    }
+    if (!isClickable(facing, state, catalog)) return
+    if (!selected || !sameThing(selected, facing, map)) {
+      open(facing)
       return
     }
     infoRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.click()
@@ -139,9 +159,17 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     }
   }, [atlas.status, state.player.onboarded, state.mentor.nextDialogue, catalog.mentor.intro])
 
+  /**
+   * Нажатие на клетку. Описание открывается у объекта рядом с персонажем — по нему самому
+   * или по «!» над ним; до далёкого объекта сначала надо дойти. Свой персонаж открывает «Изменить облик».
+   */
   const select = (cell: Cell | null) => {
-    setSelected(cell)
-    setNow(Date.now())
+    if (cell && sameCell(cell, playerCell)) return open(cell)
+    const target = facing && isClickable(facing, state, catalog) ? facing : null
+    if (cell && target && (sameThing(cell, target, map) || sameCell(cell, promptCell(target, map)))) return open(target)
+    if (cell && isClickable(cell, state, catalog) && isNear(cell, playerCell, map)) return open(cell)
+    setSelected(null)
+    setTooFar(!!cell && isClickable(cell, state, catalog))
   }
 
   const plant = async (cell: Cell, seedKey: string) => {
@@ -211,9 +239,11 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
             onPlant={plant}
             onChanged={onChanged}
           />
+        ) : tooFar ? (
+          <span className={styles.hint}>Подойдите поближе: когда над ним загорится «!», нажмите на него.</span>
         ) : (
           <span className={styles.hint}>
-            Стрелки или WASD — идти, E или пробел — действие. Можно и просто нажать на клетку.
+            Стрелки или WASD — идти. Подойдите к предмету — загорится «!»: нажмите на него или E, чтобы рассмотреть.
           </span>
         )}
       </div>

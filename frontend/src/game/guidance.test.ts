@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Catalog, GameState } from '../api/types'
-import { currentObjective, isClickable, isInteractive, markerPoint } from './guidance'
+import { currentObjective, isClickable, isInteractive, isNear, markerPoint, promptCell, sameThing } from './guidance'
 
 const map = {
   key: 'home',
@@ -87,12 +87,22 @@ describe('стрелка и «!»', () => {
     expect(isInteractive({ x: 1, y: 1 }, state({}), catalog)).toBe(false)
   })
 
-  it('табличка только у кликабельного: тайник (и после поиска), растение, грядка с семенами', () => {
+  it('описание есть у всего, что стоит в саду: тайник (и после поиска), растение, грядка с семенами', () => {
     expect(isClickable({ x: 0, y: 1 }, state({ searchedSpots: ['rock_cache'] }), catalog)).toBe(true)
     expect(isClickable({ x: 2, y: 0 }, state({ garden: { objects: [{ x: 2, y: 0 } as never] } }), catalog)).toBe(true)
     expect(isClickable({ x: 2, y: 0 }, state({ inventory: [{ itemKey: 'seed_radish', quantity: 1 }] }), catalog)).toBe(true)
     // пустая грядка без семян и простая трава — без таблички
     expect(isClickable({ x: 2, y: 0 }, state({}), catalog)).toBe(false)
     expect(isClickable({ x: 1, y: 1 }, state({}), catalog)).toBe(false)
+  })
+
+  it('нажатие по «!» над объектом — то же, что по объекту', () => {
+    // камни в (0,1): «!» рисуется над ними, в клетке (0,0)
+    expect(promptCell({ x: 0, y: 1 }, map)).toEqual({ x: 0, y: 0 })
+    expect(sameThing({ x: 0, y: 1 }, { x: 0, y: 1 }, map)).toBe(true)
+    expect(sameThing({ x: 0, y: 1 }, { x: 1, y: 1 }, map)).toBe(false)
+    // вплотную — по соседней клетке, по диагонали уже далеко
+    expect(isNear({ x: 0, y: 1 }, { x: 1, y: 1 }, map)).toBe(true)
+    expect(isNear({ x: 0, y: 1 }, { x: 1, y: 0 }, map)).toBe(false)
   })
 })
