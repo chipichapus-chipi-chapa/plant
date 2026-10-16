@@ -14,7 +14,14 @@ export type CatalogItem = {
   crystalCategory: string | null
 }
 
-export type TileType = { type: string; name: string; description: string; plantable: boolean }
+export type TileType = {
+  type: string
+  name: string
+  description: string
+  plantable: boolean
+  /** Во что клетка превращается, когда пробуждена постройка when (засохшая клумба оживает от воды в колодце) */
+  revive?: { tile: string; when: string } | null
+}
 
 export type GardenProp = {
   key: string
@@ -40,6 +47,8 @@ export type Door = {
   label: string
   /** Постройка, которую сначала надо пробудить (калитка в ежевике) */
   requires?: string | null
+  /** Поручение, которое сначала надо выполнить (Мята откроет тропу к озеру) */
+  requiresErrand?: string | null
 }
 
 /** Житель локации (мышь): стоит в клетке, разговаривает; первый разговор — talks[0], дальше — случайный из остальных */
@@ -63,7 +72,9 @@ export type Npc = {
  */
 export type Errand = {
   key: string
-  kind: 'GIVE' | 'SHOW'
+  /** REVIVE — пробудить все постройки из props */
+  kind: 'GIVE' | 'SHOW' | 'REVIVE'
+  props?: string[] | null
   goal: string
   give: ItemGrant[] | null
   spot: string | null

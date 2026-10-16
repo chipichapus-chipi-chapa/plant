@@ -43,6 +43,7 @@ class ErrandApiTests {
         playerId = currentPlayer.id();
         jdbc.update("DELETE FROM player_flag WHERE player_id = ?", playerId);
         jdbc.update("DELETE FROM player_discovery WHERE player_id = ?", playerId);
+        jdbc.update("DELETE FROM player_world_object WHERE player_id = ?", playerId);
         jdbc.update("DELETE FROM inventory_item WHERE player_id = ?", playerId);
     }
 
@@ -93,6 +94,23 @@ class ErrandApiTests {
         complete("khmur_toll").andExpect(status().isOk());
         assertThat(quantity("old_lantern")).isZero();
         assertThat(quantity("life_seed")).isZero();
+    }
+
+    @Test
+    void manorGardenMustBeFullyAwake() throws Exception {
+        accept("myata_garden");
+        for (String prop : List.of("lily-west", "lily-east", "lily-south", "manor-well")) {
+            jdbc.update("INSERT INTO player_world_object VALUES (?, ?, 'AWAKENED', now())", playerId, prop);
+        }
+        complete("myata_garden")
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("Ещё спят: Фонарный столб."));
+
+        jdbc.update("INSERT INTO player_world_object VALUES (?, 'lamp-post', 'AWAKENED', now())", playerId);
+        complete("myata_garden").andExpect(status().isOk());
+        assertThat(quantity("life_seed")).isEqualTo(8);
+        mvc.perform(get("/api/state"))
+                .andExpect(jsonPath("$.errands[?(@.key == 'myata_garden')].done").value(true));
     }
 
     private ResultActions accept(String key) throws Exception {

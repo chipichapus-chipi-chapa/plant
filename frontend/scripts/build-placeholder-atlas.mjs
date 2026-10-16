@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url'
 import { characterFrames } from './atlas/characters.mjs'
 import { eastFrames } from './atlas/east.mjs'
 import { interiorFrames } from './atlas/interior.mjs'
+import { lakeFrames } from './atlas/lake.mjs'
 import { manorFrames } from './atlas/manor.mjs'
 import { encodePng } from './atlas/png.mjs'
 import { plantFrames } from './atlas/plants.mjs'
@@ -21,7 +22,7 @@ import { uiFrames } from './atlas/ui.mjs'
 
 const OUT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'assets')
 
-const frames = { ...tileFrames(), ...propFrames(), ...interiorFrames(), ...eastFrames(), ...manorFrames(), ...plantFrames(), ...characterFrames(), ...uiFrames() }
+const frames = { ...tileFrames(), ...propFrames(), ...interiorFrames(), ...eastFrames(), ...manorFrames(), ...lakeFrames(), ...plantFrames(), ...characterFrames(), ...uiFrames() }
 
 // Упаковка «полками»: кадры по убыванию высоты, слева направо
 const ATLAS_W = 1024
