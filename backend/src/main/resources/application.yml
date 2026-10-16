@@ -23,6 +23,12 @@ server:
   # На хостинге SERVER_ADDRESS=0.0.0.0 разрешён только вместе с TELEGRAM_BOT_TOKEN (вход через Telegram).
   address: ${SERVER_ADDRESS:127.0.0.1}
 
+# Бот (только при TELEGRAM_BOT_TOKEN): внешний адрес сервера Render сообщает сам,
+# адрес игры (GitHub Pages) задаётся в render.yaml.
+telegram:
+  public-url: ${RENDER_EXTERNAL_URL:}
+  web-app-url: ${TELEGRAM_WEB_APP_URL:}
+
 management:
   endpoints:
     web:

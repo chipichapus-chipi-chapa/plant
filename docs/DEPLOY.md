@@ -8,7 +8,7 @@
 | Фронтенд (сайт) | GitHub Pages — `https://chipichapus-chipi-chapa.github.io/plant/` | `.github/workflows/pages.yml` при пуше в `main` |
 | Сервер (Spring Boot) | Render, бесплатный тариф, образ из `backend/Dockerfile` | `render.yaml`, автодеплой при пуше в `main` |
 | База (PostgreSQL) | Neon, бесплатный тариф | Flyway накатывает миграции при старте сервера |
-| Бот | Telegram, настраивается в @BotFather | кода у бота нет |
+| Бот | тот же сервер: `TelegramBot` + webhook `/telegram/webhook` | регистрируется сам при старте |
 
 ## Как устроен вход
 
@@ -35,16 +35,19 @@ Telegram передаёт Mini App строку `initData`, подписанну
 3. **Сайт — GitHub Pages.** В репозитории Settings → Pages → Source: **GitHub Actions**.
    Settings → Secrets and variables → Actions → Variables → New variable:
    `API_URL` = адрес сервера из шага 2 (без `/` в конце). Затем Actions → Pages → Run workflow.
-4. **Бот.** В @BotFather: `/mybots` → бот → Bot Settings → Menu Button →
-   адрес `https://chipichapus-chipi-chapa.github.io/plant/` и подпись «Играть».
-   По желанию `/newapp` даст ещё и прямую ссылку вида `t.me/<бот>/<имя>`.
+4. **Бот** настраивается сам. При старте сервер берёт свой внешний адрес (`RENDER_EXTERNAL_URL`,
+   его задаёт Render) и адрес игры (`TELEGRAM_WEB_APP_URL` из `render.yaml`) и вызывает Bot API:
+   `setWebhook` — Telegram присылает сообщения боту на `/telegram/webhook` с секретом в заголовке
+   (секрет выводится из токена, чужие запросы получают 403); `setChatMenuButton` — кнопка «Играть».
+   На `/start` и любое сообщение бот отвечает приветствием с кнопкой входа в сад.
+   По желанию в @BotFather `/newapp` даст ещё и прямую ссылку вида `t.me/<бот>/<имя>`.
 
 Дальше всё обновляется само: пуш в `main` пересобирает и сайт, и сервер.
 
 ## Что нужно знать
 
 - Бесплатный сервер Render засыпает после 15 минут без запросов. Первый вход после паузы
-  ждёт около минуты — игра покажет «Сервер сада не отвечает», кнопка «Попробовать ещё раз» поможет.
+  (и первый ответ бота) ждёт около минуты — игра покажет «Сервер сада не отвечает», кнопка «Попробовать ещё раз» поможет.
 - Если токен бота попал куда не следует — `/revoke` в @BotFather и новый токен в Render
   (Environment → `TELEGRAM_BOT_TOKEN`). Прогресс игроков не пострадает: он привязан к их Telegram id.
 - Открыть сайт в обычном браузере можно, но сервер ответит «Нужен вход через Telegram».
