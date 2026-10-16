@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { ApiError } from '../../api/client'
 import { plantSeed, weedBed } from '../../api/game'
-import type { Catalog, Door, GameState, GardenMap, Puzzle } from '../../api/types'
+import type { Catalog, Door, GameState, GardenMap, Npc, Puzzle } from '../../api/types'
 import { frameImage, loadAtlas, type Atlas } from '../../game/atlas'
 import { composeCharacterFrames } from '../../game/character'
 import { WEED_MS, type WeedEffect } from '../../game/effects'
 import { GardenCanvas } from '../../game/GardenCanvas'
-import { isClickable, isNear, markerPoint, promptCell, promptPoint, sameThing, WEEDING_TOOLS, type Objective } from '../../game/guidance'
+import { doorOpen, isClickable, isNear, markerPoint, npcAt, promptCell, promptPoint, sameThing, WEEDING_TOOLS, type Objective } from '../../game/guidance'
 import type { Facing } from '../../game/movement'
 import { standingAt, type Scene } from '../../game/renderer'
 import {
@@ -24,7 +24,7 @@ import {
 import { Button } from '../../ui/Button'
 import { SeedPacketIcon } from '../../ui/icons/SeedPacketIcon'
 import { Window } from '../../ui/Window'
-import { DialogueBox } from '../mentor/DialogueBox'
+import { DialogueBox, MentorDialogue } from '../mentor/DialogueBox'
 import { useToast } from '../notifications/Toasts'
 import styles from './GardenView.module.css'
 import { LockOverlay } from './LockOverlay'
@@ -45,8 +45,26 @@ type Props = {
   objective: Objective | null
 }
 
-const STANDING: Cell[] = [MENTOR_SPOT]
-const NOBODY: Cell[] = []
+/** Портрет мыши: вся мышь целиком — она маленькая и сидит внизу кадра 32×48. */
+const MOUSE_CROP: [number, number] = [0, 16]
+
+/**
+ * С какой реплики начать разговор с жителем: при первой встрече — знакомство (talks[0]),
+ * потом — случайный из остальных. Кого уже встречали, помнит браузер: наград за мышей нет,
+ * поэтому серверу это хранить незачем.
+ */
+function nextTalk(npc: Npc): string {
+  const key = `met-npc-${npc.key}`
+  let met = false
+  try {
+    met = window.localStorage.getItem(key) === '1'
+    window.localStorage.setItem(key, '1')
+  } catch {
+    // хранилище недоступно (приватное окно) — просто каждый раз знакомимся заново
+  }
+  const rest = npc.talks.slice(1)
+  return !met || rest.length === 0 ? npc.talks[0] : rest[Math.floor(Math.random() * rest.length)]
+}
 
 /** Где игрок сейчас: какая локация, где появиться и куда смотреть. */
 type Location = { key: string; start: Cell; facing: Facing }
@@ -76,6 +94,15 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
   const [lock, setLock] = useState<Puzzle | null>(null)
   // идёт прополка: анимация мотыги, персонаж стоит
   const [weeding, setWeeding] = useState<WeedEffect | null>(null)
+  // разговор с жителем локации (мышью)
+  const [chat, setChat] = useState<{ npc: Npc; dialogue: string } | null>(null)
+  // помещение (есть стены): при входе сначала темно, потом зажигается лампа
+  const indoor = Object.values(map.tiles).some((t) => t.type === 'wall')
+  // кто стоит в клетках и не пускает пройти: Вереск в саду, жители в своих локациях
+  const standing = useMemo(
+    () => [...(home ? [MENTOR_SPOT] : []), ...(map.npcs ?? []).map((n) => ({ x: n.x, y: n.y }))],
+    [home, map],
+  )
   const [atlas, setAtlas] = useState<AtlasLoad>({ status: 'loading' })
   // клетка перед персонажем: если с ней можно что-то сделать, над ней загорается «!»
   const [facing, setFacing] = useState<Cell | null>(null)
@@ -128,7 +155,14 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
       awakened,
       variants,
       sparkles: new Set(catalog.spots.filter((spot) => !searched.has(spot.key)).map((spot) => spot.propKey)),
-      characters: home && mentorImage ? [standingAt(MENTOR_SPOT, mentorImage, MENTOR_LANTERN)] : [],
+      characters: [
+        ...(home && mentorImage ? [standingAt(MENTOR_SPOT, mentorImage, MENTOR_LANTERN)] : []),
+        ...(map.npcs ?? []).flatMap((npc) => {
+          const idle = [0, 1].map((f) => frameImage(atlas.atlas, `npc_${npc.kind}_${f}`))
+          if (!idle[0] || !idle[1]) return []
+          return [{ ...standingAt(npc, idle[0]), idle: [idle[0], idle[1]] }]
+        }),
+      ],
       bubbles: home && state.mentor.hasNews ? [MENTOR_SPOT] : [],
       prompt: facing && isClickable(facing, state, catalog, map) ? promptPoint(facing, map) : null,
       marker: objective ? markerPoint(objective.target, map, state) : null,
@@ -180,7 +214,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
   const fadeTimers = useRef<number[]>([])
   useEffect(() => () => fadeTimers.current.forEach((t) => window.clearTimeout(t)), [])
   const travel = (door: Door) => {
-    if (fade !== 'none') return
+    if (fade !== 'none' || !doorOpen(door, state)) return
     if (reducedMotion()) return enter(door)
     setFade('out')
     fadeTimers.current = [
@@ -214,6 +248,11 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     if (!facing) return
     if (isMentor(facing)) {
       talk()
+      return
+    }
+    const npc = npcAt(map, facing)
+    if (npc) {
+      setChat({ npc, dialogue: nextTalk(npc) })
       return
     }
     if (!isClickable(facing, state, catalog, map)) return
@@ -271,14 +310,14 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
             key={map.key}
             map={map}
             scene={scene}
-            standing={home ? STANDING : NOBODY}
+            standing={standing}
             atlas={atlas.atlas}
             player={{ frames: playerFrames, start: location.start, facing: location.facing }}
             onSelect={select}
             onPlayerMove={onPlayerMove}
             onAction={act}
-            inputEnabled={inputEnabled && dialogue === null && reading === null && lock === null && fade === 'none' && weeding === null}
-            lightUp={!home}
+            inputEnabled={inputEnabled && dialogue === null && reading === null && lock === null && fade === 'none' && weeding === null && chat === null}
+            lightUp={indoor}
           />
         ) : (
           <div className={styles.placeholder} style={{ aspectRatio: `${map.width} / ${map.height}` }}>
@@ -301,6 +340,17 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
             </p>
             <div>
               <Button onClick={talk}>Поговорить</Button>
+            </div>
+          </div>
+        ) : selected && npcAt(map, selected) ? (
+          <div className={styles.cell}>
+            <p className={styles.text}>
+              <strong>{npcAt(map, selected)!.name}.</strong> {npcAt(map, selected)!.description}
+            </p>
+            <div>
+              <Button onClick={() => setChat({ npc: npcAt(map, selected)!, dialogue: nextTalk(npcAt(map, selected)!) })}>
+                Поговорить
+              </Button>
             </div>
           </div>
         ) : selected && sameCell(selected, playerCell) ? (
@@ -346,8 +396,19 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
         </Window>
       )}
 
-      {dialogue && atlas.status === 'ready' && (
+      {chat && atlas.status === 'ready' && (
         <DialogueBox
+          key={chat.npc.key + chat.dialogue}
+          speaker={{ name: chat.npc.name, frame: `npc_${chat.npc.kind}_0`, crop: MOUSE_CROP }}
+          dialogue={chat.npc.dialogues[chat.dialogue]}
+          atlas={atlas.atlas}
+          onEnd={() => undefined}
+          onClose={() => setChat(null)}
+        />
+      )}
+
+      {dialogue && atlas.status === 'ready' && (
+        <MentorDialogue
           key={dialogue}
           dialogueKey={dialogue}
           catalog={catalog}
@@ -394,7 +455,7 @@ function CellInfo({ cell, map, state, catalog, now, planting, onPlant, onEnter, 
   if (!info) return null
 
   const prop = propAt(map, cell.x, cell.y)
-  if (prop?.door || prop?.read) {
+  if ((prop?.door && doorOpen(prop.door, state)) || prop?.read) {
     const { door, read } = prop
     return (
       <div className={styles.cell}>
@@ -402,7 +463,7 @@ function CellInfo({ cell, map, state, catalog, now, planting, onPlant, onEnter, 
           <strong>{info.name}.</strong> {info.description}
         </p>
         <div>
-          {door && <Button onClick={() => onEnter(door)}>{door.label}</Button>}
+          {door && doorOpen(door, state) && <Button onClick={() => onEnter(door)}>{door.label}</Button>}
           {read && <Button onClick={() => onRead({ title: info.name, text: read })}>Прочитать</Button>}
         </div>
       </div>

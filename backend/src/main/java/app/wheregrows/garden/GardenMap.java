@@ -8,7 +8,17 @@ import java.util.Map;
  * постройки (props) лежат поверх тайлов. Хранится как контент в resources/content/gardens.
  */
 public record GardenMap(String key, String name, int width, int height, Map<String, TileType> tiles,
-                        List<String> rows, List<Prop> props) {
+                        List<String> rows, List<Prop> props, List<Npc> npcs) {
+
+    /** Карта без жителей — для коротких описаний в тестах и простых локаций. */
+    public GardenMap(String key, String name, int width, int height, Map<String, TileType> tiles,
+                     List<String> rows, List<Prop> props) {
+        this(key, name, width, height, tiles, rows, props, List.of());
+    }
+
+    public List<Npc> npcsOrEmpty() {
+        return npcs == null ? List.of() : npcs;
+    }
 
     public record TileType(String type, String name, String description, boolean plantable) {
     }
@@ -23,8 +33,19 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
                        String description, Door door, String read) {
     }
 
-    /** Дверь: на какую карту ведёт, в какую клетку и куда персонаж будет смотреть; label — надпись на кнопке. */
-    public record Door(String map, int x, int y, String facing, String label) {
+    /**
+     * Дверь: на какую карту ведёт, в какую клетку и куда персонаж будет смотреть; label — надпись на кнопке.
+     * requires — постройка, которую сначала надо пробудить (калитка, заросшая ежевикой), или null.
+     */
+    public record Door(String map, int x, int y, String facing, String label, String requires) {
+    }
+
+    /**
+     * Житель локации (мышь): стоит в клетке, разговаривает; description — что видно, если рассмотреть. Разговоры — тот же граф реплик, что у Вереска,
+     * но без наград и флагов: первый разговор — знакомство (talks[0]), дальше — случайный из остальных.
+     */
+    public record Npc(String key, String name, String kind, int x, int y, String description, List<String> talks,
+                      Map<String, app.wheregrows.mentor.MentorContent.Dialogue> dialogues) {
     }
 
     private static final java.util.Set<String> FACINGS = java.util.Set.of("up", "down", "left", "right");
@@ -60,6 +81,20 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
                     "постройка " + prop.key() + " выходит за край карты");
         }
         require(props.stream().map(Prop::key).distinct().count() == props.size(), "ключи построек повторяются");
+        for (Npc npc : npcsOrEmpty()) {
+            require(contains(npc.x(), npc.y()) && propAt(npc.x(), npc.y()) == null, "житель " + npc.key() + " стоит вне карты или в постройке");
+            require(npc.talks() != null && !npc.talks().isEmpty(), "житель " + npc.key() + " молчит: нет talks");
+            npc.talks().forEach(t -> require(npc.dialogues().containsKey(t), "у жителя " + npc.key() + " нет разговора " + t));
+            npc.dialogues().forEach((key, dialogue) -> {
+                require(dialogue.nodes().containsKey(dialogue.start()), npc.key() + "." + key + ": нет стартовой реплики");
+                dialogue.nodes().forEach((id, node) -> {
+                    require(node.next() == null || dialogue.nodes().containsKey(node.next()), npc.key() + "." + key + "." + id + ": битый переход");
+                    if (node.choices() != null) {
+                        node.choices().forEach(c -> require(dialogue.nodes().containsKey(c.next()), npc.key() + "." + key + "." + id + ": ответ ведёт в никуда"));
+                    }
+                });
+            });
+        }
         for (Prop prop : props) {
             if (prop.door() != null) {
                 require(FACINGS.contains(prop.door().facing()), "у двери " + prop.key() + " неизвестное направление " + prop.door().facing());

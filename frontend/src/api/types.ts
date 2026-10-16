@@ -32,7 +32,28 @@ export type GardenProp = {
 }
 
 /** Дверь: на какую карту, в какую клетку и куда персонаж будет смотреть; label — надпись на кнопке */
-export type Door = { map: string; x: number; y: number; facing: 'up' | 'down' | 'left' | 'right'; label: string }
+export type Door = {
+  map: string
+  x: number
+  y: number
+  facing: 'up' | 'down' | 'left' | 'right'
+  label: string
+  /** Постройка, которую сначала надо пробудить (калитка в ежевике) */
+  requires?: string | null
+}
+
+/** Житель локации (мышь): стоит в клетке, разговаривает; первый разговор — talks[0], дальше — случайный из остальных */
+export type Npc = {
+  key: string
+  name: string
+  /** Какой спрайт: кадры атласа npc_<kind>_0/1 */
+  kind: string
+  x: number
+  y: number
+  description: string
+  talks: string[]
+  dialogues: Record<string, Dialogue>
+}
 
 /** Карта локации (сад, сарай изнутри): строки символов, легенда символов и постройки поверх тайлов */
 export type GardenMap = {
@@ -43,6 +64,8 @@ export type GardenMap = {
   tiles: Record<string, TileType>
   rows: string[]
   props: GardenProp[]
+  /** Жители локации */
+  npcs?: Npc[] | null
 }
 
 /** Магический рецепт: ингредиенты пробуждают постройку с карты (targetObjectKey) */

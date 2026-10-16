@@ -41,11 +41,15 @@ class CatalogApiTests {
     @Test
     void catalogListsLocationsConnectedByDoors() throws Exception {
         mvc.perform(get("/api/catalog"))
-                .andExpect(jsonPath("$.locations", hasSize(2)))
+                .andExpect(jsonPath("$.locations", hasSize(3)))
                 .andExpect(jsonPath("$.locations[0].key").value("home"))
                 .andExpect(jsonPath("$.locations[0].props[?(@.key == 'shed')].door.map").value("shed"))
-                .andExpect(jsonPath("$.locations[1].props[?(@.key == 'shed-exit')].door.map").value("home"))
-                .andExpect(jsonPath("$.locations[1].props[?(@.key == 'letter')].read").isNotEmpty())
+                // калитка ведёт на тропу, только когда её пробудили
+                .andExpect(jsonPath("$.locations[0].props[?(@.key == 'east-gate')].door.requires").value("east-gate"))
+                .andExpect(jsonPath("$.locations[?(@.key == 'shed')].props[?(@.key == 'shed-exit')].door.map").value("home"))
+                .andExpect(jsonPath("$.locations[?(@.key == 'shed')].props[?(@.key == 'letter')].read").isNotEmpty())
+                // на тропе живут мыши со своими разговорами
+                .andExpect(jsonPath("$.locations[?(@.key == 'east')].npcs[*].key").value(org.hamcrest.Matchers.containsInAnyOrder("krupka", "shorokh", "vetosh")))
                 .andExpect(jsonPath("$.recipes[?(@.key == 'repair_wheelbarrow')].actionLabel").value("Починить"));
     }
 }

@@ -72,6 +72,8 @@ public class GardenMaps {
                 map.require(target != null, "дверь " + prop.key() + " ведёт на несуществующую карту " + door.map());
                 map.require(target.contains(door.x(), door.y()) && target.propAt(door.x(), door.y()) == null,
                         "дверь " + prop.key() + " ведёт в занятую или несуществующую клетку");
+                map.require(door.requires() == null || prop(door.requires()).isPresent(),
+                        "дверь " + prop.key() + " требует несуществующую постройку " + door.requires());
             }
         }
     }

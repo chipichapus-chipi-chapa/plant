@@ -149,7 +149,11 @@ INSERT INTO discovery_spot (key, prop_key, found_text, empty_text, requires_awak
     ('fence_tools', 'tools',
         'Вы снимаете с гвоздей лопату и грабли. Забор будто выдыхает с облегчением.',
         'На заборе остались только гвозди и светлые пятна там, где висели инструменты.',
-        NULL, NULL, NULL)
+        NULL, NULL, NULL),
+    ('bridge_compass', 'bridge-post',
+        'Между мокрыми камнями у опоры — старый компас. Стрелка дрожит и показывает не на север, а куда-то в чащу.',
+        'У опоры моста только мох и холодная вода. Компас уже у вас.',
+        NULL, NULL, 'wanderer_compass')
 ON CONFLICT (key) DO UPDATE SET
     prop_key = EXCLUDED.prop_key,
     found_text = EXCLUDED.found_text,
@@ -158,12 +162,13 @@ ON CONFLICT (key) DO UPDATE SET
     locked_text = EXCLUDED.locked_text,
     artifact_key = EXCLUDED.artifact_key;
 
-DELETE FROM discovery_spot_reward WHERE spot_key IN ('rock_cache', 'shed_corner', 'fence_tools');
+DELETE FROM discovery_spot_reward WHERE spot_key IN ('rock_cache', 'shed_corner', 'fence_tools', 'bridge_compass');
 INSERT INTO discovery_spot_reward (spot_key, item_key, quantity) VALUES
     ('rock_cache', 'shard_amethyst', 2),
     ('rock_cache', 'shard_emerald', 1),
     ('shed_corner', 'sun_spark', 1),
-    ('fence_tools', 'garden_tools', 1);
+    ('fence_tools', 'garden_tools', 1),
+    ('bridge_compass', 'life_seed', 3);
 
 -- Загадки ---------------------------------------------------------------------
 -- Подсказка к ящику — в письме прежнего садовника (content/gardens/shed.json, постройка letter).
