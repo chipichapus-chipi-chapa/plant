@@ -1,4 +1,4 @@
-// Сборка персонажа из слоёв атласа: тело → одежда → волосы → аксессуар.
+// Сборка персонажа из слоёв атласа: тело → одежда → сумка → волосы → аксессуар.
 // У каждого слоя свой кадр на направление (к зрителю, спиной, вбок) и фазу шага.
 // Слои нарисованы маркерными цветами (см. scripts/build-placeholder-atlas.mjs),
 // здесь они перекрашиваются в цвета, выбранные игроком. Так 3 одежды × 6 причёсок × 6 цветов
@@ -87,6 +87,8 @@ const LAYERS: Layer[] = [
   { frame: (a, p) => `char_hairback_${a.hair}_${p.direction}`, colorSlot: 'hair_color' },
   { frame: (_, p) => `char_body_${p.direction}_${p.step}`, colorSlot: 'skin' },
   { frame: (a, p) => `char_outfit_${a.outfit}_${p.direction}_${p.step}`, colorSlot: 'outfit_color' },
+  // сумка поверх одежды, под волосами: сзади рюкзак виден целиком, спереди — лямки
+  { frame: (a, p) => (a.bag && a.bag !== 'none' ? `char_bag_${a.bag}_${p.direction}` : null) },
   { frame: (a, p) => `char_hair_${a.hair}_${p.direction}`, colorSlot: 'hair_color' },
   { frame: (a, p) => (a.accessory && a.accessory !== 'none' ? `char_acc_${a.accessory}_${p.direction}` : null) },
 ]

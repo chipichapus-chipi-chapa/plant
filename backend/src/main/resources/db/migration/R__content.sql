@@ -213,7 +213,8 @@ INSERT INTO appearance_slot (key, name, kind, sort_order) VALUES
     ('hair_color',   'Цвет волос',    'COLOR', 3),
     ('outfit',       'Одежда',        'STYLE', 4),
     ('outfit_color', 'Цвет одежды',   'COLOR', 5),
-    ('accessory',    'Мелочь',        'STYLE', 6)
+    ('accessory',    'Мелочь',        'STYLE', 6),
+    ('bag',          'Сумка',         'STYLE', 7)
 ON CONFLICT (key) DO UPDATE SET name = EXCLUDED.name, kind = EXCLUDED.kind, sort_order = EXCLUDED.sort_order;
 
 INSERT INTO appearance_option (slot_key, key, name, color, sort_order) VALUES
@@ -223,25 +224,32 @@ INSERT INTO appearance_option (slot_key, key, name, color, sort_order) VALUES
     ('skin', 'brown',  'Смуглая',      '#8d5f3e', 4),
     ('skin', 'deep',   'Тёмная',       '#5e3b26', 5),
 
-    ('hair', 'short',  'Короткие',     NULL, 1),
-    ('hair', 'bob',    'Каре',         NULL, 2),
-    ('hair', 'long',   'Длинные',      NULL, 3),
-    ('hair', 'braid',  'Коса',         NULL, 4),
-    ('hair', 'bun',    'Пучок',        NULL, 5),
-    ('hair', 'curly',  'Кудри',        NULL, 6),
+    ('hair', 'bob',      'Лохматое каре', NULL, 1),
+    ('hair', 'gathered', 'Собранные',     NULL, 2),
+    ('hair', 'long',     'Длинные',       NULL, 3),
+    ('hair', 'bun',      'Пучок',         NULL, 4),
+    ('hair', 'braid',    'Коса',          NULL, 5),
+    ('hair', 'short',    'Короткие',      NULL, 6),
+    ('hair', 'curly',    'Кудри',         NULL, 7),
 
+    ('hair_color', 'cocoa',    'Какао',       '#5a3b2a', 0),
     ('hair_color', 'chestnut', 'Каштановые',  '#7a4a2a', 1),
     ('hair_color', 'wheat',    'Пшеничные',   '#e3c27a', 2),
     ('hair_color', 'copper',   'Медные',      '#c8642e', 3),
     ('hair_color', 'black',    'Чёрные',      '#2f2a2e', 4),
     ('hair_color', 'silver',   'Седые',       '#d9d4cc', 5),
     ('hair_color', 'heather',  'Вересковые',  '#c98aa8', 6),
+    ('hair_color', 'ash',      'Пепельные',   '#d8c8a8', 7),
 
-    ('outfit', 'overalls', 'Комбинезон', NULL, 1),
-    ('outfit', 'sweater',  'Свитер',     NULL, 2),
-    ('outfit', 'dress',    'Сарафан',    NULL, 3),
+    ('outfit', 'casual',   'Куртка и худи', NULL, 1),
+    ('outfit', 'sport',    'Спортивный',    NULL, 2),
+    ('outfit', 'grunge',   'Гранж',         NULL, 3),
+    ('outfit', 'dress',    'Платье',        NULL, 4),
+    ('outfit', 'winter',   'Зимний',        NULL, 5),
+    ('outfit', 'sweater',  'Домашний',      NULL, 6),
+    ('outfit', 'overalls', 'Комбинезон',    NULL, 7),
 
-    ('outfit_color', 'olive',   'Олива',     '#7d8a3e', 0),
+    ('outfit_color', 'olive',   'Олива',     '#6b7a4a', 0),
     ('outfit_color', 'moss',    'Мох',       '#5f8a3a', 1),
     ('outfit_color', 'sky',     'Небо',      '#4a7fc9', 2),
     ('outfit_color', 'berry',   'Ягода',     '#b5485a', 3),
@@ -249,10 +257,18 @@ INSERT INTO appearance_option (slot_key, key, name, color, sort_order) VALUES
     ('outfit_color', 'cream',   'Сливки',    '#e8d9b5', 5),
     ('outfit_color', 'plum',    'Слива',     '#7a4a8a', 6),
 
+    ('accessory', 'leaf_clip',    'Заколка-листик',      NULL, 0),
     ('accessory', 'none',         'Ничего',              NULL, 1),
-    ('accessory', 'gardener_hat', 'Шляпа садовника',     NULL, 2),
-    ('accessory', 'straw_hat',    'Соломенная шляпа',    NULL, 3),
-    ('accessory', 'scarf',        'Шарф',                NULL, 4),
-    ('accessory', 'glasses',      'Очки',                NULL, 5),
-    ('accessory', 'flower',       'Цветок в волосах',    NULL, 6)
+    ('accessory', 'headphones',   'Наушники',            NULL, 2),
+    ('accessory', 'beanie',       'Шапка-бини',          NULL, 3),
+    ('accessory', 'gardener_hat', 'Шляпа садовника',     NULL, 4),
+    ('accessory', 'wizard_hat',   'Шляпа колдуна',       NULL, 5),
+    ('accessory', 'straw_hat',    'Соломенная шляпа',    NULL, 6),
+    ('accessory', 'scarf',        'Шарф',                NULL, 7),
+    ('accessory', 'glasses',      'Очки',                NULL, 8),
+    ('accessory', 'flower',       'Цветок в волосах',    NULL, 9),
+
+    ('bag', 'backpack', 'Рюкзак с клевером', NULL, 1),
+    ('bag', 'tote',     'Шоппер',            NULL, 2),
+    ('bag', 'none',     'Без сумки',         NULL, 3)
 ON CONFLICT (slot_key, key) DO UPDATE SET name = EXCLUDED.name, color = EXCLUDED.color, sort_order = EXCLUDED.sort_order;
