@@ -89,6 +89,10 @@ export function tileFrame(map: GardenMap, x: number, y: number): string {
     }
     case 'bridge':
       return 'bridge'
+    case 'flowers':
+      return `flowers_${variant(x, y, 3)}`
+    case 'rug':
+      return `rug_${neighbourMask(map, x, y, 'rug')}`
     case 'floor':
       // пол по соседям: у стен темнеет, в углах комнаты срезан — комната получается восьмиугольной
       return `floor_${neighbourMask(map, x, y, 'floor')}`

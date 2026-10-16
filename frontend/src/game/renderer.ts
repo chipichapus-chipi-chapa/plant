@@ -129,13 +129,27 @@ export function drawGarden(
 }
 
 /** Источник света в логических пикселях: радиус и сила (0..1). */
-export type Light = { x: number; y: number; radius: number; strength: number }
+export type Light = {
+  x: number
+  y: number
+  radius: number
+  strength: number
+  /** Цвет отсвета [r, g, b]; без него — тёплый свет лампы */
+  color?: Glow
+}
+
+type Glow = readonly [number, number, number]
+
+/** Тёплый свет лампы и окон. */
+const LAMP_GLOW: Glow = [255, 168, 72]
+/** Светло-розовое свечение лилий и цветущей вишни. */
+const PETAL_GLOW: Glow = [255, 178, 214]
 
 /**
  * Свет у построек — смещения от левого верхнего угла постройки. Сарай светится окном и дверью,
  * у двери свет ещё и падает на землю; пробуждённая чаша мерцает сама.
  */
-const PROP_LIGHTS: Record<string, [number, number, number, number][]> = {
+const PROP_LIGHTS: Record<string, [number, number, number, number, Glow?][]> = {
   shed: [
     [29, 63, 40, 0.85],
     [83, 72, 50, 1],
@@ -145,14 +159,27 @@ const PROP_LIGHTS: Record<string, [number, number, number, number][]> = {
   // в сарае: лампа на табурете и лунный свет из двери
   lamp: [[16, 10, 110, 1]],
   door_exit: [[16, 20, 34, 0.45]],
-  // кухня поместья: угли в печи еле тлеют
-  hearth: [[32, 20, 80, 0.75]],
+  // кухня поместья: угли в печи тлеют, у кресла — тёплый угол
+  hearth: [[32, 20, 90, 0.85]],
+  // поместье: тёплые окна, окошко в двери, фонарик у входа, чердак
+  manor: [
+    [33, 63, 56, 0.9],
+    [159, 63, 56, 0.9],
+    [137, 58, 44, 0.8],
+    [112, 84, 44, 0.6],
+  ],
+  // исполинские лилии и цветущая вишня светятся изнутри светло-розовым
+  giant_lily: [
+    [30, 24, 70, 1, PETAL_GLOW],
+    [49, 38, 40, 0.7, PETAL_GLOW],
+  ],
+  blossom_tree: [[32, 30, 58, 0.7, PETAL_GLOW]],
 }
 
 function propLights(map: GardenMap, awakened: ReadonlySet<string>): Light[] {
   return map.props.flatMap((p) => {
     const key = awakened.has(p.key) ? `${p.kind}_awakened` : p.kind
-    return (PROP_LIGHTS[key] ?? []).map(([dx, dy, radius, strength]) => ({ x: p.x * TILE + dx, y: p.y * TILE + dy, radius, strength }))
+    return (PROP_LIGHTS[key] ?? []).map(([dx, dy, radius, strength, color]) => ({ x: p.x * TILE + dx, y: p.y * TILE + dy, radius, strength, color }))
   })
 }
 
@@ -245,7 +272,10 @@ const DARK_ROOM = 0.86
 /** Темнота с неподвижным светом — попиксельно, один раз на карту и набор огней. darkness — ровная темнота вместо сумерек. */
 function bakeDarkness(w: number, h: number, lights: Light[], darkness?: number): HTMLCanvasElement {
   const light = new Float32Array(w * h)
-  for (const l of lights) addLight(light, w, h, l)
+  // какой источник светит в пиксель сильнее всех — его цвет и даёт отсвет
+  const strongest = new Float32Array(w * h)
+  const owner = new Int16Array(w * h).fill(-1)
+  lights.forEach((l, index) => addLight(light, w, h, l, strongest, owner, index))
   const image = new ImageData(w, h)
   const data = image.data
   for (let y = 0; y < h; y++)
@@ -261,7 +291,9 @@ function bakeDarkness(w: number, h: number, lights: Light[], darkness?: number):
       const dark = Math.floor(ambient * (1 - lit) * 4 + threshold) / 4
       const o = i * 4
       if (lit > 0.35 && Math.floor((lit - 0.35) * 3 + threshold) > 0) {
-        data.set([255, 168, 72, 34], o) // тёплый отсвет лампы
+        const glow = owner[i] >= 0 ? (lights[owner[i]].color ?? LAMP_GLOW) : LAMP_GLOW
+        // розовое свечение цветов чуть заметнее тёплого: лепестки светятся сами, а не отражают лампу
+        data.set([glow[0], glow[1], glow[2], glow === LAMP_GLOW ? 34 : 64], o)
       } else {
         data.set([8, 7, 12, Math.round(dark * 0.92 * 255)], o)
       }
@@ -296,7 +328,15 @@ function auraSprite(): HTMLCanvasElement {
 }
 
 /** Прибавить свет одного источника: мягкий спад к краю радиуса. */
-function addLight(target: Float32Array, w: number, h: number, l: Light) {
+function addLight(
+  target: Float32Array,
+  w: number,
+  h: number,
+  l: Light,
+  strongest?: Float32Array,
+  owner?: Int16Array,
+  index = -1,
+) {
   const x0 = Math.max(0, Math.floor(l.x - l.radius))
   const x1 = Math.min(w - 1, Math.ceil(l.x + l.radius))
   const y0 = Math.max(0, Math.floor(l.y - l.radius))
@@ -304,7 +344,14 @@ function addLight(target: Float32Array, w: number, h: number, l: Light) {
   for (let y = y0; y <= y1; y++)
     for (let x = x0; x <= x1; x++) {
       const d = Math.hypot(x - l.x, y - l.y) / l.radius
-      if (d < 1) target[y * w + x] += (1 - d) * (1 - d) * 1.6 * l.strength
+      if (d >= 1) continue
+      const add = (1 - d) * (1 - d) * 1.6 * l.strength
+      const i = y * w + x
+      target[i] += add
+      if (strongest && owner && add > strongest[i]) {
+        strongest[i] = add
+        owner[i] = index
+      }
     }
 }
 
