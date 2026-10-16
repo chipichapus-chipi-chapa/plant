@@ -1,5 +1,6 @@
 import type { GardenMap, GardenObject } from '../api/types'
 import type { Atlas } from './atlas'
+import { hoeFrame, weedParticles, type WeedEffect } from './effects'
 import { TILE, tileFrame, type Cell } from './layout'
 
 /** Кадр персонажа: 32×48, низ — по низу клетки. */
@@ -18,6 +19,8 @@ export type CharacterSprite = {
   lift?: number
   /** Неподвижный свет у стоящего персонажа (фонарь Вереска) — смещение от ступней */
   light?: Light
+  /** Кадры «жизни на месте» (мышь шевелит ушами): [обычный, движение]; image — запасной */
+  idle?: CanvasImageSource[]
 }
 
 /** Персонаж, стоящий в клетке: ступни по центру у нижнего края. */
@@ -42,6 +45,8 @@ export type Scene = {
    * open (замок открыт). Нет такого кадра в атласе — рисуется обычный.
    */
   variants?: ReadonlyMap<string, string>
+  /** Идущие анимации: прополка (мотыга и вылетающие сорняки) */
+  effects?: WeedEffect[]
   /** Насколько горят лампы (0..1): в помещении сначала темно, потом свет разгорается */
   lightLevel?: number
   /** Ступни идущего игрока: вокруг него ореол, снимающий сумерки */
@@ -85,12 +90,15 @@ export function drawGarden(
   ].sort((a, b) => a.bottom - b.bottom)
   // Персонажи и постройки — по глубине: кто ниже на экране, тот ближе и рисуется позже
   const people = [...characters].sort((a, b) => a.py - b.py)
+  const drawPerson = (c: CharacterSprite) => drawCharacter(ctx, { ...c, image: idleImage(c, time) })
   let next = 0
   for (const sprite of sprites) {
-    while (next < people.length && people[next].py < sprite.bottom * TILE) drawCharacter(ctx, people[next++])
+    while (next < people.length && people[next].py < sprite.bottom * TILE) drawPerson(people[next++])
     drawFrame(ctx, atlas, sprite.frame, sprite.x, sprite.y)
   }
-  while (next < people.length) drawCharacter(ctx, people[next++])
+  while (next < people.length) drawPerson(people[next++])
+
+  for (const effect of scene.effects ?? []) drawWeeding(ctx, atlas, effect, time - effect.at, scene.aura)
 
   drawLighting(
     ctx,
@@ -137,6 +145,8 @@ const PROP_LIGHTS: Record<string, [number, number, number, number][]> = {
   // в сарае: лампа на табурете и лунный свет из двери
   lamp: [[16, 10, 110, 1]],
   door_exit: [[16, 20, 34, 0.45]],
+  // кухня поместья: угли в печи еле тлеют
+  hearth: [[32, 20, 80, 0.75]],
 }
 
 function propLights(map: GardenMap, awakened: ReadonlySet<string>): Light[] {
@@ -298,6 +308,15 @@ function addLight(target: Float32Array, w: number, h: number, l: Light) {
     }
 }
 
+/**
+ * Кадр стоящего персонажа: редкое движение (мышь дёрнула ушами, качнула хвостом) раз в пару секунд.
+ * Сдвиг по позиции — чтобы соседи не шевелились синхронно.
+ */
+function idleImage(c: CharacterSprite, time: number): CanvasImageSource {
+  if (!c.idle || c.idle.length < 2) return c.image
+  return (time + c.px * 37 + c.py * 11) % 2600 < 280 ? c.idle[1] : c.idle[0]
+}
+
 function drawCharacter(ctx: CanvasRenderingContext2D, c: CharacterSprite) {
   const left = Math.round(c.px - CHARACTER_WIDTH / 2)
   const top = Math.round(c.py - CHARACTER_HEIGHT + 2 - (c.lift ?? 0))
@@ -310,6 +329,35 @@ function drawCharacter(ctx: CanvasRenderingContext2D, c: CharacterSprite) {
   ctx.scale(-1, 1)
   ctx.drawImage(c.image, 0, 0)
   ctx.restore()
+}
+
+/**
+ * Прополка: мотыга в руках у персонажа (со стороны грядки) и клочки сорняков, вылетающие из клетки.
+ * Рисуется до света — анимация живёт в тех же сумерках, что и сад.
+ */
+function drawWeeding(ctx: CanvasRenderingContext2D, atlas: Atlas, effect: WeedEffect, t: number, player?: { x: number; y: number } | null) {
+  const hoe = hoeFrame(t)
+  if (hoe && player) {
+    const targetX = effect.cell.x * TILE + TILE / 2
+    const left = targetX < player.x - 4
+    const x = Math.round(player.x + (left ? -18 : 2))
+    const y = Math.round(player.y - 24)
+    if (left) {
+      ctx.save()
+      ctx.translate(x + 16, y)
+      ctx.scale(-1, 1)
+      drawFrame(ctx, atlas, `fx_hoe_${hoe}`, 0, 0)
+      ctx.restore()
+    } else {
+      drawFrame(ctx, atlas, `fx_hoe_${hoe}`, x, y)
+    }
+  }
+  for (const p of weedParticles(effect, t)) {
+    ctx.fillStyle = '#0e0b0a'
+    ctx.fillRect(p.x - 1, p.y - 1, p.size + 2, p.size + 2) // контур, как у всех спрайтов
+    ctx.fillStyle = p.color
+    ctx.fillRect(p.x, p.y, p.size, p.size)
+  }
 }
 
 /** Кадр постройки с учётом её состояния; если особого кадра нет — обычный. */

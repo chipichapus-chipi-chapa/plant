@@ -52,13 +52,13 @@ public class MentorService {
         List<MentorProgress.StepState> steps = new ArrayList<>();
         String next = set.contains(MET_FLAG) ? null : content.intro();
         for (MentorContent.Step step : content.tutorial()) {
-            boolean done = conditions.met(playerId, step.condition());
+            boolean done = conditions.met(playerId, step);
             boolean acknowledged = set.contains("ack_" + step.key());
             boolean offered = step.offer() == null || set.contains("offered_" + step.key());
             steps.add(new MentorProgress.StepState(step.key(), done, acknowledged, offered));
             if (next == null && !acknowledged) {
-                // поручение сначала надо получить, даже если дело уже сделано заранее
-                next = !offered ? step.offer() : done ? step.done() : step.hint();
+                // поручение сначала надо получить; а если дело уже сделано заранее — Вереск сразу благодарит
+                next = done ? step.done() : !offered ? step.offer() : step.hint();
             }
         }
         boolean news = next != null && (next.equals(content.intro()) || content.doneDialogues().contains(next)

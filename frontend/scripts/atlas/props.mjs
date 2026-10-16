@@ -152,7 +152,8 @@ export function toolsTaken() {
   return s
 }
 
-export function barrel() {
+/** Бочка; наполнена — до краёв вода, в ней отражается небо. */
+export function barrel(full = false) {
   const s = new Sprite(T, T)
   s.shadow(17, 29, 11, 2.5)
   const b = new Sprite(T, T)
@@ -166,9 +167,15 @@ export function barrel() {
   for (let x = 10; x < 24; x += 4) for (let y = 8; y < 28; y++) b.px(x, y, R.wood[1]) // клёпки
   for (const y of [11, 23]) for (let x = 7; x < 25; x++) b.px(x, y, pick(R.stone.slice(0, 4), 0.9 - (x - 7) / 18, x, y))
   b.ellipse(16, 7, 8, 2.5, R.wood[2])
-  b.ellipse(16, 7.5, 6.5, 1.5, P.dark)
-  b.px(14, 7, R.leaf[2])
-  b.px(17, 7, R.straw[2])
+  if (full) {
+    b.ellipse(16, 7.5, 6.5, 1.5, R.dew[2])
+    b.rect(12, 7, 3, 1, R.dew[4]) // блик неба на воде
+    b.px(19, 8, R.dew[1])
+  } else {
+    b.ellipse(16, 7.5, 6.5, 1.5, P.dark)
+    b.px(14, 7, R.leaf[2])
+    b.px(17, 7, R.straw[2])
+  }
   b.outline(INK)
   s.stamp(b)
   return s
@@ -260,6 +267,7 @@ export function propFrames() {
     prop_shed: shed(),
     prop_tools: tools(),
     prop_barrel: barrel(),
+    prop_barrel_awakened: barrel(true),
     prop_wheelbarrow: wheelbarrow(false),
     prop_wheelbarrow_awakened: wheelbarrow(true),
     prop_tools_searched: toolsTaken(),
