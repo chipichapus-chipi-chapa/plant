@@ -1,0 +1,172 @@
+.editor {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.intro {
+  margin: 0;
+  font-style: italic;
+  color: var(--c-bark);
+}
+
+.layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+  align-items: flex-start;
+}
+
+/* Превью: персонаж на кусочке травы, крупно и без размытия */
+.preview {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  margin: 0 auto;
+}
+
+.canvas {
+  width: 160px;
+  height: 240px;
+  padding: var(--space-2) var(--space-4);
+  image-rendering: pixelated;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 55%, rgb(255 168 72 / 0.18), transparent),
+    linear-gradient(to bottom, var(--c-night) 72%, var(--c-night-grass) 72%);
+  box-shadow: 0 0 0 var(--px) var(--c-bark), 0 0 24px rgb(255 176 96 / 0.25);
+  box-sizing: content-box;
+}
+
+.previewButtons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.random {
+  font-size: var(--text-s);
+}
+
+.fields {
+  display: grid;
+  flex: 1;
+  min-width: 240px;
+  gap: var(--space-3);
+}
+
+.row {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.label {
+  font-size: var(--text-s);
+  color: var(--c-bark);
+}
+
+.input {
+  padding: var(--space-1) var(--space-2);
+  border: 0;
+  background: var(--c-parchment);
+  color: var(--c-ink);
+  font: inherit;
+  box-shadow: inset 0 0 0 var(--px) var(--c-bark);
+}
+
+.input:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 var(--px) var(--c-ink), 0 0 0 var(--px) var(--c-sun);
+}
+
+.cycler {
+  display: grid;
+  grid-template-columns: 32px 1fr 32px;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.value {
+  text-align: center;
+  padding: var(--space-1) 0;
+  background: var(--c-parchment-shade);
+}
+
+.arrow {
+  height: 32px;
+  border: 0;
+  background: var(--c-wood);
+  color: var(--c-parchment);
+  box-shadow: 0 0 0 var(--px) var(--c-ink), inset 0 calc(var(--px) * -1) 0 0 var(--c-bark);
+  cursor: pointer;
+}
+
+.arrow:hover {
+  background: var(--c-sun);
+  color: var(--c-ink);
+}
+
+.arrow:focus-visible {
+  outline: var(--px) solid var(--c-sun);
+  outline-offset: 2px;
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  /* место под рамку выбранного цвета, чтобы она не наезжала на подпись */
+  padding: var(--space-2);
+}
+
+.swatch {
+  position: relative;
+  cursor: pointer;
+}
+
+.swatch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.chip {
+  display: block;
+  width: 28px;
+  height: 28px;
+  box-shadow: 0 0 0 var(--px) var(--c-ink);
+}
+
+.swatch:has(input:checked) .chip {
+  box-shadow: 0 0 0 var(--px) var(--c-sun), 0 0 0 calc(var(--px) * 2) var(--c-ink);
+}
+
+.swatch:has(input:focus-visible) .chip {
+  outline: var(--px) dashed var(--c-ink);
+  outline-offset: calc(var(--px) * 3);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.error {
+  margin: 0;
+  color: var(--c-berry);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.secondary {
+  background: var(--c-parchment);
+}

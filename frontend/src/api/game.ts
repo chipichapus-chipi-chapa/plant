@@ -1,5 +1,5 @@
 import { apiFetch } from './client'
-import type { CastResult, Catalog, CompletionResult, DayCompletionResult, HabitHistory, GameState, GardenObject, Habit, HabitInput, PurchaseResult, SearchResult } from './types'
+import type { AttemptResult, CastResult, ErrandResult, Catalog, CompletionResult, DayCompletionResult, FinishDialogueResult, HabitHistory, GameState, GardenObject, Habit, HabitInput, PurchaseResult, SearchResult, WeedResult } from './types'
 
 export const fetchGameState = () => apiFetch<GameState>('/api/state')
 export const fetchCatalog = () => apiFetch<Catalog>('/api/catalog')
@@ -26,6 +26,20 @@ export const purchaseItem = (itemKey: string, quantity: number, idempotencyKey: 
 export const plantSeed = (x: number, y: number, seedItemKey: string) =>
   apiFetch<GardenObject>('/api/garden/plantings', { method: 'POST', body: JSON.stringify({ x, y, seedItemKey }) })
 
+/** Прополоть заросшую грядку (нужны лопата и грабли в сумке) */
+export const weedBed = (x: number, y: number) =>
+  apiFetch<WeedResult>('/api/garden/weedings', { method: 'POST', body: JSON.stringify({ x, y }) })
+
+/** Житель попросил — поручение взято */
+export const acceptErrand = (key: string) => apiFetch<unknown>(`/api/errands/${key}/accept`, { method: 'POST' })
+
+/** Выполнить поручение: отдать вещи или показать находку */
+export const completeErrand = (key: string) => apiFetch<ErrandResult>(`/api/errands/${key}/complete`, { method: 'POST' })
+
+/** Попробовать открыть замок: неверная комбинация ничего не стоит */
+export const attemptPuzzle = (puzzleKey: string, answer: string[]) =>
+  apiFetch<AttemptResult>(`/api/puzzles/${puzzleKey}/attempts`, { method: 'POST', body: JSON.stringify({ answer }) })
+
 export const castRecipe = (recipeKey: string) =>
   apiFetch<CastResult>(`/api/magic/recipes/${recipeKey}/cast`, { method: 'POST' })
 
@@ -41,3 +55,10 @@ export const uncompleteHabitOn = (id: number, day: string) =>
 
 export const searchSpot = (spotKey: string) =>
   apiFetch<SearchResult>(`/api/exploration/spots/${spotKey}/search`, { method: 'POST' })
+
+export const saveProfile = (displayName: string, appearance: Record<string, string>) =>
+  apiFetch<void>('/api/profile', { method: 'PUT', body: JSON.stringify({ displayName, appearance }) })
+
+/** Разговор дочитан: сервер ставит флаг и (один раз) выдаёт подарок */
+export const finishDialogue = (key: string) =>
+  apiFetch<FinishDialogueResult>(`/api/mentor/dialogues/${key}/finish`, { method: 'POST' })

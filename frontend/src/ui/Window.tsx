@@ -7,30 +7,32 @@ type Props = {
   children: ReactNode
   /** wide — для таблиц вроде трекера привычек */
   size?: 'normal' | 'wide'
+  /** false — окно нельзя закрыть мимоходом (первое знакомство): нет крестика, Escape и клика по фону */
+  dismissible?: boolean
 }
 
 /**
  * Игровое окно поверх сада: пергамент в деревянной рамке.
  * Закрывается крестиком, Escape или кликом по затемнению; фокус переходит в окно и возвращается обратно.
  */
-export function Window({ title, onClose, children, size = 'normal' }: Props) {
+export function Window({ title, onClose, children, size = 'normal', dismissible = true }: Props) {
   const dialogRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null
     dialogRef.current?.focus()
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape' && dismissible) onClose()
     }
     window.addEventListener('keydown', onKey)
     return () => {
       window.removeEventListener('keydown', onKey)
       previous?.focus()
     }
-  }, [onClose])
+  }, [onClose, dismissible])
 
   return (
-    <div className={styles.backdrop} onClick={onClose}>
+    <div className={styles.backdrop} onClick={dismissible ? onClose : undefined}>
       <div
         ref={dialogRef}
         className={`${styles.window} ${size === 'wide' ? styles.wide : ''}`}
@@ -42,16 +44,18 @@ export function Window({ title, onClose, children, size = 'normal' }: Props) {
       >
         <header className={styles.titlebar}>
           <h2 className={styles.title}>{title}</h2>
-          <button type="button" className={styles.close} onClick={onClose} aria-label="Закрыть">
-            <svg width="16" height="16" viewBox="0 0 8 8" shapeRendering="crispEdges" aria-hidden="true">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <g key={i} fill="currentColor">
-                  <rect x={i} y={i} width="1" height="1" />
-                  <rect x={7 - i} y={i} width="1" height="1" />
-                </g>
-              ))}
-            </svg>
-          </button>
+          {dismissible && (
+            <button type="button" className={styles.close} onClick={onClose} aria-label="Закрыть">
+              <svg width="16" height="16" viewBox="0 0 8 8" shapeRendering="crispEdges" aria-hidden="true">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <g key={i} fill="currentColor">
+                    <rect x={i} y={i} width="1" height="1" />
+                    <rect x={7 - i} y={i} width="1" height="1" />
+                  </g>
+                ))}
+              </svg>
+            </button>
+          )}
         </header>
         <div className={styles.body}>{children}</div>
       </div>

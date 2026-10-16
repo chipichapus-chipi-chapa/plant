@@ -54,7 +54,14 @@ INSERT INTO item_def (key, kind, name, description, price, species_key, crystal_
     ('seed_chamomile', 'SEED', 'Пакетик семян ромашки',
         'Растёт неспешно и пахнет летом даже в дождь.', 3, 'chamomile', NULL),
     ('seed_sunflower', 'SEED', 'Пакетик семян подсолнуха',
-        'Долго тянется к солнцу, зато потом видно с другого конца сада.', 5, 'sunflower', NULL)
+        'Долго тянется к солнцу, зато потом видно с другого конца сада.', 5, 'sunflower', NULL),
+
+    ('garden_tools', 'TOOL', 'Лопата и грабли',
+        'Сняты с забора. Ручки отполированы чьими-то ладонями — сорнякам теперь не поздоровится.', NULL, NULL, NULL),
+    ('repair_kit',   'TOOL', 'Ремонтный набор',
+        'Гаечный ключ, молоток и пара новых шплинтов. Пахнет маслом и чужой аккуратностью.', NULL, NULL, NULL),
+    ('old_lantern',  'TOOL', 'Старый фонарь',
+        'Фонарь прежнего садовника. Стекло в трещинках, но фитиль цел — с ним не страшно и в чаще.', NULL, NULL, NULL)
 ON CONFLICT (key) DO UPDATE SET
     kind = EXCLUDED.kind,
     name = EXCLUDED.name,
@@ -66,27 +73,38 @@ ON CONFLICT (key) DO UPDATE SET
 -- Магические рецепты -----------------------------------------------------------
 -- Ингредиенты пересоздаются целиком: на них не ссылаются данные игроков.
 
-INSERT INTO recipe_def (key, name, description, target_object_key, result_text, sort_order) VALUES
+INSERT INTO recipe_def (key, name, description, target_object_key, result_text, sort_order, action_label) VALUES
     ('awaken_basin', 'Пробуждение каменной чаши',
         'Изумруд будит корни, аметист — свет. Вместе они вспомнят, как здесь цвело.',
         'stone-basin',
-        'В чаше распустились светящиеся цветы. Ночью их, наверное, видно даже из окна сарая.', 1),
+        'В чаше распустились светящиеся цветы. Ночью их, наверное, видно даже из окна сарая.', 1, 'Пробудить'),
     ('open_east_gate', 'Солнце для калитки',
         'Ежевика боится только настоящего солнца. Одной искры хватит, чтобы она вспомнила, что ей пора отдохнуть.',
         'east-gate',
-        'Ежевика отступила, калитка скрипнула и открылась. За ней — тропа на восток. Куда она ведёт, узнаем в следующей главе.', 2)
+        'Ежевика отступила, калитка скрипнула и открылась. За ней — тропа на восток. Куда она ведёт, узнаем в следующей главе.', 2, 'Пробудить'),
+    ('repair_wheelbarrow', 'Починка тачки',
+        'Поставить колесо на ось и забить новый шплинт. Ремонтный набор заперт в ящике в сарае.',
+        'wheelbarrow',
+        'Колесо встало на место и больше не скрипит. Тачка стоит ровно — кажется, даже гордо.', 3, 'Починить'),
+    ('fill_barrel', 'Вода для бочки',
+        'Сапфир странствий помнит дорогу к роднику. Принесите его с прогулки — и бочка вспомнит, что такое вода.',
+        'barrel',
+        'Бочка до краёв полна прохладной воды. В ней отражается небо — даже ночью.', 4, 'Наполнить')
 ON CONFLICT (key) DO UPDATE SET
     name = EXCLUDED.name,
     description = EXCLUDED.description,
     target_object_key = EXCLUDED.target_object_key,
     result_text = EXCLUDED.result_text,
-    sort_order = EXCLUDED.sort_order;
+    sort_order = EXCLUDED.sort_order,
+    action_label = EXCLUDED.action_label;
 
-DELETE FROM recipe_ingredient WHERE recipe_key IN ('awaken_basin', 'open_east_gate');
+DELETE FROM recipe_ingredient WHERE recipe_key IN ('awaken_basin', 'open_east_gate', 'repair_wheelbarrow', 'fill_barrel');
 INSERT INTO recipe_ingredient (recipe_key, item_key, quantity) VALUES
     ('awaken_basin', 'shard_emerald', 2),
     ('awaken_basin', 'shard_amethyst', 1),
-    ('open_east_gate', 'sun_spark', 1);
+    ('open_east_gate', 'sun_spark', 1),
+    ('repair_wheelbarrow', 'repair_kit', 1),
+    ('fill_barrel', 'shard_sapphire', 1);
 
 -- Артефакты -------------------------------------------------------------------
 -- Лор раскрывается понемногу: через описание, легенду и подсказки к ещё не найденному.
@@ -105,7 +123,7 @@ INSERT INTO artifact_def (key, name, crystal_category, description, legend, acqu
     ('hearth_lantern', 'Фонарь очага', 'amber',
         'Маленький фонарь с янтарным стеклом. Даже потухший, он греет руки.',
         'Когда-то в поместье его зажигали в первый холодный вечер — и все собирались на кухне.',
-        'Его свет помнят стены поместья. Само поместье — далеко за садом.',
+        'Его свет помнят стены поместья. Само поместье — за чащей, куда не пускает сторож.',
         'Когда-нибудь согреет целый дом.', 3)
 ON CONFLICT (key) DO UPDATE SET
     name = EXCLUDED.name,
@@ -123,12 +141,25 @@ INSERT INTO discovery_spot (key, prop_key, found_text, empty_text, requires_awak
         'Под камнями кто-то спрятал жестяную коробочку. Внутри — осколки, бережно завёрнутые в сухой лист.',
         'Под камнями пусто. Коробочка теперь служит домом для жука.',
         NULL, NULL, NULL),
-    ('shed_corner', 'shed',
+    -- угол теперь внутри сарая (content/gardens/shed.json); ключ точки прежний — находки игроков сохраняются
+    ('shed_corner', 'shed-corner',
         'Свет из каменной чаши падает в щель сарая. В углу, под старой рогожей, что-то мерцает — и греет ладонь.',
         'В сарае пахнет землёй и тишиной. Всё, что здесь было спрятано, уже у вас.',
         'stone-basin',
         'В сарае темно, ничего не разглядеть. Вот бы сюда немного света…',
-        'seed_of_first_garden')
+        'seed_of_first_garden'),
+    ('fence_tools', 'tools',
+        'Вы снимаете с гвоздей лопату и грабли. Забор будто выдыхает с облегчением.',
+        'На заборе остались только гвозди и светлые пятна там, где висели инструменты.',
+        NULL, NULL, NULL),
+    ('hearth_glow', 'hearth',
+        'В остывшей золе — маленький фонарь с янтарным стеклом. Он тёплый, хотя печь давно не топили.',
+        'В печи только зола. Фонарь очага уже у вас — и он всё такой же тёплый.',
+        NULL, NULL, 'hearth_lantern'),
+    ('bridge_compass', 'bridge-post',
+        'Между мокрыми камнями у опоры — старый компас. Стрелка дрожит и показывает не на север, а куда-то в чащу.',
+        'У опоры моста только мох и холодная вода. Компас уже у вас.',
+        NULL, NULL, 'wanderer_compass')
 ON CONFLICT (key) DO UPDATE SET
     prop_key = EXCLUDED.prop_key,
     found_text = EXCLUDED.found_text,
@@ -137,8 +168,107 @@ ON CONFLICT (key) DO UPDATE SET
     locked_text = EXCLUDED.locked_text,
     artifact_key = EXCLUDED.artifact_key;
 
-DELETE FROM discovery_spot_reward WHERE spot_key IN ('rock_cache', 'shed_corner');
+DELETE FROM discovery_spot_reward WHERE spot_key IN ('rock_cache', 'shed_corner', 'fence_tools', 'bridge_compass', 'hearth_glow');
 INSERT INTO discovery_spot_reward (spot_key, item_key, quantity) VALUES
     ('rock_cache', 'shard_amethyst', 2),
     ('rock_cache', 'shard_emerald', 1),
-    ('shed_corner', 'sun_spark', 1);
+    ('shed_corner', 'sun_spark', 1),
+    ('fence_tools', 'garden_tools', 1),
+    ('bridge_compass', 'life_seed', 3),
+    ('hearth_glow', 'sun_spark', 1);
+
+-- Загадки ---------------------------------------------------------------------
+-- Подсказка к ящику — в письме прежнего садовника (content/gardens/shed.json, постройка letter).
+
+INSERT INTO puzzle_def (key, prop_key, prompt, answer, solved_text, wrong_text) VALUES
+    ('toolbox_lock', 'toolbox',
+        'На крышке замок с тремя колёсиками. На каждом — капля, солнце, луна и лист.',
+        'drop,sun,moon',
+        'Щёлк! Крышка поддаётся. Внутри — гаечный ключ, молоток и новые шплинты. Хватит, чтобы поставить колесо тачки на место.',
+        'Замок не поддаётся. Может, в сарае есть подсказка?')
+ON CONFLICT (key) DO UPDATE SET
+    prop_key = EXCLUDED.prop_key,
+    prompt = EXCLUDED.prompt,
+    answer = EXCLUDED.answer,
+    solved_text = EXCLUDED.solved_text,
+    wrong_text = EXCLUDED.wrong_text;
+
+DELETE FROM puzzle_symbol WHERE puzzle_key = 'toolbox_lock';
+INSERT INTO puzzle_symbol (puzzle_key, symbol_key, name, sort_order) VALUES
+    ('toolbox_lock', 'drop', 'Капля', 1),
+    ('toolbox_lock', 'sun',  'Солнце', 2),
+    ('toolbox_lock', 'moon', 'Луна', 3),
+    ('toolbox_lock', 'leaf', 'Лист', 4);
+
+DELETE FROM puzzle_reward WHERE puzzle_key = 'toolbox_lock';
+INSERT INTO puzzle_reward (puzzle_key, item_key, quantity) VALUES
+    ('toolbox_lock', 'repair_kit', 1);
+
+-- Внешность персонажа ----------------------------------------------------------
+-- Первый вариант каждого слота (по sort_order) — облик по умолчанию.
+
+INSERT INTO appearance_slot (key, name, kind, sort_order) VALUES
+    ('skin',         'Кожа',          'COLOR', 1),
+    ('hair',         'Причёска',      'STYLE', 2),
+    ('hair_color',   'Цвет волос',    'COLOR', 3),
+    ('outfit',       'Одежда',        'STYLE', 4),
+    ('outfit_color', 'Цвет одежды',   'COLOR', 5),
+    ('accessory',    'Мелочь',        'STYLE', 6),
+    ('bag',          'Сумка',         'STYLE', 7)
+ON CONFLICT (key) DO UPDATE SET name = EXCLUDED.name, kind = EXCLUDED.kind, sort_order = EXCLUDED.sort_order;
+
+INSERT INTO appearance_option (slot_key, key, name, color, sort_order) VALUES
+    ('skin', 'light',  'Светлая',      '#f7e1d2', 1),
+    ('skin', 'warm',   'Тёплая',       '#e8c4a0', 2),
+    ('skin', 'tan',    'Загорелая',    '#c99a6e', 3),
+    ('skin', 'brown',  'Смуглая',      '#8d5f3e', 4),
+    ('skin', 'deep',   'Тёмная',       '#5e3b26', 5),
+
+    ('hair', 'bob',      'Лохматое каре', NULL, 1),
+    ('hair', 'gathered', 'Собранные',     NULL, 2),
+    ('hair', 'long',     'Длинные',       NULL, 3),
+    ('hair', 'bun',      'Пучок',         NULL, 4),
+    ('hair', 'braid',    'Коса',          NULL, 5),
+    ('hair', 'short',    'Короткие',      NULL, 6),
+    ('hair', 'curly',    'Кудри',         NULL, 7),
+
+    ('hair_color', 'cocoa',    'Какао',       '#5a3b2a', 0),
+    ('hair_color', 'chestnut', 'Каштановые',  '#7a4a2a', 1),
+    ('hair_color', 'wheat',    'Пшеничные',   '#e3c27a', 2),
+    ('hair_color', 'copper',   'Медные',      '#c8642e', 3),
+    ('hair_color', 'black',    'Чёрные',      '#2f2a2e', 4),
+    ('hair_color', 'silver',   'Седые',       '#d9d4cc', 5),
+    ('hair_color', 'heather',  'Вересковые',  '#c98aa8', 6),
+    ('hair_color', 'ash',      'Пепельные',   '#d8c8a8', 7),
+
+    ('outfit', 'casual',   'Куртка и худи', NULL, 1),
+    ('outfit', 'sport',    'Спортивный',    NULL, 2),
+    ('outfit', 'grunge',   'Гранж',         NULL, 3),
+    ('outfit', 'dress',    'Платье',        NULL, 4),
+    ('outfit', 'winter',   'Зимний',        NULL, 5),
+    ('outfit', 'sweater',  'Домашний',      NULL, 6),
+    ('outfit', 'overalls', 'Комбинезон',    NULL, 7),
+
+    ('outfit_color', 'olive',   'Олива',     '#6b7a4a', 0),
+    ('outfit_color', 'moss',    'Мох',       '#5f8a3a', 1),
+    ('outfit_color', 'sky',     'Небо',      '#4a7fc9', 2),
+    ('outfit_color', 'berry',   'Ягода',     '#b5485a', 3),
+    ('outfit_color', 'mustard', 'Горчица',   '#d99a2b', 4),
+    ('outfit_color', 'cream',   'Сливки',    '#e8d9b5', 5),
+    ('outfit_color', 'plum',    'Слива',     '#7a4a8a', 6),
+
+    ('accessory', 'leaf_clip',    'Заколка-листик',      NULL, 0),
+    ('accessory', 'none',         'Ничего',              NULL, 1),
+    ('accessory', 'headphones',   'Наушники',            NULL, 2),
+    ('accessory', 'beanie',       'Шапка-бини',          NULL, 3),
+    ('accessory', 'gardener_hat', 'Шляпа садовника',     NULL, 4),
+    ('accessory', 'wizard_hat',   'Шляпа колдуна',       NULL, 5),
+    ('accessory', 'straw_hat',    'Соломенная шляпа',    NULL, 6),
+    ('accessory', 'scarf',        'Шарф',                NULL, 7),
+    ('accessory', 'glasses',      'Очки',                NULL, 8),
+    ('accessory', 'flower',       'Цветок в волосах',    NULL, 9),
+
+    ('bag', 'backpack', 'Рюкзак с клевером', NULL, 1),
+    ('bag', 'tote',     'Шоппер',            NULL, 2),
+    ('bag', 'none',     'Без сумки',         NULL, 3)
+ON CONFLICT (slot_key, key) DO UPDATE SET name = EXCLUDED.name, color = EXCLUDED.color, sort_order = EXCLUDED.sort_order;

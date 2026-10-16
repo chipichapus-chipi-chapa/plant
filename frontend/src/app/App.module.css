@@ -1,62 +1,22 @@
-.shell {
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  min-height: 100%;
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: var(--space-4);
-  gap: var(--space-4);
+/* Игровое поле во весь экран: сад по центру, интерфейс — слоями поверх */
+.screen {
+  position: relative;
+  height: 100dvh;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 45%, #15100d, var(--c-night) 70%);
 }
 
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  flex-wrap: wrap;
-}
-
-.logo {
-  margin: 0;
-  font-size: 28px;
-  font-weight: 600;
-  color: var(--c-sun);
-  text-shadow: var(--px) var(--px) 0 var(--c-ink);
-}
-
-/* Сад — центральный элемент: во всю ширину, под ним панель действий */
-.stage {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-4);
-  align-content: start;
-  width: 100%;
-  max-width: 1100px;
-  margin: 0 auto;
-}
-
+/* Кнопки панели — в ряд внизу поля */
 .toolbar {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
-  gap: var(--space-4);
-  padding: var(--space-2) 0 var(--space-4);
+  gap: var(--space-3);
 }
 
-.garden {
+.loading {
   display: grid;
   place-items: center;
-  /* Пропорции будущей сетки 16×10 тайлов */
-  aspect-ratio: 16 / 10;
-  /* Заросший сад в «выцветшей» палитре; шахматка 32px намечает тайловую сетку */
-  background-color: var(--w-withered-grass);
-  background-image:
-    linear-gradient(45deg, var(--w-withered-olive) 25%, transparent 25%, transparent 75%, var(--w-withered-olive) 75%),
-    linear-gradient(45deg, var(--w-withered-olive) 25%, transparent 25%, transparent 75%, var(--w-withered-olive) 75%);
-  background-size: 64px 64px;
-  background-position: 0 0, 32px 32px;
-  background-blend-mode: soft-light;
-  box-shadow: 0 0 0 var(--px) var(--c-ink);
+  height: 100%;
 }
 
 .gardenNote {
@@ -72,18 +32,16 @@
   font-size: var(--text-s);
 }
 
-.footer {
-  font-size: var(--text-s);
-  color: var(--c-parchment-shade);
-  opacity: 0.8;
-}
-
 
 .badge {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
   color: var(--c-parchment);
+}
+
+.name {
+  text-shadow: 1px 1px 0 var(--c-ink);
 }
 
 .coins {
@@ -109,6 +67,7 @@
 .errorWrap {
   display: grid;
   place-items: center;
+  height: 100%;
 }
 
 .errorPanel {

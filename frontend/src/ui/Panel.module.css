@@ -6,7 +6,8 @@
   position: relative;
   margin: var(--px);
   padding: var(--space-3) var(--space-4);
-  background: var(--c-parchment);
+  background: var(--paper-texture), var(--c-parchment);
+  background-size: var(--paper-size), auto;
   box-shadow:
     0 calc(var(--px) * -1) 0 0 var(--c-ink),
     0 var(--px) 0 0 var(--c-ink),

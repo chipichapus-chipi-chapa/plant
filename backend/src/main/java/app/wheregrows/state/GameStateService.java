@@ -8,9 +8,13 @@ import app.wheregrows.exploration.ExplorationService;
 import app.wheregrows.garden.GardenService;
 import app.wheregrows.habit.HabitService;
 import app.wheregrows.magic.MagicService;
+import app.wheregrows.mentor.MentorService;
 import app.wheregrows.player.GameCalendar;
 import app.wheregrows.player.PlayerProfile;
 import app.wheregrows.player.PlayerProfileRepository;
+import app.wheregrows.player.ProfileService;
+import app.wheregrows.puzzle.PuzzleService;
+import app.wheregrows.errand.ErrandService;
 
 @Service
 class GameStateService {
@@ -22,10 +26,19 @@ class GameStateService {
     private final GardenService garden;
     private final MagicService magic;
     private final ExplorationService exploration;
+    private final ProfileService profileService;
+    private final MentorService mentor;
+    private final PuzzleService puzzles;
+    private final ErrandService errands;
 
     GameStateService(PlayerProfileRepository profiles, InventoryItemRepository inventory, HabitService habits,
                      GameCalendar calendar, GardenService garden, MagicService magic,
-                     ExplorationService exploration) {
+                     ExplorationService exploration, ProfileService profileService, MentorService mentor,
+                     PuzzleService puzzles, ErrandService errands) {
+        this.puzzles = puzzles;
+        this.errands = errands;
+        this.mentor = mentor;
+        this.profileService = profileService;
         this.magic = magic;
         this.exploration = exploration;
         this.profiles = profiles;
@@ -40,14 +53,15 @@ class GameStateService {
         PlayerProfile profile = profiles.findById(playerId).orElseThrow();
 
         return new GameStateResponse(
-                new GameStateResponse.Player(profile.getDisplayName(), profile.getZone().getId()),
+                new GameStateResponse.Player(profile.getDisplayName(), profile.getZone().getId(),
+                        profile.isOnboarded(), profileService.appearanceOf(playerId)),
                 calendar.today(profile),
                 inventory.findByIdPlayerIdAndQuantityGreaterThanOrderByIdItemKey(playerId, 0).stream()
                         .map(item -> new GameStateResponse.InventoryEntry(item.getItemKey(), item.getQuantity()))
                         .toList(),
                 habits.list(profile),
                 habits.dailyRewards(profile),
-                new GameStateResponse.Garden(garden.objects(playerId)),
+                new GameStateResponse.Garden(garden.objects(playerId), garden.weeded(playerId)),
                 magic.worldObjects(playerId).stream()
                         .map(w -> new GameStateResponse.WorldObject(w.getObjectKey(), w.getState()))
                         .toList(),
@@ -55,6 +69,9 @@ class GameStateService {
                 exploration.collection(playerId).stream()
                         .map(a -> new GameStateResponse.CollectedArtifact(a.getArtifactKey(), a.getFoundAt(),
                                 a.getFoundWhere()))
-                        .toList());
+                        .toList(),
+                mentor.progress(playerId),
+                puzzles.solvedPuzzles(playerId),
+                errands.states(playerId));
     }
 }

@@ -39,6 +39,10 @@ public class Recipe {
     @Column(name = "sort_order", nullable = false)
     private short sortOrder;
 
+    /** Надпись на кнопке: «Пробудить», «Починить»… */
+    @Column(name = "action_label", nullable = false)
+    private String actionLabel;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "recipe_ingredient", joinColumns = @JoinColumn(name = "recipe_key"))
     private List<Ingredient> ingredients = new ArrayList<>();
@@ -50,6 +54,10 @@ public class Recipe {
     }
 
     protected Recipe() {
+    }
+
+    public String getActionLabel() {
+        return actionLabel;
     }
 
     public String getKey() {
