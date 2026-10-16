@@ -18,6 +18,7 @@ import {
   objectAt,
   PLAYER_SPOT,
   propAt,
+  withRevived,
   withWeeded,
   type Cell,
 } from '../../game/layout'
@@ -46,6 +47,26 @@ type Props = {
   objective: Objective | null
   /** Интерфейс поверх поля: задание (сверху слева), счётчик (сверху справа), кнопки панели (снизу) */
   hud: { top: ReactNode; corner: ReactNode; toolbar: ReactNode }
+}
+
+/**
+ * Пасхалка: если облик игрока совпал с «слот:вариант» из секретов персонажа — особый разговор.
+ * Показывается один раз (помнит браузер): секрет, который повторяется, перестаёт быть секретом.
+ */
+function secretTalk(secrets: Record<string, string> | null | undefined, appearance: Record<string, string>, who: string): string | null {
+  for (const [match, dialogue] of Object.entries(secrets ?? {})) {
+    const [slot, option] = match.split(':')
+    if (appearance[slot] !== option) continue
+    const key = `secret-${who}-${dialogue}`
+    try {
+      if (window.localStorage.getItem(key) === '1') continue
+      window.localStorage.setItem(key, '1')
+    } catch {
+      // хранилище недоступно — пасхалка просто покажется ещё раз
+    }
+    return dialogue
+  }
+  return null
 }
 
 /** Портрет мыши: вся мышь целиком — она маленькая и сидит внизу кадра 32×48. */
@@ -104,11 +125,12 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
   // уходит с дороги (но договаривает благодарность до конца)
   const map = useMemo((): GardenMap => {
     const base = catalog.locations.find((l) => l.key === location.key) ?? catalog.garden
-    const map = base.key === HOME ? withWeeded(base, state.garden.weeded) : base
+    const awake = new Set(state.worldObjects.map((w) => w.objectKey))
+    const map = withRevived(base.key === HOME ? withWeeded(base, state.garden.weeded) : base, awake)
     const gone = (n: Npc) =>
       !!n.errand?.leaves && !!state.errands.find((e) => e.key === n.errand!.key)?.done && chat?.npc.key !== n.key
     return map.npcs?.some(gone) ? { ...map, npcs: map.npcs.filter((n) => !gone(n)) } : map
-  }, [catalog, location.key, state.garden.weeded, state.errands, chat])
+  }, [catalog, location.key, state.garden.weeded, state.worldObjects, state.errands, chat])
   // читаем письмо — текст в окне поверх сада
   const [reading, setReading] = useState<{ title: string; text: string } | null>(null)
   // замок крупным планом поверх сада
@@ -173,7 +195,8 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
       effects: weeding ? [weeding] : [],
       awakened,
       variants,
-      sparkles: new Set(catalog.spots.filter((spot) => !searched.has(spot.key)).map((spot) => spot.propKey)),
+      // секретки не мерцают: догадаться надо самому
+      sparkles: new Set(catalog.spots.filter((spot) => !spot.hidden && !searched.has(spot.key)).map((spot) => spot.propKey)),
       characters: [
         ...(home && mentorImage ? [standingAt(MENTOR_SPOT, mentorImage, MENTOR_LANTERN)] : []),
         ...(map.npcs ?? []).flatMap((npc) => {
@@ -218,6 +241,9 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
 
   const [dialogue, setDialogue] = useState<string | null>(null)
   const talk = () => {
+    // пасхалка от облика — когда у Вереска нет новостей (поручения и благодарности важнее)
+    const secret = !state.mentor.hasNews && secretTalk(catalog.mentor.secrets, state.player.appearance, 'vereshk')
+    if (secret) return setDialogue(secret)
     const idle = catalog.mentor.idle
     setDialogue(state.mentor.nextDialogue ?? idle[Math.floor(Math.random() * idle.length)])
   }
@@ -262,7 +288,8 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     const status = errand && state.errands.find((e) => e.key === errand.key)
     if (errand && !status?.offered) return setChat({ npc, dialogue: errand.offer, accept: errand })
     if (errand && !status?.done) return setChat({ npc, dialogue: errand.waiting })
-    setChat({ npc, dialogue: nextTalk(npc) })
+    const secret = secretTalk(npc.secrets, state.player.appearance, npc.key)
+    setChat({ npc, dialogue: secret ?? nextTalk(npc) })
   }
 
   const isMentor = (cell: Cell) => home && sameCell(cell, MENTOR_SPOT)
@@ -680,8 +707,22 @@ function ErrandInfo({ npc, state, catalog, onDone, onChanged }: {
   const nameOf = (key: string) => catalog.items.find((i) => i.key === key)?.name ?? key
   const have = (key: string) => state.inventory.find((e) => e.itemKey === key)?.quantity ?? 0
   const give = errand.give ?? []
-  const enough = errand.kind === 'SHOW' ? state.searchedSpots.includes(errand.spot ?? '') : give.every((g) => have(g.itemKey) >= g.quantity)
-  const label = errand.kind === 'SHOW' ? 'Показать находку' : `Отдать: ${give.map((g) => `${nameOf(g.itemKey)} ×${g.quantity}`).join(', ')}`
+  const awake = (key: string) => state.worldObjects.some((w) => w.objectKey === key)
+  const revive = errand.props ?? []
+  const enough =
+    errand.kind === 'SHOW'
+      ? state.searchedSpots.includes(errand.spot ?? '')
+      : errand.kind === 'REVIVE'
+        ? revive.every(awake)
+        : give.every((g) => have(g.itemKey) >= g.quantity)
+  const label =
+    errand.kind === 'SHOW'
+      ? 'Показать находку'
+      : errand.kind === 'REVIVE'
+        ? 'Показать, что сад проснулся'
+        : `Отдать: ${give.map((g) => `${nameOf(g.itemKey)} ×${g.quantity}`).join(', ')}`
+  // что уже проснулось — без давления: просто отметки, без процентов и сроков
+  const propName = (key: string) => catalog.locations.flatMap((l) => l.props).find((p) => p.key === key)?.name ?? key
 
   const complete = async () => {
     setBusy(true)
@@ -700,6 +741,16 @@ function ErrandInfo({ npc, state, catalog, onDone, onChanged }: {
   return (
     <>
       <p className={styles.hint}>Поручение: {errand.goal}.</p>
+      {errand.kind === 'REVIVE' && (
+        <p className={styles.hint}>
+          {revive.map((key, i) => (
+            <span key={key}>
+              {i > 0 && ' · '}
+              {awake(key) ? '✓' : '○'} {propName(key)}
+            </span>
+          ))}
+        </p>
+      )}
       <div>
         <Button onClick={() => void complete()} disabled={busy || !enough}>
           {label}

@@ -62,6 +62,17 @@ export function withWeeded(map: GardenMap, weeded: Cell[]): GardenMap {
   return { ...map, rows: rows.map((r) => r.join('')) }
 }
 
+/**
+ * Карта с оживлением: клетки, у которых в легенде есть revive, превращаются в другой символ,
+ * когда их постройка пробуждена (засохшие клумбы расцветают, когда в колодце снова вода).
+ */
+export function withRevived(map: GardenMap, awakened: ReadonlySet<string>): GardenMap {
+  const changes = Object.entries(map.tiles).filter(([, t]) => t.revive && awakened.has(t.revive.when))
+  if (changes.length === 0) return map
+  const swap = new Map(changes.map(([symbol, t]) => [symbol, t.revive!.tile]))
+  return { ...map, rows: map.rows.map((row) => row.split('').map((c) => swap.get(c) ?? c).join('')) }
+}
+
 /** Кадр атласа для клетки. Забор выбирает кусок по соседям: горизонтальный, вертикальный или столб в углу. */
 export function tileFrame(map: GardenMap, x: number, y: number): string {
   const type = tileAt(map, x, y)?.type ?? 'grass'
@@ -91,6 +102,10 @@ export function tileFrame(map: GardenMap, x: number, y: number): string {
       return 'bridge'
     case 'flowers':
       return `flowers_${variant(x, y, 3)}`
+    case 'dry_bed':
+      return `dry_bed_${variant(x, y, 3)}`
+    case 'reeds':
+      return `reeds_${variant(x, y, 3)}`
     case 'rug':
       return `rug_${neighbourMask(map, x, y, 'rug')}`
     case 'floor':

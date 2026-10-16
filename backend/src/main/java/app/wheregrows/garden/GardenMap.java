@@ -20,7 +20,19 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
         return npcs == null ? List.of() : npcs;
     }
 
-    public record TileType(String type, String name, String description, boolean plantable) {
+    /**
+     * Тип клетки. revive — во что клетка превращается, когда пробуждена постройка (засохшая клумба
+     * оживает, когда в колодце снова есть вода); null — клетка не меняется.
+     */
+    public record TileType(String type, String name, String description, boolean plantable, Revive revive) {
+
+        public TileType(String type, String name, String description, boolean plantable) {
+            this(type, name, description, plantable, null);
+        }
+    }
+
+    /** tile — символ легенды, в который превращается клетка; when — постройка, которую надо пробудить. */
+    public record Revive(String tile, String when) {
     }
 
     /**
@@ -37,15 +49,17 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
      * Дверь: на какую карту ведёт, в какую клетку и куда персонаж будет смотреть; label — надпись на кнопке.
      * requires — постройка, которую сначала надо пробудить (калитка, заросшая ежевикой), или null.
      */
-    public record Door(String map, int x, int y, String facing, String label, String requires) {
+    public record Door(String map, int x, int y, String facing, String label, String requires, String requiresErrand) {
     }
 
     /**
      * Житель локации (мышь): стоит в клетке, разговаривает; description — что видно, если рассмотреть. Разговоры — тот же граф реплик, что у Вереска,
      * но без наград и флагов: первый разговор — знакомство (talks[0]), дальше — случайный из остальных.
      */
+    /** secrets — пасхалки: «слот:вариант» облика игрока → особый разговор. */
     public record Npc(String key, String name, String kind, int x, int y, String description, List<String> talks,
-                      Map<String, app.wheregrows.mentor.MentorContent.Dialogue> dialogues, Errand errand) {
+                      Map<String, app.wheregrows.mentor.MentorContent.Dialogue> dialogues, Errand errand,
+                      Map<String, String> secrets) {
     }
 
     /**
@@ -55,9 +69,14 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
      */
     public record Errand(String key, Kind kind, String goal, List<app.wheregrows.economy.ItemGrant> give, String spot,
                          List<app.wheregrows.economy.ItemGrant> reward, String offer, String waiting, String thanks,
-                         boolean leaves) {
+                         boolean leaves, List<String> props) {
 
-        public enum Kind { GIVE, SHOW }
+        /** GIVE — отдать вещи, SHOW — показать находку, REVIVE — пробудить все постройки из props. */
+        public enum Kind { GIVE, SHOW, REVIVE }
+
+        public List<String> propsOrEmpty() {
+            return props == null ? List.of() : props;
+        }
 
         public List<app.wheregrows.economy.ItemGrant> giveOrEmpty() {
             return give == null ? List.of() : give;
@@ -105,6 +124,9 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
             require(contains(npc.x(), npc.y()) && propAt(npc.x(), npc.y()) == null, "житель " + npc.key() + " стоит вне карты или в постройке");
             require(npc.talks() != null && !npc.talks().isEmpty(), "житель " + npc.key() + " молчит: нет talks");
             npc.talks().forEach(t -> require(npc.dialogues().containsKey(t), "у жителя " + npc.key() + " нет разговора " + t));
+            if (npc.secrets() != null) {
+                npc.secrets().values().forEach(t -> require(npc.dialogues().containsKey(t), "у жителя " + npc.key() + " нет секретного разговора " + t));
+            }
             Errand errand = npc.errand();
             if (errand != null) {
                 for (String d : java.util.Arrays.asList(errand.offer(), errand.waiting(), errand.thanks())) {
@@ -113,6 +135,7 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
                 require(errand.goal() != null, "у поручения " + errand.key() + " нет текста задания");
                 require(errand.kind() != Errand.Kind.GIVE || !errand.giveOrEmpty().isEmpty(), "поручение " + errand.key() + ": нечего отдавать");
                 require(errand.kind() != Errand.Kind.SHOW || errand.spot() != null, "поручение " + errand.key() + ": нечего показывать");
+                require(errand.kind() != Errand.Kind.REVIVE || !errand.propsOrEmpty().isEmpty(), "поручение " + errand.key() + ": нечего оживлять");
             }
             npc.dialogues().forEach((key, dialogue) -> {
                 require(dialogue.nodes().containsKey(dialogue.start()), npc.key() + "." + key + ": нет стартовой реплики");
@@ -123,6 +146,11 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
                     }
                 });
             });
+        }
+        for (TileType tile : tiles.values()) {
+            if (tile.revive() != null) {
+                require(tiles.containsKey(tile.revive().tile()), "клетка «" + tile.name() + "» оживает в неизвестный символ " + tile.revive().tile());
+            }
         }
         for (Prop prop : props) {
             if (prop.door() != null) {

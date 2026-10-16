@@ -134,6 +134,46 @@ function lilyBloom(p, cx, cy, size) {
   for (let i = 0; i < 8; i++) p.px(cx - size * 0.5 + i * size * 0.13, cy + 2 + (i % 2), PINK[1]) // крапинки
 }
 
+/** Цвета уснувшей лилии: выцветший розовый, увядшая зелень. */
+const DRY_PINK = ['#33242a', '#4d3a40', '#665058', '#7f6970', '#958289', '#a99a9e']
+
+/** Уснувшая лилия: толстый стебель согнулся дугой, большой цветок поник и смотрит в землю, свет погас. */
+function sleepingLily() {
+  const s = new Sprite(64, 96)
+  s.shadow(32, 92, 20, 3)
+  const p = new Sprite(64, 96)
+  // стебель: прямой внизу, сверху загибается вправо и вниз
+  for (let y = 30; y < 94; y++) {
+    const x = 28 + Math.round(((94 - y) / 64) ** 2 * 14)
+    p.rect(x, y, 4, 1, R.weed[3])
+    p.px(x + 4, y, R.weed[1])
+  }
+  for (let t = 0; t <= 1; t += 0.03) p.rect(Math.round(42 + t * 8), Math.round(30 + t * 12), 3, 2, R.weed[3])
+  // широкие опущенные листья с бурыми кончиками
+  for (const [y0, dir, len] of [[88, -1, 24], [82, 1, 22], [72, -1, 20], [64, 1, 16]]) {
+    for (let k = 0; k < len; k++) {
+      const x = 30 + dir * k
+      const y = y0 + Math.floor(k / 3)
+      const w = Math.max(1, Math.round(3 * Math.sin((k / len) * Math.PI)))
+      for (let i = 0; i < w; i++) p.px(x, y + i, k > len - 6 ? R.straw[i === 0 ? 3 : 1] : i === 0 ? R.weed[4] : R.weed[2])
+    }
+  }
+  // большой цветок висит вниз, лепестки сложены колоколом
+  const cx = 50
+  const cy = 44
+  for (const ang of [1.0, 1.25, 1.5, 1.75, 2.0, 2.25]) {
+    for (let t = 0; t <= 1; t += 0.04) {
+      const r = 3.6 * Math.sin(Math.PI * Math.min(1, t * 1.1)) + 0.8
+      p.shadedEllipse(cx + Math.cos(ang) * t * 14, cy + Math.sin(ang) * t * 20, r, r * 0.8, DRY_PINK.slice(1), { bias: 0.05 - t * 0.2 })
+    }
+  }
+  p.shadedEllipse(cx, cy, 4, 3.5, DRY_PINK.slice(0, 3))
+  p.outline(INK)
+  s.stamp(p)
+  for (const [x, y] of [[18, 90], [44, 91], [56, 88]]) s.px(x, y, DRY_PINK[3]) // опавшие лепестки
+  return s
+}
+
 /** Исполинская розовая лилия 2×3 клетки — ростом с дерево: толстый стебель, широкие листья, два цветка и бутон. */
 function giantLily() {
   const s = new Sprite(64, 96)
@@ -449,34 +489,39 @@ function breadTable() {
   return s
 }
 
-function well() {
+/** Колодец; полный — внутри блестит вода, ведро поднято с водой. */
+function well(full = false) {
   const s = new Sprite(T, T)
   s.shadow(16, 28, 12, 2.5)
   const w = new Sprite(T, T)
   for (let y = 16; y < 28; y++) for (let x = 5; x < 27; x++) w.px(x, y, (y - 16) % 4 === 3 ? R.stone[1] : (x + Math.floor((y - 16) / 4) * 3) % 7 === 0 ? R.stone[1] : R.stone[3])
   w.ellipse(16, 16, 11, 3, R.stone[4])
-  w.ellipse(16, 16.5, 8.5, 2, P.dark)
+  w.ellipse(16, 16.5, 8.5, 2, full ? R.dew[2] : P.dark)
+  if (full) w.rect(12, 16, 3, 1, R.dew[4])
   w.rect(6, 4, 2, 13, R.wood[2])
   w.rect(24, 4, 2, 13, R.wood[2])
   for (let y = 1; y < 6; y++) for (let x = 3 + (5 - y); x < 29 - (5 - y); x++) w.px(x, y, y === 1 ? ROOF[4] : ROOF[3])
   w.rect(8, 8, 16, 1, R.straw[2])
-  w.rect(15, 9, 1, 4, R.straw[2])
-  w.rect(13, 13, 5, 3, R.wood[3])
+  w.rect(15, 9, 1, full ? 2 : 4, R.straw[2])
+  w.rect(13, full ? 10 : 13, 5, 3, R.wood[3])
+  if (full) w.rect(14, 10, 3, 1, R.dew[3])
   w.outline(INK)
   s.stamp(w)
   for (const x of [4, 26]) s.px(x, 27, PINK[3]) // цветы у сруба
   return s
 }
 
-function lampPost() {
+/** Фонарный столб; зажжён — тёплый огонёк за стеклом. */
+function lampPost(lit = false) {
   const s = new Sprite(T, T)
   s.shadow(16, 29, 6, 2)
   const p = new Sprite(T, T)
   p.rect(15, 10, 3, 19, R.silver[1])
   p.rect(13, 28, 7, 2, R.silver[0])
   p.rect(11, 2, 11, 9, R.silver[0])
-  p.rect(12, 3, 9, 7, R.dew[0])
-  p.px(13, 4, R.dew[2])
+  if (lit) for (let y = 3; y < 10; y++) for (let x = 12; x < 21; x++) p.px(x, y, pick(R.lamp.slice(2), 1 - Math.abs(x - 16) / 6, x, y))
+  else p.rect(12, 3, 9, 7, R.dew[0])
+  p.px(13, 4, lit ? R.lamp[5] : R.dew[2])
   p.rect(10, 1, 13, 2, R.silver[2])
   p.outline(INK)
   s.stamp(p)
@@ -567,14 +612,72 @@ function flourSack() {
   return s
 }
 
+/** Засохшая клумба: сухая земля, пожухлые кустики, поникшие бесцветные головки. */
+function dryBed(seed) {
+  const s = new Sprite(T, T)
+  const r = rng(seed)
+  for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) s.px(x, y, (x + y * 3) % 7 === 0 ? R.soil[1] : R.soil[2])
+  for (let i = 0; i < 8; i++) s.shadedEllipse(3 + r() * 26, 5 + r() * 24, 3, 2.3, [R.straw[0], R.straw[1], R.weed[1], R.weed[2]])
+  for (let i = 0; i < 10; i++) {
+    const x = 2 + Math.floor(r() * 28)
+    const y = 4 + Math.floor(r() * 26)
+    s.rect(x, y, 2, 1, DRY_PINK[3])
+    s.px(x, y + 1, DRY_PINK[2])
+  }
+  return s
+}
+
+/** Калитка в живой изгороди, запертая; на замке — кошачья лапка Мяты. */
+function gateClosed() {
+  const s = new Sprite(T, T)
+  const h = new Sprite(T, T)
+  for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) if (x < 7 || x > 24) h.px(x, y, noise(x, y, 4, 9, 1e9) > 0.55 ? R.leaf[3] : R.leaf[2])
+  for (let y = 4; y < 30; y++) for (let x = 7; x < 25; x++) h.px(x, y, (x - 7) % 5 === 4 ? R.wood[1] : R.wood[3])
+  h.rect(7, 10, 18, 2, R.wood[2])
+  h.rect(7, 22, 18, 2, R.wood[2])
+  h.outline(INK)
+  s.stamp(h)
+  s.rect(14, 15, 5, 5, R.silver[1]) // замок
+  s.px(16, 18, PINK[3]) // кошачья лапка
+  s.px(15, 16, PINK[3])
+  s.px(17, 16, PINK[3])
+  return s
+}
+
+/** Ёжик Шуршик: колючая спинка, соломенная шляпка, крошечная лейка. Кадр 1 — шмыгнул носом. */
+function shurshik(frame) {
+  const s = new Sprite(32, 48)
+  s.shadow(16, 46, 9, 1.5)
+  const h = new Sprite(32, 48)
+  h.shadedEllipse(15, 39, 9, 6.5, R.wood.slice(0, 4)) // колючки
+  for (let i = 0; i < 12; i++) h.px(7 + i * 1.4, 33 + (i % 3), R.wood[0])
+  h.shadedEllipse(21, 40, 5, 4.5, R.straw.slice(2, 6), { bias: 0.1 }) // мордочка
+  h.rect(25 + frame, 39, 2, 2, INK) // нос
+  h.shadedEllipse(15, 32, 6, 2, R.straw.slice(2)) // шляпка
+  h.shadedEllipse(15, 30, 3, 2.5, R.straw.slice(2), { clip: (x, y) => y <= 31 })
+  h.rect(5, 41, 4, 3, R.dew[2]) // лейка
+  h.rect(3, 41, 2, 1, R.dew[2])
+  h.outline(INK)
+  s.stamp(h)
+  s.px(21, 38, INK) // глаз
+  s.px(22, 37, P.white)
+  return s
+}
+
 export function manorFrames() {
   const frames = {
     prop_manor: manor(),
-    prop_giant_lily: giantLily(),
+    prop_giant_lily: sleepingLily(),
+    prop_giant_lily_awakened: giantLily(),
+    prop_gate_closed: gateClosed(),
+    npc_shurshik_0: shurshik(0),
+    npc_shurshik_1: shurshik(1),
     prop_oak: oak(),
     prop_blossom_tree: blossomTree(),
     prop_well: well(),
+    prop_well_awakened: well(true),
     prop_lamp_post: lampPost(),
+    prop_lamp_post_awakened: lampPost(true),
     prop_hearth: hearth(),
     prop_jar_shelf: jarShelf(),
     prop_cupboard: cupboard(false),
@@ -594,6 +697,7 @@ export function manorFrames() {
     npc_myata_1: myata(1),
   }
   for (let i = 0; i < 3; i++) frames[`flowers_${i}`] = flowers(300 + i * 7)
+  for (let i = 0; i < 3; i++) frames[`dry_bed_${i}`] = dryBed(320 + i * 7)
   for (let m = 0; m < 16; m++) frames[`rug_${m}`] = rug(m)
   for (const k of ['berry', 'honey', 'blueberry', 'mint']) frames[`sym_${k}`] = symbol(k)
   return frames

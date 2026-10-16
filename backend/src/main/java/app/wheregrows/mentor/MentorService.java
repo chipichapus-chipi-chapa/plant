@@ -75,7 +75,9 @@ public class MentorService {
             throw new NotFoundException("Такого разговора нет.");
         }
         String expected = progress(playerId).nextDialogue();
-        if (!dialogueKey.equals(expected) && !content.idle().contains(dialogueKey)) {
+        // уместны: ожидаемый разговор, случайная фраза или пасхалка (облик игрока проверяет клиент — наград за неё нет)
+        if (!dialogueKey.equals(expected) && !content.idle().contains(dialogueKey)
+                && !content.secretsOrEmpty().containsValue(dialogueKey)) {
             throw new ConflictException("Вереск сейчас о другом.");
         }
 

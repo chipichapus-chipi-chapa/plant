@@ -17,6 +17,7 @@ import app.wheregrows.exploration.PlayerDiscovery;
 import app.wheregrows.exploration.PlayerDiscoveryRepository;
 import app.wheregrows.garden.GardenMap;
 import app.wheregrows.garden.GardenMaps;
+import app.wheregrows.magic.MagicService;
 import app.wheregrows.mentor.PlayerFlag;
 import app.wheregrows.mentor.PlayerFlagRepository;
 import app.wheregrows.player.PlayerProfileRepository;
@@ -38,10 +39,13 @@ public class ErrandService {
     private final ItemDefinitionRepository items;
     private final Inventory inventory;
     private final PlayerProfileRepository players;
+    private final MagicService magic;
     private final Clock clock;
 
     ErrandService(GardenMaps maps, PlayerFlagRepository flags, PlayerDiscoveryRepository discoveries,
-                  ItemDefinitionRepository items, Inventory inventory, PlayerProfileRepository players, Clock clock) {
+                  ItemDefinitionRepository items, Inventory inventory, PlayerProfileRepository players,
+                  MagicService magic, Clock clock) {
+        this.magic = magic;
         this.maps = maps;
         this.flags = flags;
         this.discoveries = discoveries;
@@ -87,6 +91,13 @@ public class ErrandService {
         if (errand.kind() == GardenMap.Errand.Kind.SHOW
                 && !discoveries.existsById(new PlayerDiscovery.Id(playerId, errand.spot()))) {
             throw new ConflictException("Пока нечего показать.");
+        }
+        if (errand.kind() == GardenMap.Errand.Kind.REVIVE) {
+            List<String> sleeping = errand.propsOrEmpty().stream().filter(p -> !magic.isAwakened(playerId, p))
+                    .map(p -> maps.prop(p).map(GardenMap.Prop::name).orElse(p)).toList();
+            if (!sleeping.isEmpty()) {
+                throw new ConflictException("Ещё спят: " + String.join(", ", sleeping) + ".");
+            }
         }
         for (ItemGrant give : errand.giveOrEmpty()) {
             String name = items.findById(give.itemKey()).map(i -> i.getName()).orElse(give.itemKey());

@@ -28,9 +28,11 @@ export function npcAt(map: GardenMap, cell: Cell): Npc | undefined {
   return map.npcs?.find((n) => n.x === cell.x && n.y === cell.y)
 }
 
-/** Открыта ли дверь: у калитки в ежевике — только после пробуждения. */
+/** Открыта ли дверь: у калитки в ежевике — только после пробуждения, у тропы к озеру — после поручения Мяты. */
 export function doorOpen(door: Door, state: GameState): boolean {
-  return !door.requires || state.worldObjects.some((w) => w.objectKey === door.requires)
+  const awake = !door.requires || state.worldObjects.some((w) => w.objectKey === door.requires)
+  const errand = !door.requiresErrand || !!state.errands?.find((e) => e.key === door.requiresErrand)?.done
+  return awake && errand
 }
 
 /**

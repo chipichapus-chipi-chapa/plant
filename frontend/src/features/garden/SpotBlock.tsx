@@ -14,7 +14,7 @@ type Props = {
   onChanged: () => Promise<void>
 }
 
-/** Место находки у постройки: «Осмотреть», а после находки — тихая пометка, что здесь уже всё найдено. */
+/** Место находки у постройки: кнопка со своей надписью («Осмотреть», «Подвести стрелки»…), после находки — тихая пометка. */
 export function SpotBlock({ spotKey, state, catalog, onChanged }: Props) {
   const [busy, setBusy] = useState(false)
   const [lastText, setLastText] = useState<string | null>(null)
@@ -48,7 +48,7 @@ export function SpotBlock({ spotKey, state, catalog, onChanged }: Props) {
     <div className={styles.recipe}>
       {lastText && <p className={styles.hint}>{lastText}</p>}
       <Button onClick={() => void search()} disabled={busy}>
-        Осмотреть
+        {catalog.spots.find((s) => s.key === spotKey)?.actionLabel ?? 'Осмотреть'}
       </Button>
     </div>
   )

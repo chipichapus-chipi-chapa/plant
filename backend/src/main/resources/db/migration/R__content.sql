@@ -93,7 +93,22 @@ INSERT INTO recipe_def (key, name, description, target_object_key, result_text, 
     ('fill_barrel', 'Вода для бочки',
         'Сапфир странствий помнит дорогу к роднику. Принесите его с прогулки — и бочка вспомнит, что такое вода.',
         'barrel',
-        'Бочка до краёв полна прохладной воды. В ней отражается небо — даже ночью.', 4, 'Наполнить')
+        'Бочка до краёв полна прохладной воды. В ней отражается небо — даже ночью.', 4, 'Наполнить'),
+    ('wake_lily_west', 'Западная лилия',
+        'Розовый кварц — кристалл тех, кто рядом. Эта лилия скучает по людям больше остальных.',
+        'lily-west', 'Лилия поднимает голову, лепестки раскрываются — и внутри загорается мягкий розовый свет.', 5, 'Пробудить'),
+    ('wake_lily_east', 'Восточная лилия',
+        'Изумруд роста напомнит ей, как тянуться вверх.',
+        'lily-east', 'Стебель выпрямляется со вздохом, и восточная лилия светится, как фонарь из лепестков.', 6, 'Пробудить'),
+    ('wake_lily_south', 'Южная лилия',
+        'Янтарь очага — тёплый, как кухня Агаты. Южной лилии не хватает именно тепла.',
+        'lily-south', 'Южная лилия раскрывается медленно, будто потягивается после долгого сна. Пахнет мёдом.', 7, 'Пробудить'),
+    ('fill_manor_well', 'Вода для колодца',
+        'Сапфир странствий приводит воду туда, где гуляют. Клумбы ждут её давно.',
+        'manor-well', 'Где-то глубоко булькает, и ведро поднимается полным. Клумбы вокруг вздыхают — и расцветают.', 8, 'Наполнить'),
+    ('light_lamp_post', 'Первый холодный вечер',
+        'Фонарь зажигают в первый холодный вечер. Солнечной искры хватит, чтобы он вспомнил, как это.',
+        'lamp-post', 'Фонарь вспыхивает тёплым светом. Табличка под ним больше не грустит.', 9, 'Зажечь')
 ON CONFLICT (key) DO UPDATE SET
     name = EXCLUDED.name,
     description = EXCLUDED.description,
@@ -102,13 +117,19 @@ ON CONFLICT (key) DO UPDATE SET
     sort_order = EXCLUDED.sort_order,
     action_label = EXCLUDED.action_label;
 
-DELETE FROM recipe_ingredient WHERE recipe_key IN ('awaken_basin', 'open_east_gate', 'repair_wheelbarrow', 'fill_barrel');
+DELETE FROM recipe_ingredient WHERE recipe_key IN ('awaken_basin', 'open_east_gate', 'repair_wheelbarrow', 'fill_barrel',
+    'wake_lily_west', 'wake_lily_east', 'wake_lily_south', 'fill_manor_well', 'light_lamp_post');
 INSERT INTO recipe_ingredient (recipe_key, item_key, quantity) VALUES
     ('awaken_basin', 'shard_emerald', 2),
     ('awaken_basin', 'shard_amethyst', 1),
     ('open_east_gate', 'sun_spark', 1),
     ('repair_wheelbarrow', 'repair_kit', 1),
-    ('fill_barrel', 'shard_sapphire', 1);
+    ('fill_barrel', 'shard_sapphire', 1),
+    ('wake_lily_west', 'shard_rose', 1),
+    ('wake_lily_east', 'shard_emerald', 1),
+    ('wake_lily_south', 'shard_amber', 1),
+    ('fill_manor_well', 'shard_sapphire', 1),
+    ('light_lamp_post', 'sun_spark', 1);
 
 -- Артефакты -------------------------------------------------------------------
 -- Лор раскрывается понемногу: через описание, легенду и подсказки к ещё не найденному.
@@ -128,7 +149,17 @@ INSERT INTO artifact_def (key, name, crystal_category, description, legend, acqu
         'Маленький фонарь с янтарным стеклом. Даже потухший, он греет руки.',
         'Когда-то в поместье его зажигали в первый холодный вечер — и все собирались на кухне.',
         'Его свет помнят стены поместья. Само поместье — за чащей, куда не пускает сторож.',
-        'Когда-нибудь согреет целый дом.', 3)
+        'Когда-нибудь согреет целый дом.', 3),
+    ('agata_ring', 'Кольцо Агаты', 'rose',
+        'Тонкое колечко с розовым камешком. Внутри выгравировано: «Возвращайся к чаю».',
+        'Агата снимала кольцо, когда месила тесто, и прятала его в часы с кукушкой — чтобы точно не потерять. Однажды уплыла и забыла.',
+        'Без четверти пять — время пить чай. И время для секретов.',
+        'Пока у вас, в поместье кто-то ждёт к чаю.', 4),
+    ('gardener_song', 'Ноты песни садовника', 'amethyst',
+        'Свёрнутый листок с нотами и пятнами от чая. Мелодия простая, слова — смешные.',
+        'Ту самую песню, за которую цапля отдала луковицу лилии. Цапля говорит, песня была плохая. Цапля лукавит.',
+        'Тот, кто сядет отдохнуть у воды, услышит песню.',
+        'Если напеть её лилиям, они, кажется, светятся ярче.', 5)
 ON CONFLICT (key) DO UPDATE SET
     name = EXCLUDED.name,
     crystal_category = EXCLUDED.crystal_category,
@@ -172,14 +203,54 @@ ON CONFLICT (key) DO UPDATE SET
     locked_text = EXCLUDED.locked_text,
     artifact_key = EXCLUDED.artifact_key;
 
-DELETE FROM discovery_spot_reward WHERE spot_key IN ('rock_cache', 'shed_corner', 'fence_tools', 'bridge_compass', 'hearth_glow');
+-- Секретки: без мерцания, со своей надписью на кнопке. Мерцающие тайники — тоже со своими надписями.
+INSERT INTO discovery_spot (key, prop_key, found_text, empty_text, requires_awakened, locked_text, artifact_key, hidden, action_label) VALUES
+    ('rock_whisper', 'rock-1',
+        'Под камнем — записка садовника: «Кто поднимает обычные камни, тот находит необычное». И пригоршня тёплых семян.',
+        'Под камнем только мокрица. Она смотрит на вас с упрёком.', NULL, NULL, NULL, TRUE, 'Приподнять камень'),
+    ('shelf_jar', 'shelf',
+        'На дне банки из-под семян — забытый пакетик подсолнуха. Пахнет летом.',
+        'Банка пустая. Только запах лета остался.', NULL, NULL, NULL, TRUE, 'Заглянуть в банку'),
+    ('burrow_knock', 'mouse-hole',
+        'Тук-тук… Дверца приоткрывается, маленькая лапка протягивает жёлудь и тёплый янтарный осколок: «За то, что постучал. Все обычно не стучат».',
+        'Из норы шёпотом: «Мы уже дали! Заходи к чаю, но без стука можно».', NULL, NULL, NULL, TRUE, 'Постучать'),
+    ('clock_teatime', 'cuckoo-clock',
+        'Вы ставите стрелки на без четверти пять. Кукушка выскакивает — и роняет вам в ладонь колечко.',
+        'Кукушка выглядывает, видит, что колечка нет, и обиженно прячется.', NULL, NULL, 'agata_ring', TRUE, 'Подвести стрелки'),
+    ('oak_swing', 'oak',
+        'Качели скрипят, ветер шумит в листьях — и с ветки падает жёлудь-копилка. Внутри — Солнечная искра.',
+        'Качели скрипят. Просто приятно покачаться.', NULL, NULL, NULL, TRUE, 'Покачаться'),
+    ('bench_song', 'lake-bench',
+        'Вы сидите, слушаете туман… Под скамейкой — свёрнутые ноты. Та самая песня садовника.',
+        'Туман дышит над водой. Хорошо просто посидеть.', NULL, NULL, 'gardener_song', TRUE, 'Посидеть')
+ON CONFLICT (key) DO UPDATE SET
+    prop_key = EXCLUDED.prop_key,
+    found_text = EXCLUDED.found_text,
+    empty_text = EXCLUDED.empty_text,
+    artifact_key = EXCLUDED.artifact_key,
+    hidden = EXCLUDED.hidden,
+    action_label = EXCLUDED.action_label;
+
+UPDATE discovery_spot SET action_label = 'Снять с забора' WHERE key = 'fence_tools';
+UPDATE discovery_spot SET action_label = 'Заглянуть под мост' WHERE key = 'bridge_compass';
+UPDATE discovery_spot SET action_label = 'Заглянуть в печь' WHERE key = 'hearth_glow';
+UPDATE discovery_spot SET action_label = 'Заглянуть под рогожу' WHERE key = 'shed_corner';
+UPDATE discovery_spot SET action_label = 'Заглянуть под камни' WHERE key = 'rock_cache';
+
+DELETE FROM discovery_spot_reward WHERE spot_key IN ('rock_cache', 'shed_corner', 'fence_tools', 'bridge_compass', 'hearth_glow',
+    'rock_whisper', 'shelf_jar', 'burrow_knock', 'oak_swing');
 INSERT INTO discovery_spot_reward (spot_key, item_key, quantity) VALUES
     ('rock_cache', 'shard_amethyst', 2),
     ('rock_cache', 'shard_emerald', 1),
     ('shed_corner', 'sun_spark', 1),
     ('fence_tools', 'garden_tools', 1),
     ('bridge_compass', 'life_seed', 3),
-    ('hearth_glow', 'sun_spark', 1);
+    ('hearth_glow', 'sun_spark', 1),
+    ('rock_whisper', 'life_seed', 3),
+    ('shelf_jar', 'seed_sunflower', 1),
+    ('burrow_knock', 'shard_amber', 1),
+    ('burrow_knock', 'life_seed', 1),
+    ('oak_swing', 'sun_spark', 1);
 
 -- Загадки ---------------------------------------------------------------------
 -- Подсказка к ящику — в письме прежнего садовника (content/gardens/shed.json, постройка letter).
