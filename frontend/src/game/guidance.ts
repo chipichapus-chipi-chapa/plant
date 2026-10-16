@@ -78,6 +78,21 @@ export function isInteractive(cell: Cell, state: GameState, catalog: Catalog): b
   return !!tileAt(map, cell.x, cell.y)?.plantable && !objectAt(state.garden.objects, cell) && hasSeeds(state, catalog)
 }
 
+/**
+ * Есть ли у клетки табличка: только у того, с чем вообще можно иметь дело, — Вереск, тайники,
+ * объекты с заклинанием, растения, грядка под посадку. Трава, тропа и декорации молчат.
+ * В отличие от isInteractive, тайник остаётся кликабельным и после поиска — можно перечитать находку.
+ */
+export function isClickable(cell: Cell, state: GameState, catalog: Catalog): boolean {
+  if (cell.x === MENTOR_SPOT.x && cell.y === MENTOR_SPOT.y) return true
+  if (objectAt(state.garden.objects, cell)) return true
+  const prop = propAt(catalog.garden, cell.x, cell.y)
+  if (prop) {
+    return catalog.spots.some((s) => s.propKey === prop.key) || catalog.recipes.some((r) => r.targetObjectKey === prop.key)
+  }
+  return isInteractive(cell, state, catalog)
+}
+
 /** Где рисовать «!» над клеткой: над головой персонажа, над постройкой или над самой клеткой. */
 export function promptPoint(cell: Cell, map: GardenMap): { x: number; y: number } {
   if (cell.x === MENTOR_SPOT.x && cell.y === MENTOR_SPOT.y) {

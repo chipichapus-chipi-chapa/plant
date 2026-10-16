@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Catalog, GameState } from '../api/types'
-import { currentObjective, isInteractive, markerPoint } from './guidance'
+import { currentObjective, isClickable, isInteractive, markerPoint } from './guidance'
 
 const map = {
   key: 'home',
@@ -85,5 +85,14 @@ describe('стрелка и «!»', () => {
     expect(isInteractive({ x: 2, y: 0 }, state({}), catalog)).toBe(false)
     expect(isInteractive({ x: 2, y: 0 }, state({ inventory: [{ itemKey: 'seed_radish', quantity: 1 }] }), catalog)).toBe(true)
     expect(isInteractive({ x: 1, y: 1 }, state({}), catalog)).toBe(false)
+  })
+
+  it('табличка только у кликабельного: тайник (и после поиска), растение, грядка с семенами', () => {
+    expect(isClickable({ x: 0, y: 1 }, state({ searchedSpots: ['rock_cache'] }), catalog)).toBe(true)
+    expect(isClickable({ x: 2, y: 0 }, state({ garden: { objects: [{ x: 2, y: 0 } as never] } }), catalog)).toBe(true)
+    expect(isClickable({ x: 2, y: 0 }, state({ inventory: [{ itemKey: 'seed_radish', quantity: 1 }] }), catalog)).toBe(true)
+    // пустая грядка без семян и простая трава — без таблички
+    expect(isClickable({ x: 2, y: 0 }, state({}), catalog)).toBe(false)
+    expect(isClickable({ x: 1, y: 1 }, state({}), catalog)).toBe(false)
   })
 })

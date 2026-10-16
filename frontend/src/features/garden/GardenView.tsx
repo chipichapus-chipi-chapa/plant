@@ -5,7 +5,7 @@ import type { Catalog, GameState } from '../../api/types'
 import { frameImage, loadAtlas, type Atlas } from '../../game/atlas'
 import { composeCharacterFrames } from '../../game/character'
 import { GardenCanvas } from '../../game/GardenCanvas'
-import { isInteractive, markerPoint, promptPoint, type Objective } from '../../game/guidance'
+import { isClickable, isInteractive, markerPoint, promptPoint, type Objective } from '../../game/guidance'
 import { standingAt, type Scene } from '../../game/renderer'
 import {
   describeCell,
@@ -201,7 +201,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
               <Button onClick={onEditCharacter}>Изменить облик</Button>
             </div>
           </div>
-        ) : selected ? (
+        ) : selected && isClickable(selected, state, catalog) ? (
           <CellInfo
             cell={selected}
             state={state}
