@@ -32,7 +32,47 @@ export type GardenProp = {
 }
 
 /** Дверь: на какую карту, в какую клетку и куда персонаж будет смотреть; label — надпись на кнопке */
-export type Door = { map: string; x: number; y: number; facing: 'up' | 'down' | 'left' | 'right'; label: string }
+export type Door = {
+  map: string
+  x: number
+  y: number
+  facing: 'up' | 'down' | 'left' | 'right'
+  label: string
+  /** Постройка, которую сначала надо пробудить (калитка в ежевике) */
+  requires?: string | null
+}
+
+/** Житель локации (мышь): стоит в клетке, разговаривает; первый разговор — talks[0], дальше — случайный из остальных */
+export type Npc = {
+  key: string
+  name: string
+  /** Какой спрайт: кадры атласа npc_<kind>_0/1 */
+  kind: string
+  x: number
+  y: number
+  description: string
+  talks: string[]
+  dialogues: Record<string, Dialogue>
+  /** Поручение жителя, если есть */
+  errand?: Errand | null
+}
+
+/**
+ * Поручение жителя: GIVE — отдать вещи, SHOW — показать находку (spot обыскан).
+ * offer — просьба, waiting — пока не сделано, thanks — благодарность. leaves — житель уходит с дороги.
+ */
+export type Errand = {
+  key: string
+  kind: 'GIVE' | 'SHOW'
+  goal: string
+  give: ItemGrant[] | null
+  spot: string | null
+  reward: ItemGrant[] | null
+  offer: string
+  waiting: string
+  thanks: string
+  leaves: boolean
+}
 
 /** Карта локации (сад, сарай изнутри): строки символов, легенда символов и постройки поверх тайлов */
 export type GardenMap = {
@@ -43,6 +83,8 @@ export type GardenMap = {
   tiles: Record<string, TileType>
   rows: string[]
   props: GardenProp[]
+  /** Жители локации */
+  npcs?: Npc[] | null
 }
 
 /** Магический рецепт: ингредиенты пробуждают постройку с карты (targetObjectKey) */
@@ -85,7 +127,7 @@ export type DialogueNode = { text: string; next: string | null; choices: { text:
 export type Dialogue = { start: string; onEnd: string | null; gift: ItemGrant[] | null; nodes: Record<string, DialogueNode> }
 
 /** Реплики наставника и обучение — контент с сервера */
-/** Цель стрелки шага: кнопка панели, постройка карты или тип клетки — задано ровно одно */
+/** Цель шага (над ней горит «!»): кнопка панели, постройка карты или тип клетки — задано ровно одно */
 export type TutorialTarget = { hud: string | null; prop: string | null; tile: string | null }
 
 export type MentorContent = {
@@ -154,6 +196,8 @@ export type GameState = {
   garden: { objects: GardenObject[]; weeded: { x: number; y: number }[] }
   /** Разгаданные загадки */
   solvedPuzzles: string[]
+  /** Поручения жителей: попросили ли и сделано ли */
+  errands: { key: string; offered: boolean; done: boolean }[]
   /** Пробуждённые объекты мира; нет в списке — объект спит */
   worldObjects: { objectKey: string; state: 'AWAKENED' }[]
   /** Обысканные места находок */
@@ -235,3 +279,6 @@ export type WeedResult = { x: number; y: number; remaining: number }
 
 /** Итог попытки открыть замок: solved — открыт (сейчас или раньше), reward — что получено этой попыткой */
 export type AttemptResult = { puzzleKey: string; solved: boolean; text: string; reward: ItemGrant[] }
+
+/** Итог поручения: что отдано и что получено */
+export type ErrandResult = { key: string; given: ItemGrant[]; reward: ItemGrant[] }

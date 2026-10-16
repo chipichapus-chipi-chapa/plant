@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Catalog, GameState, GardenMap } from '../api/types'
-import { currentObjective, isClickable, isInteractive, isNear, markerPoint, promptCell, sameThing } from './guidance'
+import { currentObjective, doorOpen, isClickable, isInteractive, isNear, markerPoint, npcAt, promptCell, sameThing } from './guidance'
 
 const map = {
   key: 'home',
@@ -85,9 +85,14 @@ describe('задание от Вереска', () => {
     expect(currentObjective(withSeeds, catalog)?.target).toEqual({ kind: 'tile', type: 'soil' })
   })
 
-  it('поручение сначала надо получить у Вереска — даже если дело уже сделано', () => {
-    const s = state({ mentor: { nextDialogue: 'offer_weed', hasNews: true, steps: steps(['weed', true, false, false]) } })
+  it('поручение сначала надо получить у Вереска', () => {
+    const s = state({ mentor: { nextDialogue: 'offer_weed', hasNews: true, steps: steps(['weed', false, false, false]) } })
     expect(currentObjective(s, catalog)).toEqual({ text: 'Вереск хочет попросить', target: { kind: 'mentor' } })
+  })
+
+  it('дело, сделанное до поручения, сразу ведёт к Вереску за благодарностью', () => {
+    const s = state({ mentor: { nextDialogue: 'done_weed', hasNews: true, steps: steps(['weed', true, false, false]) } })
+    expect(currentObjective(s, catalog)).toEqual({ text: 'Расскажите', target: { kind: 'mentor' } })
   })
 
   it('после обучения заданий нет', () => {
@@ -96,13 +101,13 @@ describe('задание от Вереска', () => {
   })
 })
 
-describe('стрелка и «!»', () => {
-  it('стрелка указывает на первую свободную грядку', () => {
+describe('знаки «!»', () => {
+  it('«!» цели задания — над первой свободной грядкой', () => {
     const s = state({ garden: { objects: [{ x: 2, y: 0 } as never], weeded: [] } })
     expect(markerPoint({ kind: 'tile', type: 'soil' }, map, s)).toEqual({ x: 3 * 32 + 16, y: -2 })
   })
 
-  it('если цель снаружи, а игрок в сарае, стрелка указывает на дверь', () => {
+  it('если цель снаружи, а игрок в сарае, «!» горит над дверью', () => {
     expect(markerPoint({ kind: 'mentor' }, shed, state({}))).toEqual({ x: 1.5 * 32, y: 30 })
   })
 
@@ -140,5 +145,19 @@ describe('стрелка и «!»', () => {
     // вплотную — по соседней клетке, по диагонали уже далеко
     expect(isNear({ x: 0, y: 1 }, { x: 1, y: 1 }, map)).toBe(true)
     expect(isNear({ x: 0, y: 1 }, { x: 1, y: 0 }, map)).toBe(false)
+  })
+
+  it('калитка в ежевике пускает, только когда её пробудили', () => {
+    const door = { map: 'east', x: 1, y: 6, facing: 'right' as const, label: 'На тропу', requires: 'east-gate' }
+    expect(doorOpen(door, state({}))).toBe(false)
+    expect(doorOpen(door, state({ worldObjects: [{ objectKey: 'east-gate', state: 'AWAKENED' }] }))).toBe(true)
+    expect(doorOpen({ ...door, requires: null }, state({}))).toBe(true)
+  })
+
+  it('с мышью можно поговорить — над ней «!»', () => {
+    const glade: GardenMap = { ...shed, key: 'east', npcs: [{ key: 'krupka', name: 'Крупка', kind: 'krupka', x: 0, y: 0, description: '', talks: ['hi'], dialogues: {} }] }
+    expect(npcAt(glade, { x: 0, y: 0 })?.key).toBe('krupka')
+    expect(isInteractive({ x: 0, y: 0 }, state({}), catalog, glade)).toBe(true)
+    expect(isClickable({ x: 2, y: 0 }, state({}), catalog, glade)).toBe(false)
   })
 })

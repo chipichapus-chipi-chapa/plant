@@ -1,0 +1,100 @@
+{
+  "key": "manor",
+  "name": "Двор поместья",
+  "width": 16,
+  "height": 10,
+  "tiles": {
+    ".": {
+      "type": "grass",
+      "name": "Двор",
+      "description": "Когда-то здесь стригли траву. Теперь она стрижёт сама себя — как умеет.",
+      "plantable": false
+    },
+    ",": {
+      "type": "weeds",
+      "name": "Заросли",
+      "description": "Крапива и мята вперемешку. Пахнет летом и предупреждением.",
+      "plantable": false
+    },
+    "p": {
+      "type": "path",
+      "name": "Дорожка",
+      "description": "Камни дорожки разошлись, между ними пробивается мох.",
+      "plantable": false
+    },
+    "F": {
+      "type": "forest",
+      "name": "Лес",
+      "description": "Чаща обнимает поместье со всех сторон.",
+      "plantable": false
+    }
+  },
+  "rows": [
+    "FFFFFFFFFFFFFFFF",
+    "FFF..........FFF",
+    "F.............FF",
+    "F.,,...........F",
+    "F......p.......F",
+    "F......p.......F",
+    "ppppppppppppp..F",
+    "F..........,,..F",
+    "FFF.,........FFF",
+    "FFFFFFFFFFFFFFFF"
+  ],
+  "props": [
+    {
+      "key": "manor-house",
+      "kind": "manor",
+      "x": 4,
+      "y": 1,
+      "width": 6,
+      "height": 3,
+      "name": "Поместье",
+      "description": "Большой старый дом. Окна темны, но из трубы будто ещё пахнет хлебом. Дверь не заперта.",
+      "door": {
+        "map": "kitchen",
+        "x": 4,
+        "y": 5,
+        "facing": "up",
+        "label": "Войти в дом"
+      }
+    },
+    {
+      "key": "manor-well",
+      "kind": "well",
+      "x": 12,
+      "y": 3,
+      "width": 1,
+      "height": 1,
+      "name": "Колодец",
+      "description": "Глубокий, с замшелым срубом. Если крикнуть в него «эй», он вежливо отвечает тем же."
+    },
+    {
+      "key": "lamp-post",
+      "kind": "lamp_post",
+      "x": 3,
+      "y": 5,
+      "width": 1,
+      "height": 1,
+      "name": "Фонарный столб",
+      "description": "Фонарь на столбе давно потух. Под ним табличка: «Зажигать в первый холодный вечер»."
+    },
+    {
+      "key": "manor-path-back",
+      "kind": "gate_open",
+      "x": 0,
+      "y": 6,
+      "width": 1,
+      "height": 1,
+      "name": "Тропа через чащу",
+      "description": "Обратно — к ручью, мышам и саду.",
+      "door": {
+        "map": "east",
+        "x": 14,
+        "y": 5,
+        "facing": "left",
+        "label": "Вернуться на тропу"
+      }
+    }
+  ]
+}

@@ -1,93 +1,149 @@
-// Сарай изнутри: дощатый пол, бревенчатые стены, ящик с замком, полка, стол с письмом,
-// керосиновая лампа, угол под рогожей и дверь в сад. Тот же приём: плоские тона, шахматка, чёрный контур.
+// Сарай изнутри. Планировка — как в комнатах Inscryption: восьмиугольный пятачок утоптанной земли
+// посреди чёрной пустоты. Материалы — как в нашем саду: бревенчатая кромка стен с балкой,
+// деревянная мебель с железными оковками, зелёное стекло и тёплая лампа.
+// Плоские тона, шахматка на переходах, почти чёрный контур.
 
 import { checker, noise, pick, rng, Sprite } from './canvas.mjs'
 import { T } from './tiles.mjs'
 import { INK, P, R } from './palette.mjs'
 
-// --- Пол и стены ----------------------------------------------------------------------------
+const N = 1
+const E = 2
+const S = 4
+const W = 8
+const VOID = P.dark
+/** Насколько срезан угол комнаты (по диагонали, в пикселях). */
+const CUT = 12
 
-/** Половицы поперёк комнаты: доски по 8 пикселей, тёмные щели, редкие сучки и гвозди. */
-function floor(seed) {
-  const s = new Sprite(T, T)
-  const r = rng(seed)
-  for (let y = 0; y < T; y++) {
-    const board = Math.floor(y / 8)
-    const inBoard = y % 8
-    // стык досок сдвинут от ряда к ряду, как на настоящем полу
-    const joint = (board * 13 + 5) % T
-    for (let x = 0; x < T; x++) {
-      const n = noise(x, y, 6, board + seed, T)
-      const tone = inBoard === 7 ? 0 : inBoard === 0 ? 4 : n > 0.7 ? 2 : 3
-      s.px(x, y, x === joint && inBoard !== 7 ? R.oldWood[0] : R.oldWood[tone])
-    }
-  }
-  for (let i = 0; i < 2; i++) {
-    const x = 3 + Math.floor(r() * 26)
-    const y = Math.floor(r() * 4) * 8 + 3
-    s.px(x, y, R.oldWood[1])
-    s.px(x + 1, y, R.oldWood[1])
-    s.px(x, y + 1, R.oldWood[2])
-  }
-  if (r() > 0.4) s.px(4 + Math.floor(r() * 24), Math.floor(r() * 4) * 8 + 1, R.silver[2]) // гвоздь
-  return s
-}
+const BOTTLE = ['#1f3a1c', '#2f5a26', '#4f8a3a', '#7ab84a', '#b6e07a']
 
-/** Верх стены (вид сверху на брёвна): тёмный, с поперечными балками. */
-function wallTop() {
+// --- Пол ------------------------------------------------------------------------------------
+
+/**
+ * Земляной пол по маске соседей-пола (N=1, E=2, S=4, W=8). У стены земля темнеет шахматкой,
+ * а там, где стены сходятся углом, угол срезан по диагонали — за ним пустота.
+ */
+function floor(mask) {
   const s = new Sprite(T, T)
+  const r = rng(500 + mask)
+  const open = (side) => !!(mask & side)
   for (let y = 0; y < T; y++)
-    for (let x = 0; x < T; x++) s.px(x, y, (y % 16 === 0) ? R.wood[2] : checker(x, y) && y % 16 === 1 ? R.wood[1] : R.wood[0])
+    for (let x = 0; x < T; x++) {
+      // расстояние до ближайшей стены (стороны без соседа) и до среза угла
+      let d = Infinity
+      if (!open(N)) d = Math.min(d, y)
+      if (!open(S)) d = Math.min(d, T - 1 - y)
+      if (!open(W)) d = Math.min(d, x)
+      if (!open(E)) d = Math.min(d, T - 1 - x)
+      const corners = [
+        [!open(N) && !open(W), x + y],
+        [!open(N) && !open(E), T - 1 - x + y],
+        [!open(S) && !open(W), x + T - 1 - y],
+        [!open(S) && !open(E), T - 1 - x + T - 1 - y],
+      ]
+      let cut = false
+      for (const [on, sum] of corners) {
+        if (!on) continue
+        if (sum < CUT) cut = true
+        d = Math.min(d, Math.floor((sum - CUT) / 1.4))
+      }
+      if (cut) {
+        s.px(x, y, VOID)
+        continue
+      }
+      // основа: ровная земля с пятнами чуть темнее и редкими светлыми крупинками
+      // пятна редкие и крупные (период — клетка, без шва), чтобы пол читался ровным, без узора
+      const n = noise(x, y, 16, 31, T)
+      let color = n < 0.2 && checker(x, y) ? R.dirt[2] : R.dirt[3]
+      if (d < 1) color = R.wood[2] // деревянный плинтус у самой стены
+      else if (d < 3) color = R.dirt[0]
+      else if (d < 5) color = checker(x, y) ? R.dirt[1] : R.dirt[2]
+      else if (d < 7 && checker(x, y)) color = R.dirt[2]
+      s.px(x, y, color)
+    }
+  for (let i = 0; i < 4; i++) {
+    const x = 6 + Math.floor(r() * 20)
+    const y = 6 + Math.floor(r() * 20)
+    s.px(x, y, r() > 0.5 ? R.dirt[4] : R.dirt[1])
+  }
   return s
 }
 
-/** Лицевая сторона стены: горизонтальные брёвна с щелями; во втором варианте — окошко с лунным светом. */
-function wallFace(windowed) {
+// --- Стены ----------------------------------------------------------------------------------
+
+/**
+ * Стена — пустота, а со стороны пола (маска соседей-пола) — бревенчатая кромка.
+ * Над комнатой (пол снизу) кромка толще: брёвна и балка вдоль стены.
+ */
+function wall(mask) {
   const s = new Sprite(T, T)
-  for (let y = 0; y < T; y++) {
-    const inRow = y % 5
+  s.rect(0, 0, T, T, VOID)
+  const r = rng(700 + mask)
+  if (mask & S) {
+    // брёвна
+    for (let y = 14; y < 26; y++)
+      for (let x = 0; x < T; x++) {
+        const row = Math.floor((y - 14) / 4)
+        const seam = (y - 14) % 4 === 3 || (x + row * 5) % 10 === 0
+        s.px(x, y, seam ? R.wood[0] : (x + row * 5) % 10 === 1 ? R.wood[2] : R.wood[1])
+      }
+    // балка
     for (let x = 0; x < T; x++) {
-      const tone = inRow === 4 ? 0 : inRow === 0 ? 4 : noise(x, Math.floor(y / 5), 6, 9, T) > 0.68 ? 2 : 3
-      s.px(x, y, R.wood[tone])
+      s.px(x, 18, INK)
+      s.px(x, 19, R.wood[4])
+      s.px(x, 20, R.wood[3])
+      s.px(x, 21, R.wood[2])
+      s.px(x, 22, INK)
     }
+    if (r() > 0.5) s.rect(10 + Math.floor(r() * 12), 17, 3, 7, R.silver[1]) // железная скоба
+    s.rect(0, 26, T, 1, R.wood[3])
+    s.rect(0, 27, T, 5, R.wood[1])
+    s.rect(0, 31, T, 1, INK)
   }
-  // плинтус внизу стены — граница с полом
-  for (let x = 0; x < T; x++) {
-    s.px(x, T - 2, R.wood[1])
-    s.px(x, T - 1, INK)
+  if (mask & N) {
+    s.rect(0, 0, T, 2, R.wood[2])
+    s.rect(0, 2, T, 2, R.wood[1])
+    for (let x = 2; x < T - 4; x += 9) if (r() > 0.4) s.rect(x, 4, 5, 2, R.wood[1]) // торцы брёвен
   }
-  if (windowed) {
-    s.rect(9, 6, 14, 12, INK)
-    for (let y = 7; y < 17; y++) for (let x = 10; x < 22; x++) s.px(x, y, pick(R.dew.slice(1, 4), 0.85 - (y - 7) / 14, x, y))
-    s.rect(15, 7, 2, 10, R.wood[1])
-    s.rect(10, 11, 12, 1, R.wood[1])
-    s.px(12, 8, R.dew[4])
-    s.rect(8, 18, 16, 2, R.wood[4]) // подоконник
+  if (mask & W) {
+    s.rect(0, 0, 2, T, R.wood[2])
+    s.rect(2, 0, 2, T, R.wood[1])
+    for (let y = 3; y < T - 4; y += 8) if (r() > 0.4) s.rect(4, y, 2, 4, R.wood[1])
+  }
+  if (mask & E) {
+    s.rect(T - 2, 0, 2, T, R.wood[2])
+    s.rect(T - 4, 0, 2, T, R.wood[1])
+    for (let y = 3; y < T - 4; y += 8) if (r() > 0.4) s.rect(T - 6, y, 2, 4, R.wood[1])
   }
   return s
 }
 
 // --- Предметы -------------------------------------------------------------------------------
 
-/** Ящик, обитый железом, с замком из трёх колёсиков; открыт — крышка откинута, внутри пусто. */
+/** Шляпки гвоздей в ряд — у мебели сарая. */
+function rivets(s, x0, x1, y, step = 4) {
+  for (let x = x0; x <= x1; x += step) s.px(x, y, R.silver[3])
+}
+
+/** Деревянный ящик в железных оковках, с латунным замком из трёх колёсиков; открыт — крышка откинута, внутри пусто. */
 function toolbox(open) {
   const s = new Sprite(T, T)
   s.shadow(16, 28, 13, 2.5)
   const b = new Sprite(T, T)
   const top = open ? 14 : 11
-  for (let y = top; y < 28; y++) for (let x = 4; x < 28; x++) b.px(x, y, R.wood[x < 6 ? 4 : x > 25 ? 2 : (y - top) % 6 === 5 ? 2 : 3])
+  for (let y = top; y < 28; y++) for (let x = 4; x < 28; x++) b.px(x, y, R.wood[x < 6 ? 4 : x > 25 ? 1 : y < top + 2 ? 4 : 2])
   for (const x of [7, 24]) for (let y = top; y < 28; y++) b.px(x, y, R.silver[y === top ? 3 : 1]) // железные полосы
+  rivets(b, 6, 26, 26)
   if (open) {
-    // откинутая крышка за ящиком и тёмное нутро
-    for (let y = 4; y < 14; y++) for (let x = 4; x < 28; x++) b.px(x, y, R.wood[y < 6 ? 4 : 2])
-    b.rect(5, 14, 22, 3, P.dark)
+    for (let y = 3; y < 14; y++) for (let x = 4; x < 28; x++) b.px(x, y, R.wood[y < 5 ? 3 : 1])
+    b.rect(5, 14, 22, 3, VOID)
   } else {
-    for (let x = 4; x < 28; x++) b.px(x, top, R.wood[5])
-    // замок: латунная пластина с тремя колёсиками
-    b.rect(12, 16, 9, 6, R.straw[2])
+    b.rect(4, top, 24, 1, R.wood[5])
+    b.rect(12, 16, 9, 6, R.straw[3])
+    b.rect(12, 16, 9, 1, R.straw[5])
     for (const x of [13, 16, 19]) {
-      b.px(x, 18, R.lamp[3])
-      b.px(x, 19, R.straw[0])
+      b.px(x, 18, R.lamp[4])
+      b.px(x, 19, R.straw[1])
     }
   }
   b.outline(INK)
@@ -95,60 +151,58 @@ function toolbox(open) {
   return s
 }
 
-/** Полка на стене: горшки, банка из-под семян и моток бечёвки. */
-function shelf() {
+/** Низкий деревянный шкафчик, на нём бутылки зелёного стекла. */
+function cabinet() {
   const s = new Sprite(2 * T, T)
-  const p = new Sprite(2 * T, T)
-  for (let x = 4; x < 60; x++) {
-    p.px(x, 22, R.wood[4])
-    p.px(x, 23, R.wood[2])
+  s.shadow(32, 29, 28, 2.5)
+  const c = new Sprite(2 * T, T)
+  for (let y = 16; y < 29; y++) for (let x = 4; x < 60; x++) c.px(x, y, R.wood[x < 6 ? 4 : x > 57 ? 1 : y < 18 ? 4 : 2])
+  c.rect(31, 18, 1, 10, R.wood[1]) // створки
+  c.rect(26, 22, 2, 2, R.wood[5])
+  c.rect(35, 22, 2, 2, R.wood[5])
+  rivets(c, 7, 57, 27, 5)
+  c.outline(INK)
+  s.stamp(c)
+  // бутылки: высокая, круглая и маленькая
+  const g = new Sprite(2 * T, T)
+  for (const [x, w, h] of [[10, 5, 12], [18, 7, 8], [44, 6, 11], [52, 4, 6]]) {
+    for (let y = 16 - h; y < 16; y++) for (let i = 0; i < w; i++) g.px(x + i, y, BOTTLE[i === 0 ? 4 : i === 1 ? 3 : i === w - 1 ? 1 : 2])
+    g.rect(x + Math.floor(w / 2) - 1, 16 - h - 3, 2, 3, BOTTLE[1]) // горлышко
   }
-  p.rect(8, 24, 2, 4, R.wood[1])
-  p.rect(54, 24, 2, 4, R.wood[1])
-  // горшки
-  for (const [x, w] of [[10, 9], [22, 7]]) {
-    for (let y = 13; y < 22; y++) for (let i = 0; i < w - Math.floor((y - 13) / 4); i++) p.px(x + Math.floor((y - 13) / 8) + i, y, R.rust[i === 0 ? 4 : i > w - 4 ? 2 : 3])
-    p.rect(x - 1, 12, w + 2, 2, R.rust[4])
-  }
-  // банка
-  for (let y = 10; y < 22; y++) for (let x = 36; x < 44; x++) p.px(x, y, x === 37 ? R.dew[4] : R.dew[2])
-  p.rect(35, 9, 10, 2, R.silver[2])
-  // бечёвка
-  p.shadedEllipse(52, 18, 4, 4, R.straw.slice(1))
-  p.outline(INK)
-  s.stamp(p)
+  g.outline(INK)
+  s.stamp(g)
   return s
 }
 
-/** Стол с письмом и чашкой давно остывшего чая. */
+/** Деревянный верстак с письмом и чашкой давно остывшего чая. */
 function deskLetter() {
   const s = new Sprite(2 * T, T)
   s.shadow(32, 29, 28, 2.5)
   const d = new Sprite(2 * T, T)
-  for (let y = 10; y < 16; y++) for (let x = 3; x < 61; x++) d.px(x, y, R.wood[y === 10 ? 5 : y > 13 ? 2 : 4])
-  for (const x of [6, 55]) for (let y = 16; y < 29; y++) for (let i = 0; i < 3; i++) d.px(x + i, y, R.wood[i === 0 ? 3 : 1])
+  for (let y = 12; y < 17; y++) for (let x = 3; x < 61; x++) d.px(x, y, R.wood[y === 12 ? 5 : y > 15 ? 2 : 4])
+  for (let y = 17; y < 23; y++) for (let x = 5; x < 59; x++) d.px(x, y, R.wood[x > 56 ? 1 : 2])
+  rivets(d, 8, 56, 21, 6)
+  for (const x of [6, 55]) for (let y = 23; y < 29; y++) for (let i = 0; i < 3; i++) d.px(x + i, y, R.wood[i === 0 ? 3 : 1])
   d.outline(INK)
   s.stamp(d)
-  // письмо: сложенный листок, строчки
   const l = new Sprite(2 * T, T)
-  for (let y = 6; y < 13; y++) for (let x = 14; x < 30; x++) l.px(x, y, x > 26 ? R.bone[1] : R.bone[3])
-  for (const y of [8, 10]) for (let x = 16; x < 26; x += 1) if ((x + y) % 4 !== 0) l.px(x, y, R.bone[0])
-  // чашка
-  l.shadedEllipse(42, 8, 3.5, 3, R.bone.slice(1))
-  l.ellipse(42, 6.5, 2.5, 1, R.wood[1])
-  l.px(46, 8, R.bone[2])
+  for (let y = 7; y < 14; y++) for (let x = 14; x < 30; x++) l.px(x, y, x > 26 ? R.bone[1] : R.bone[3])
+  for (const y of [9, 11]) for (let x = 16; x < 26; x++) if ((x + y) % 4 !== 0) l.px(x, y, R.bone[0])
+  l.shadedEllipse(42, 9, 3.5, 3, R.bone.slice(1))
+  l.ellipse(42, 7.5, 2.5, 1, R.wood[1])
+  l.px(46, 9, R.bone[2])
   l.outline(INK)
   s.stamp(l)
   return s
 }
 
-/** Керосиновая лампа на табурете: тёплое стекло, огонёк. */
+/** Керосиновая лампа на табурете: тёплое стекло, огонёк — единственный тёплый свет в комнате. */
 function lamp() {
   const s = new Sprite(T, T)
   s.shadow(16, 29, 9, 2)
   const t = new Sprite(T, T)
   for (let y = 18; y < 21; y++) for (let x = 8; x < 24; x++) t.px(x, y, R.wood[y === 18 ? 4 : 3])
-  for (const x of [9, 21]) for (let y = 21; y < 29; y++) t.rect(x, y, 2, 1, R.wood[2])
+  for (const x of [9, 21]) for (let y = 21; y < 29; y++) t.rect(x, y, 2, 1, R.wood[1])
   t.outline(INK)
   s.stamp(t)
   const l = new Sprite(T, T)
@@ -179,34 +233,35 @@ function sack(searched) {
   return s
 }
 
-/** Дверь в сад: проём в нижней стене, за ним ночная трава в лунном свете. */
+/** Выход в сад: проём в нижней стене, коврик и полоска ночной травы снаружи. */
 function doorExit() {
   const s = new Sprite(T, T)
-  for (let y = 0; y < T; y++) for (let x = 4; x < 28; x++) s.px(x, y, y > 20 ? (checker(x, y) ? R.grass[2] : R.grass[1]) : pick(R.dew.slice(0, 3), 0.75 - y / 40, x, y))
+  for (let y = 0; y < T; y++)
+    for (let x = 4; x < 28; x++) s.px(x, y, y < 14 ? R.dirt[y < 8 ? 3 : 2] : y > 24 ? (checker(x, y) ? R.grass[2] : R.grass[1]) : VOID)
+  // коврик у порога
+  for (let y = 4; y < 12; y++) for (let x = 8; x < 24; x++) s.px(x, y, (x + y) % 4 === 0 ? R.rust[2] : R.rust[3])
+  s.rect(8, 4, 16, 1, R.rust[4])
   const f = new Sprite(T, T)
-  for (let y = 0; y < T; y++) {
+  for (let y = 12; y < T; y++) {
     f.rect(1, y, 3, 1, R.wood[y % 6 === 5 ? 1 : 3])
     f.rect(28, y, 3, 1, R.wood[y % 6 === 5 ? 1 : 2])
   }
   f.outline(INK)
   s.stamp(f)
-  // порог
-  s.rect(4, 0, 24, 2, R.wood[4])
-  s.rect(4, 2, 24, 1, INK)
   return s
 }
 
 export function interiorFrames() {
+  const frames = {}
+  for (let m = 0; m < 16; m++) {
+    frames[`floor_${m}`] = floor(m)
+    frames[`wall_${m}`] = wall(m)
+  }
   return {
-    floor_0: floor(1),
-    floor_1: floor(2),
-    floor_2: floor(3),
-    wall_top: wallTop(),
-    wall_face_0: wallFace(false),
-    wall_face_1: wallFace(true),
+    ...frames,
     prop_toolbox: toolbox(false),
     prop_toolbox_open: toolbox(true),
-    prop_shelf: shelf(),
+    prop_cabinet: cabinet(),
     prop_desk_letter: deskLetter(),
     prop_lamp: lamp(),
     prop_sack: sack(false),

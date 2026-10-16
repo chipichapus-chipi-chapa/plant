@@ -77,11 +77,24 @@ export function tileFrame(map: GardenMap, x: number, y: number): string {
       return 'prop_gate'
     case 'weeds':
       return `weeds_${variant(x, y, 3)}`
+    case 'forest': {
+      // за краем карты лес продолжается — опушка рисуется только там, где рядом поляна
+      const forestAt = (dx: number, dy: number) => !inBounds(map, { x: x + dx, y: y + dy }) || tileAt(map, x + dx, y + dy)?.type === 'forest'
+      return `forest_${(forestAt(0, -1) ? 1 : 0) | (forestAt(1, 0) ? 2 : 0) | (forestAt(0, 1) ? 4 : 0) | (forestAt(-1, 0) ? 8 : 0)}`
+    }
+    case 'water': {
+      // мост — тоже вода под досками: берег у ручья только там, где рядом суша
+      const wet = (dx: number, dy: number) => ['water', 'bridge'].includes(tileAt(map, x + dx, y + dy)?.type ?? '')
+      return `water_${(wet(0, -1) || y === 0 ? 1 : 0) | (wet(1, 0) ? 2 : 0) | (wet(0, 1) || y === map.height - 1 ? 4 : 0) | (wet(-1, 0) ? 8 : 0)}`
+    }
+    case 'bridge':
+      return 'bridge'
     case 'floor':
-      return `floor_${variant(x, y, 3)}`
+      // пол по соседям: у стен темнеет, в углах комнаты срезан — комната получается восьмиугольной
+      return `floor_${neighbourMask(map, x, y, 'floor')}`
     case 'wall':
-      // лицевая сторона стены видна, если под ней пол; иначе — тёмный верх стены
-      return tileAt(map, x, y + 1)?.type === 'floor' ? `wall_face_${variant(x, y, 2)}` : 'wall_top'
+      // стена — чёрная пустота, а со стороны пола у неё каменная кромка
+      return `wall_${neighbourMask(map, x, y, 'floor')}`
     case 'path':
     case 'soil':
     case 'overgrown':
