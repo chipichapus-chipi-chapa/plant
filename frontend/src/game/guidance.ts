@@ -67,7 +67,8 @@ export function currentObjective(state: GameState, catalog: Catalog): Objective 
  * Если цель в другой локации (например, Вереск, а игрок в сарае), «!» горит над дверью наружу.
  */
 export function markerPoint(target: ObjectiveTarget, map: GardenMap, state: GameState): { x: number; y: number } | null {
-  if (target.kind === 'hud') return null
+  // у кнопок панели свой «!»; у клеток (свободная грядка) метки нет — «!» над случайной грядкой только сбивает
+  if (target.kind === 'hud' || target.kind === 'tile') return null
   const here = targetPoint(target, map, state)
   if (here || map.key === HOME) return here
   const exit = map.props.find((p) => p.door?.map === HOME)
@@ -159,4 +160,15 @@ export function promptPoint(cell: Cell, map: GardenMap): { x: number; y: number 
   const prop = propAt(map, cell.x, cell.y)
   if (prop) return { x: (prop.x + prop.width / 2) * TILE, y: prop.y * TILE }
   return { x: cell.x * TILE + TILE / 2, y: cell.y * TILE + 4 }
+}
+
+/** Можно ли выполнить поручение жителя прямо сейчас: взято, не сделано, всё нужное есть. */
+export function errandReady(npc: Npc, state: GameState): boolean {
+  const errand = npc.errand
+  const status = errand && state.errands.find((e) => e.key === errand.key)
+  if (!errand || !status?.offered || status.done) return false
+  const have = (key: string) => state.inventory.find((e) => e.itemKey === key)?.quantity ?? 0
+  if (errand.kind === 'SHOW') return state.searchedSpots.includes(errand.spot ?? '')
+  if (errand.kind === 'REVIVE') return (errand.props ?? []).every((key) => state.worldObjects.some((w) => w.objectKey === key))
+  return (errand.give ?? []).every((g) => have(g.itemKey) >= g.quantity)
 }

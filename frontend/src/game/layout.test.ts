@@ -47,10 +47,10 @@ describe('геометрия', () => {
     expect(cellAtPoint(63.9, 64, 2)).toEqual({ x: 0, y: 1 })
   })
 
-  it('заполняет доступную ширину, но не больше ×3', () => {
+  it('заполняет доступную ширину, но не больше ×4', () => {
     expect(fitScale(128, map)).toBe(1) // карта 128 px шириной
     expect(fitScale(224, map)).toBe(1.75)
-    expect(fitScale(5000, map)).toBe(3)
+    expect(fitScale(5000, map)).toBe(4)
   })
 
   it('учитывает высоту, чтобы под садом оставалось место для кнопок', () => {

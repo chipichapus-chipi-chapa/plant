@@ -130,14 +130,14 @@ export function cellAtPoint(px: number, py: number, scale: number): Cell {
 }
 
 /**
- * Масштаб сада под доступную ширину и высоту (не больше ×3, не меньше ×0.25).
+ * Масштаб сада под доступную ширину и высоту (не больше ×4, не меньше ×0.25).
  * Масштаб дробный: на обычном ноутбуке целый ×1 оставил бы сад крошечным, а ×2 не влез бы.
  * Сцена рисуется в буфер 1:1 и растягивается без сглаживания, поэтому пиксели остаются чёткими,
  * лишь часть из них на экранный пиксель шире соседних.
  */
 export function fitScale(availableWidth: number, map: GardenMap, availableHeight = Infinity): number {
   const fit = Math.min(availableWidth / (map.width * TILE), availableHeight / (map.height * TILE))
-  return Math.max(0.25, Math.min(3, fit))
+  return Math.max(0.25, Math.min(4, fit))
 }
 
 /** Что показать игроку о клетке: постройка важнее тайла под ней. */

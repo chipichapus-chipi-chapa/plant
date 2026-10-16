@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent 
 import type { GardenMap } from '../api/types'
 import type { Atlas } from './atlas'
 import { directionFor, type CharacterFrames } from './character'
+import { useSettings } from '../app/settings'
 import { Fireflies } from './Fireflies'
 import { cellAtPoint, fitScale, inBounds, TILE, type Cell } from './layout'
 import { blockedCells, cellOf, facingCell, walk, walkerAt, type Facing, type Walker } from './movement'
@@ -98,6 +99,9 @@ export function GardenCanvas(props: Props) {
   const bufferRef = useRef<HTMLCanvasElement | null>(null)
   const [scale, setScale] = useState(1)
   const [touch] = useState(coarsePointer)
+  // настройки вида: сумерки, строки монитора, светлячки — игровой цикл читает их из ref
+  const { settings } = useSettings()
+  const look = useRef(settings)
 
   // Всё, что читает игровой цикл, лежит в ref: цикл не перезапускается на каждый рендер React
   const latest = useRef(props)
@@ -112,6 +116,7 @@ export function GardenCanvas(props: Props) {
 
   // Свежие значения для игрового цикла — после каждого рендера
   useLayoutEffect(() => {
+    look.current = settings
     latest.current = props
     scaleRef.current = scale
     blockedRef.current = blocked
@@ -120,7 +125,7 @@ export function GardenCanvas(props: Props) {
   // Любое изменение входных данных — повод перерисовать кадр
   useEffect(() => {
     dirtyRef.current = true
-  }, [scene, atlas, scale, player.frames])
+  }, [scene, atlas, scale, player.frames, settings])
 
   // Невидимый джойстик на телефоне: ведёшь пальцем по саду — персонаж идёт в ту сторону
   const touchRef = useRef<{ id: number; x: number; y: number; dragging: boolean } | null>(null)
@@ -245,6 +250,7 @@ export function GardenCanvas(props: Props) {
         ...p.scene,
         time,
         lightLevel: p.lightUp ? lampLevel(time - enteredAt) : 1,
+        dim: look.current.brightness === 'soft' ? 0.55 : 1,
         // вокруг игрока мягкий ореол: в сумерках его всегда видно
         aura: { x: w.x, y: w.y },
         characters: [
@@ -258,7 +264,7 @@ export function GardenCanvas(props: Props) {
       ctx.imageSmoothingEnabled = false
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       ctx.drawImage(buffer, 0, 0, canvas.width, canvas.height)
-      const lines = scanlines(ctx, Math.max(2, Math.round(dpr * 3)))
+      const lines = look.current.scanlines ? scanlines(ctx, Math.max(2, Math.round(dpr * 3))) : null
       if (lines) {
         ctx.fillStyle = lines
         ctx.fillRect(0, 0, canvas.width, canvas.height)
@@ -314,7 +320,7 @@ export function GardenCanvas(props: Props) {
             if (!lastPointerWasTouch.current) onSelect(cellFromEvent(e))
           }}
         />
-        <Fireflies />
+        {settings.fireflies && <Fireflies />}
         {touch && inputEnabled && (
           <button
             type="button"

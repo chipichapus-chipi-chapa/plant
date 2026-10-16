@@ -1,0 +1,39 @@
+.hint {
+  display: none;
+}
+
+@media (orientation: portrait) and (pointer: coarse) {
+  .hint {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: var(--space-4);
+    padding: var(--space-6);
+    background: var(--c-night);
+    color: var(--c-parchment);
+    text-align: center;
+  }
+}
+
+/* Телефончик, который поворачивается набок */
+.phone {
+  width: 48px;
+  height: 80px;
+  border: 4px solid var(--c-parchment);
+  border-radius: 8px;
+  animation: turn 2.2s ease-in-out infinite;
+}
+
+@keyframes turn {
+  0%,
+  30% {
+    transform: rotate(0);
+  }
+  60%,
+  100% {
+    transform: rotate(-90deg);
+  }
+}

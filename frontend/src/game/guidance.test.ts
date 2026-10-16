@@ -102,9 +102,9 @@ describe('задание от Вереска', () => {
 })
 
 describe('знаки «!»', () => {
-  it('«!» цели задания — над первой свободной грядкой', () => {
-    const s = state({ garden: { objects: [{ x: 2, y: 0 } as never], weeded: [] } })
-    expect(markerPoint({ kind: 'tile', type: 'soil' }, map, s)).toEqual({ x: 3 * 32 + 16, y: -2 })
+  it('над клетками-целями (свободная грядка) метки нет — только над предметами и Вереском', () => {
+    expect(markerPoint({ kind: 'tile', type: 'soil' }, map, state({}))).toBeNull()
+    expect(markerPoint({ kind: 'prop', key: 'rock-2' }, map, state({}))).toEqual({ x: 16, y: 30 })
   })
 
   it('если цель снаружи, а игрок в сарае, «!» горит над дверью', () => {

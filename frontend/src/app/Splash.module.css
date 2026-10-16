@@ -1,0 +1,70 @@
+/* Заставка: тёмная комната, тёплый свет вокруг Мяты и лилий, название светом лампы */
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background:
+    radial-gradient(ellipse 45% 40% at 50% 55%, rgb(255 176 96 / 0.22), transparent 70%),
+    radial-gradient(ellipse 30% 25% at 30% 50%, rgb(220 150 180 / 0.12), transparent 70%),
+    radial-gradient(ellipse 30% 25% at 70% 50%, rgb(220 150 180 / 0.12), transparent 70%),
+    var(--c-night);
+  cursor: pointer;
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(32px, 7vmin, 64px);
+  font-weight: 400;
+  color: var(--c-glow);
+  text-shadow:
+    3px 3px 0 var(--c-ink),
+    0 0 24px rgb(255 176 96 / 0.6);
+}
+
+.scene {
+  width: min(480px, 70vw, calc(55vh * 160 / 96));
+  aspect-ratio: 160 / 96;
+  image-rendering: pixelated;
+}
+
+.motto {
+  margin: 0;
+  color: var(--c-parchment-shade);
+  font-size: var(--text-m);
+  opacity: 0.85;
+}
+
+.start {
+  padding: var(--space-2) var(--space-4);
+  border: 0;
+  background: var(--paper-texture), var(--c-parchment);
+  background-size: var(--paper-size), auto;
+  color: var(--c-ink);
+  font: inherit;
+  box-shadow: 0 0 0 var(--px) var(--c-ink), 0 0 20px rgb(255 207 122 / 0.4);
+  cursor: pointer;
+  animation: breathe 2.4s ease-in-out infinite;
+}
+
+.start:disabled {
+  opacity: 0.7;
+  animation: none;
+}
+
+@keyframes breathe {
+  50% {
+    box-shadow: 0 0 0 var(--px) var(--c-ink), 0 0 36px rgb(255 207 122 / 0.7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .start {
+    animation: none;
+  }
+}
