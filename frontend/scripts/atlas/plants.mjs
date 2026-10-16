@@ -1,8 +1,8 @@
-// Растения по стадиям в «живой» палитре: на фоне выцветшего сада посадки — самое яркое.
+// Растения по стадиям: на тёмной земле посадки — самое живое пятно сада.
 // Кадр 32×48: низ — уровень земли клетки, верх может выступать над клеткой.
 
 import { Sprite } from './canvas.mjs'
-import { OUTLINE_GREEN, P, R } from './palette.mjs'
+import { INK, P, R } from './palette.mjs'
 
 const PW = 32
 const PH = 48
@@ -37,7 +37,7 @@ function sprout() {
   stem(s, 15, GROUND - 6, GROUND)
   leaf(s, 12, GROUND - 7, 3, 1.6, 0.1)
   leaf(s, 19, GROUND - 8, 3, 1.6)
-  s.outline(OUTLINE_GREEN)
+  s.outline(INK)
   const base = canvas()
   base.stamp(s)
   return base
@@ -57,7 +57,7 @@ export function radish(stage) {
   leaf(s, 22, GROUND - h, 3.5, big ? 6 : 4, -0.05)
   leaf(s, 16, GROUND - h - 4, 3, big ? 7 : 5, 0.12)
   for (const x of [10, 16, 22]) s.line(16, GROUND - 2, x, GROUND - h, R.leaf[2])
-  s.outline(OUTLINE_GREEN)
+  s.outline(INK)
   const base = canvas()
   base.stamp(s)
   return base
@@ -74,12 +74,12 @@ export function chamomile(stage) {
     for (const [x, y] of [[10, 19], [16, 23], [22, 18], [13, 14], [20, 13]]) {
       const cy = GROUND - y
       for (const [dx, dy] of [[0, -2], [2, 0], [0, 2], [-2, 0], [1, -1], [1, 1], [-1, 1], [-1, -1]]) s.px(x + dx, cy + dy, P.petal)
-      s.px(x - 2, cy, '#d8cbb0')
-      s.rect(x - 1, cy - 1, 2, 2, R.sun[3])
-      s.px(x, cy, R.sun[1])
+      s.px(x - 2, cy, '#9c9282')
+      s.rect(x - 1, cy - 1, 2, 2, R.lamp[3])
+      s.px(x, cy, R.lamp[1])
     }
   }
-  s.outline(OUTLINE_GREEN)
+  s.outline(INK)
   const base = canvas()
   base.stamp(s)
   return base
@@ -96,15 +96,15 @@ export function sunflower(stage) {
   const top = GROUND - height
   if (stage === 2) s.shadedEllipse(16, top, 3.5, 3.5, R.leaf.slice(2))
   if (stage === 3) {
-    s.shadedEllipse(16, top, 8, 7, R.sun.slice(1))
+    s.shadedEllipse(16, top, 8, 7, R.lamp.slice(1))
     for (let a = 0; a < 12; a++) {
       const ang = (a / 12) * Math.PI * 2
-      s.px(16 + Math.round(Math.cos(ang) * 7), top + Math.round(Math.sin(ang) * 6), R.sun[1])
+      s.px(16 + Math.round(Math.cos(ang) * 7), top + Math.round(Math.sin(ang) * 6), R.lamp[1])
     }
     s.shadedEllipse(16, top, 3.5, 3.5, R.soil.slice(0, 4))
     for (const [dx, dy] of [[-1, -1], [1, 0], [0, 1]]) s.px(16 + dx, top + dy, R.soil[5])
   }
-  s.outline(OUTLINE_GREEN)
+  s.outline(INK)
   const base = canvas()
   base.stamp(s)
   return base

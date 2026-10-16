@@ -59,7 +59,7 @@ class GardenMapTests {
         GardenMap tooShort = new GardenMap("broken", "", 3, 1, Map.of(".", grass), List.of(".."), List.of());
         GardenMap unknownChar = new GardenMap("broken", "", 2, 1, Map.of(".", grass), List.of(".?"), List.of());
         GardenMap propOutside = new GardenMap("broken", "", 2, 1, Map.of(".", grass), List.of(".."),
-                List.of(new GardenMap.Prop("big", "shed", 1, 0, 2, 1, "", "")));
+                List.of(new GardenMap.Prop("big", "shed", 1, 0, 2, 1, "", "", null, null)));
 
         assertThatThrownBy(tooShort::validate).hasMessageContaining("width");
         assertThatThrownBy(unknownChar::validate).hasMessageContaining("'?'");

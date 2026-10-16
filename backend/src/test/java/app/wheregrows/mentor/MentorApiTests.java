@@ -49,7 +49,7 @@ class MentorApiTests {
     void freshStart() {
         playerId = currentPlayer.id();
         for (String table : List.of("player_flag", "habit_completion", "habit", "garden_object", "player_discovery",
-                "player_world_object", "inventory_item")) {
+                "player_world_object", "player_tile", "inventory_item")) {
             jdbc.update("DELETE FROM " + table);
         }
     }
@@ -110,14 +110,80 @@ class MentorApiTests {
     }
 
     @Test
-    void afterTutorialOnlySmallTalkRemains() throws Exception {
+    void afterTutorialVereshkOffersTheWeedingErrand() throws Exception {
+        finishTutorial();
+
+        // поручение даёт сам Вереск: над ним «!», пока разговор не состоялся
+        mvc.perform(get("/api/state"))
+                .andExpect(jsonPath("$.mentor.nextDialogue").value("offer_tools"))
+                .andExpect(jsonPath("$.mentor.hasNews").value(true))
+                .andExpect(jsonPath("$.mentor.steps[4].offered").value(false));
+        finish("offer_tools").andExpect(jsonPath("$.flag").value("offered_take_tools"));
+        mvc.perform(get("/api/state"))
+                .andExpect(jsonPath("$.mentor.nextDialogue").value("hint_take_tools"))
+                .andExpect(jsonPath("$.mentor.hasNews").value(false));
+
+        jdbc.update("INSERT INTO player_discovery VALUES (?, 'fence_tools', now())", playerId);
+        finish("done_take_tools").andExpect(status().isOk());
+        mvc.perform(get("/api/state")).andExpect(jsonPath("$.mentor.nextDialogue").value("hint_weed"));
+
+        // все заросшие клетки домашнего сада — два ряда по шесть
+        jdbc.update("INSERT INTO player_tile SELECT ?, 'home', x, y, 'WEEDED', now() "
+                + "FROM generate_series(2, 7) AS x, generate_series(2, 3) AS y", playerId);
+        finish("done_weed")
+                .andExpect(jsonPath("$.gift[0].itemKey").value("life_seed"))
+                .andExpect(jsonPath("$.gift[1].itemKey").value("seed_chamomile"));
+        assertThat(quantity("seed_chamomile")).isEqualTo(2);
+
+        // дальше — следующее поручение: починить тачку
+        mvc.perform(get("/api/state"))
+                .andExpect(jsonPath("$.mentor.nextDialogue").value("offer_repair"))
+                .andExpect(jsonPath("$.mentor.hasNews").value(true));
+        finish("idle_rest").andExpect(status().isOk()).andExpect(jsonPath("$.gift").isEmpty());
+    }
+
+    @Test
+    void gardenErrandsFollowRealProgress() throws Exception {
+        finishTutorial();
         jdbc.update("INSERT INTO player_flag SELECT ?, f, now() FROM unnest(ARRAY["
-                + "'met_vereshk','ack_create_habit','ack_earn_reward','ack_plant','ack_inspect']) AS f", playerId);
+                + "'ack_take_tools','ack_weed','offered_repair']) AS f", playerId);
+        mvc.perform(get("/api/state")).andExpect(jsonPath("$.mentor.nextDialogue").value("hint_repair"));
+
+        // тачка починена → благодарность с подарком
+        jdbc.update("INSERT INTO player_world_object VALUES (?, 'wheelbarrow', 'AWAKENED', now())", playerId);
+        finish("done_repair").andExpect(jsonPath("$.gift[0].itemKey").value("seed_sunflower"));
+
+        // бочка уже наполнена до поручения — Вереск сразу благодарит, поручение не нужно
+        jdbc.update("INSERT INTO player_world_object VALUES (?, 'barrel', 'AWAKENED', now())", playerId);
+        mvc.perform(get("/api/state"))
+                .andExpect(jsonPath("$.mentor.nextDialogue").value("done_barrel"))
+                .andExpect(jsonPath("$.mentor.hasNews").value(true));
+        finish("done_barrel").andExpect(status().isOk());
+
+        // подсолнух: только что посаженный не считается, выросший — считается
+        finish("offer_sunflower");
+        jdbc.update("INSERT INTO garden_object (player_id, x, y, kind, species_key, planted_at) "
+                + "VALUES (?, 3, 5, 'PLANT', 'sunflower', now())", playerId);
+        mvc.perform(get("/api/state")).andExpect(jsonPath("$.mentor.nextDialogue").value("hint_sunflower"));
+        jdbc.update("UPDATE garden_object SET planted_at = now() - interval '11 hours' WHERE player_id = ?", playerId);
+        mvc.perform(get("/api/state")).andExpect(jsonPath("$.mentor.nextDialogue").value("done_sunflower"));
+    }
+
+    @Test
+    void errandAlreadyDoneIsThankedRightAway() throws Exception {
+        finishTutorial();
+        jdbc.update("INSERT INTO player_discovery VALUES (?, 'fence_tools', now())", playerId);
 
         mvc.perform(get("/api/state"))
-                .andExpect(jsonPath("$.mentor.nextDialogue").doesNotExist())
-                .andExpect(jsonPath("$.mentor.hasNews").value(false));
-        finish("idle_rest").andExpect(status().isOk()).andExpect(jsonPath("$.gift").isEmpty());
+                .andExpect(jsonPath("$.mentor.steps[4].done").value(true))
+                .andExpect(jsonPath("$.mentor.nextDialogue").value("done_take_tools"));
+        finish("offer_tools").andExpect(status().isConflict());
+        finish("done_take_tools").andExpect(status().isOk());
+    }
+
+    private void finishTutorial() {
+        jdbc.update("INSERT INTO player_flag SELECT ?, f, now() FROM unnest(ARRAY["
+                + "'met_vereshk','ack_create_habit','ack_earn_reward','ack_plant','ack_inspect']) AS f", playerId);
     }
 
     @Test

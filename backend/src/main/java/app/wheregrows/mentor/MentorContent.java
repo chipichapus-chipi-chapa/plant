@@ -12,16 +12,24 @@ import app.wheregrows.economy.ItemGrant;
  * если шаг использует уже известное условие ({@link Condition}).
  */
 public record MentorContent(Speaker speaker, String intro, List<String> idle, List<Step> tutorial,
-                            Map<String, Dialogue> dialogues, String meetGoal, String reportGoal) {
+                            Map<String, Dialogue> dialogues, String meetGoal, String reportGoal, String offerGoal) {
 
     public record Speaker(String key, String name) {
     }
 
     /**
-     * Шаг обучения: засчитывается по условию из реальной игры, а не по нажатию «далее».
+     * Шаг обучения (или поручение): засчитывается по условию из реальной игры, а не по нажатию «далее».
      * goal — строка задания на экране; target — куда указывает стрелка.
+     * offer — необязательный разговор, в котором Вереск сам даёт поручение: пока он не состоялся,
+     * над наставником горит «!», а задание на экране — «поговорите с Вереском».
+     * param — уточнение условия: например, какое растение вырастить (GROWN); null — любое.
      */
-    public record Step(String key, Condition condition, String hint, String done, String goal, Target target) {
+    public record Step(String key, Condition condition, String hint, String done, String goal, Target target,
+                       String offer, String param) {
+
+        public Step(String key, Condition condition, String hint, String done, String goal, Target target) {
+            this(key, condition, hint, done, goal, target, null, null);
+        }
     }
 
     /**
@@ -49,8 +57,13 @@ public record MentorContent(Speaker speaker, String intro, List<String> idle, Li
     public record Choice(String text, String next) {
     }
 
+    /** Разговоры-новости: благодарности за выполненный шаг и предложения поручений. */
     public Set<String> doneDialogues() {
         return Set.copyOf(tutorial.stream().map(Step::done).toList());
+    }
+
+    public Set<String> offerDialogues() {
+        return Set.copyOf(tutorial.stream().map(Step::offer).filter(java.util.Objects::nonNull).toList());
     }
 
     /** Ошибка в диалогах должна ронять запуск, а не обрывать разговор посреди игры. */
@@ -61,6 +74,8 @@ public record MentorContent(Speaker speaker, String intro, List<String> idle, Li
         for (Step step : tutorial) {
             require(step.condition() != null, "у шага " + step.key() + " нет условия");
             require(step.goal() != null, "у шага " + step.key() + " нет текста задания");
+            require(step.condition() != Condition.PROP_AWAKENED || step.target() != null && step.target().prop() != null,
+                    "у шага " + step.key() + " условие PROP_AWAKENED, но цель — не постройка");
             Target t = step.target();
             require(t != null && java.util.stream.Stream.of(t.hud(), t.prop(), t.tile()).filter(java.util.Objects::nonNull).count() == 1,
                     "у шага " + step.key() + " должна быть ровно одна цель");
@@ -69,6 +84,13 @@ public record MentorContent(Speaker speaker, String intro, List<String> idle, Li
             require(done != null, "нет диалога " + step.done());
             require(("ack_" + step.key()).equals(done.onEnd()),
                     "диалог " + step.done() + " должен ставить флаг ack_" + step.key());
+            if (step.offer() != null) {
+                Dialogue offer = dialogues.get(step.offer());
+                require(offer != null, "нет диалога " + step.offer());
+                require(("offered_" + step.key()).equals(offer.onEnd()),
+                        "диалог " + step.offer() + " должен ставить флаг offered_" + step.key());
+                require(offerGoal != null, "есть поручения, но нет текста задания offerGoal");
+            }
         }
         dialogues.forEach((key, dialogue) -> {
             require(dialogue.nodes().containsKey(dialogue.start()), key + ": нет стартовой реплики " + dialogue.start());

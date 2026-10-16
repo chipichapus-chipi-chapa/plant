@@ -28,9 +28,12 @@ export function RecipeBlock({ recipe, state, catalog, onChanged }: Props) {
   const missing = recipe.ingredients.filter((i) => have(i.itemKey) < i.quantity)
   const enough = missing.length === 0
   // Подсказка о том, откуда берётся недостающее, — без давления и сроков
-  const hint = missing.some((i) => i.itemKey === SUN_SPARK)
-    ? 'Солнечные искры находят при важных открытиях. Мерцание над постройкой подскажет, где стоит поискать.'
-    : 'Осколки приходят за привычки нужного цвета. Ничего не сгорит, пока копятся.'
+  const missingTool = missing.map((i) => catalog.items.find((item) => item.key === i.itemKey)).find((item) => item?.kind === 'TOOL')
+  const hint = missingTool
+    ? `Нужен ${missingTool.name.toLowerCase()}. ${recipe.description.split('. ').slice(1).join('. ')}`.trim()
+    : missing.some((i) => i.itemKey === SUN_SPARK)
+      ? 'Солнечные искры находят при важных открытиях. Мерцание над постройкой подскажет, где стоит поискать.'
+      : 'Осколки приходят за привычки нужного цвета. Ничего не сгорит, пока копятся.'
 
   const cast = async () => {
     setBusy(true)
@@ -39,7 +42,7 @@ export function RecipeBlock({ recipe, state, catalog, onChanged }: Props) {
       toast({ message: result.resultText })
       await onChanged()
     } catch (e) {
-      toast({ message: e instanceof ApiError ? (e.detail ?? e.title) : 'Магия не сработала. Попробуйте ещё раз.' })
+      toast({ message: e instanceof ApiError ? (e.detail ?? e.title) : 'Не получилось. Попробуйте ещё раз.' })
     } finally {
       setBusy(false)
     }
@@ -57,7 +60,7 @@ export function RecipeBlock({ recipe, state, catalog, onChanged }: Props) {
           const count = have(ingredient.itemKey)
           return (
             <li key={ingredient.itemKey} className={count >= ingredient.quantity ? styles.ok : styles.short}>
-              <ItemIcon itemKey={ingredient.itemKey} color={color} />
+              <ItemIcon itemKey={ingredient.itemKey} kind={item?.kind} color={color} />
               <span>{item?.name ?? ingredient.itemKey}</span>
               <span className={styles.count}>
                 {Math.min(count, ingredient.quantity)}/{ingredient.quantity}
@@ -67,7 +70,7 @@ export function RecipeBlock({ recipe, state, catalog, onChanged }: Props) {
         })}
       </ul>
       <Button onClick={() => void cast()} disabled={!enough || busy}>
-        Пробудить
+        {recipe.actionLabel}
       </Button>
       {!enough && <p className={styles.hint}>{hint}</p>}
     </div>

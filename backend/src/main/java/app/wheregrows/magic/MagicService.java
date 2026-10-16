@@ -69,7 +69,7 @@ public class MagicService {
         String targetName = targetName(recipe);
 
         if (states.existsById(new WorldObjectState.Id(playerId, recipe.getTargetObjectKey()))) {
-            throw new ConflictException("«" + targetName + "» уже пробуждена. Повторно тратить ничего не нужно.");
+            throw new ConflictException("Здесь уже всё сделано: «" + targetName + "». Повторно тратить ничего не нужно.");
         }
 
         Map<String, ItemDefinition> definitions = items.findAllById(
@@ -103,9 +103,6 @@ public class MagicService {
     }
 
     private String targetName(Recipe recipe) {
-        GardenMap.Prop prop = maps.home().props().stream()
-                .filter(p -> p.key().equals(recipe.getTargetObjectKey()))
-                .findFirst().orElseThrow();
-        return prop.name();
+        return maps.prop(recipe.getTargetObjectKey()).map(GardenMap.Prop::name).orElseThrow();
     }
 }

@@ -16,7 +16,7 @@ class MentorContentTests {
 
     private static MentorContent content(Map<String, MentorContent.Dialogue> dialogues, List<MentorContent.Step> steps) {
         return new MentorContent(new MentorContent.Speaker("v", "В"), "intro", List.of(), steps, dialogues,
-                "Поговорите", "Расскажите");
+                "Поговорите", "Расскажите", "Вереск хочет попросить");
     }
 
     @Test
