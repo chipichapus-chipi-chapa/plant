@@ -22,7 +22,8 @@ ON CONFLICT (key) DO UPDATE SET
 INSERT INTO plant_species (key, name, stage_minutes) VALUES
     ('radish',    'Редис',     ARRAY[10, 30]),
     ('chamomile', 'Ромашка',   ARRAY[30, 120]),
-    ('sunflower', 'Подсолнух', ARRAY[60, 180, 360])
+    ('sunflower', 'Подсолнух', ARRAY[60, 180, 360]),
+    ('lily',      'Розовая лилия', ARRAY[120, 480])
 ON CONFLICT (key) DO UPDATE SET
     name = EXCLUDED.name,
     stage_minutes = EXCLUDED.stage_minutes;
@@ -55,6 +56,9 @@ INSERT INTO item_def (key, kind, name, description, price, species_key, crystal_
         'Растёт неспешно и пахнет летом даже в дождь.', 3, 'chamomile', NULL),
     ('seed_sunflower', 'SEED', 'Пакетик семян подсолнуха',
         'Долго тянется к солнцу, зато потом видно с другого конца сада.', 5, 'sunflower', NULL),
+
+    ('seed_lily', 'SEED', 'Луковица розовой лилии',
+        'Из шкатулки в поместье. Говорят, из такой же выросли исполинские лилии в саду садовника.', NULL, 'lily', NULL),
 
     ('garden_tools', 'TOOL', 'Лопата и грабли',
         'Сняты с забора. Ручки отполированы чьими-то ладонями — сорнякам теперь не поздоровится.', NULL, NULL, NULL),
@@ -181,6 +185,16 @@ INSERT INTO discovery_spot_reward (spot_key, item_key, quantity) VALUES
 -- Подсказка к ящику — в письме прежнего садовника (content/gardens/shed.json, постройка letter).
 
 INSERT INTO puzzle_def (key, prop_key, prompt, answer, solved_text, wrong_text) VALUES
+    ('cupboard_lock', 'cupboard',
+        'Нижний ящик буфета заперт. На замке три колёсика: ягода, мёд, черника и мята.',
+        'berry,honey,blueberry',
+        'Щёлк — и ящик выезжает с довольным скрипом. Внутри — банка «того самого» варенья и тёплая Солнечная искра, завёрнутая в салфетку.',
+        'Ящик не поддаётся. Может, порядок как-то связан с рецептом на столе?'),
+    ('season_box', 'music-box',
+        'На крышке шкатулки четыре колёсика: капля, солнце, лист и луна.',
+        'drop,sun,leaf,moon',
+        'Крышка открывается, и шкатулка играет тихий вальс. На бархате лежит луковица розовой лилии — тёплая, будто живая.',
+        'Шкатулка молчит. Наверное, колёсики надо поставить так, как идёт год.'),
     ('toolbox_lock', 'toolbox',
         'На крышке замок с тремя колёсиками. На каждом — капля, солнце, луна и лист.',
         'drop,sun,moon',
@@ -193,15 +207,26 @@ ON CONFLICT (key) DO UPDATE SET
     solved_text = EXCLUDED.solved_text,
     wrong_text = EXCLUDED.wrong_text;
 
-DELETE FROM puzzle_symbol WHERE puzzle_key = 'toolbox_lock';
+DELETE FROM puzzle_symbol WHERE puzzle_key IN ('toolbox_lock', 'cupboard_lock', 'season_box');
 INSERT INTO puzzle_symbol (puzzle_key, symbol_key, name, sort_order) VALUES
+    ('cupboard_lock', 'berry',     'Ягода',   1),
+    ('cupboard_lock', 'honey',     'Мёд',     2),
+    ('cupboard_lock', 'blueberry', 'Черника', 3),
+    ('cupboard_lock', 'mint',      'Мята',    4),
+    ('season_box', 'drop', 'Капля',  1),
+    ('season_box', 'sun',  'Солнце', 2),
+    ('season_box', 'leaf', 'Лист',   3),
+    ('season_box', 'moon', 'Луна',   4),
     ('toolbox_lock', 'drop', 'Капля', 1),
     ('toolbox_lock', 'sun',  'Солнце', 2),
     ('toolbox_lock', 'moon', 'Луна', 3),
     ('toolbox_lock', 'leaf', 'Лист', 4);
 
-DELETE FROM puzzle_reward WHERE puzzle_key = 'toolbox_lock';
+DELETE FROM puzzle_reward WHERE puzzle_key IN ('toolbox_lock', 'cupboard_lock', 'season_box');
 INSERT INTO puzzle_reward (puzzle_key, item_key, quantity) VALUES
+    ('cupboard_lock', 'sun_spark', 1),
+    ('cupboard_lock', 'life_seed', 5),
+    ('season_box', 'seed_lily', 1),
     ('toolbox_lock', 'repair_kit', 1);
 
 -- Внешность персонажа ----------------------------------------------------------

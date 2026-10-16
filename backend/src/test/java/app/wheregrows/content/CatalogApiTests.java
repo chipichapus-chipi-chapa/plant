@@ -31,7 +31,7 @@ class CatalogApiTests {
                 .andExpect(jsonPath("$.crystals[0].color").value("#4fae6a"))
                 .andExpect(jsonPath("$.items[?(@.key == 'life_seed')].kind").value("CURRENCY"))
                 .andExpect(jsonPath("$.items[?(@.key == 'shard_rose')].crystalCategory").value("rose"))
-                .andExpect(jsonPath("$.species", hasSize(3)))
+                .andExpect(jsonPath("$.species", hasSize(4)))
                 .andExpect(jsonPath("$.species[?(@.key == 'radish')].stageMinutes[0]").value(10))
                 .andExpect(jsonPath("$.items[?(@.key == 'seed_radish')].kind").value("SEED"))
                 .andExpect(jsonPath("$.items[?(@.key == 'seed_radish')].price").value(2))

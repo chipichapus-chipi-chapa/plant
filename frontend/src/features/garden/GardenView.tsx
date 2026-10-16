@@ -73,6 +73,18 @@ function nextTalk(npc: Npc): string {
 type Location = { key: string; start: Cell; facing: Facing }
 const START: Location = { key: HOME, start: PLAYER_SPOT, facing: 'down' }
 
+/**
+ * Только для разработки: `?at=<ключ локации>` ставит героя у входа в неё — чтобы посмотреть графику
+ * и свет, не проходя весь путь. На прогресс не влияет: где стоит герой, сервер не знает.
+ * В собранной игре параметр игнорируется.
+ */
+function devStart(catalog: Catalog): Location {
+  if (!import.meta.env.DEV) return START
+  const key = new URLSearchParams(window.location.search).get('at')
+  const entry = key && catalog.locations.flatMap((l) => l.props).find((p) => p.door?.map === key)?.door
+  return entry ? { key: entry.map, start: { x: entry.x, y: entry.y }, facing: entry.facing } : START
+}
+
 /** Сколько длится затемнение и проявление при переходе в другую локацию. */
 const FADE_MS = 350
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
@@ -84,7 +96,7 @@ const sameCell = (a: Cell, b: Cell) => a.x === b.x && a.y === b.y
 
 /** Сад и другие локации (сарай изнутри), табличка о выбранном объекте, посадка, прополка, двери. */
 export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEnabled, objective, hud }: Props) {
-  const [location, setLocation] = useState<Location>(START)
+  const [location, setLocation] = useState<Location>(() => devStart(catalog))
   const home = location.key === HOME
   // разговор с жителем локации; accept — в конце разговора житель даёт поручение
   const [chat, setChat] = useState<{ npc: Npc; dialogue: string; accept?: Errand } | null>(null)
