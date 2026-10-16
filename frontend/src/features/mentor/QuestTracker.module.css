@@ -43,3 +43,17 @@
 .go {
   color: var(--c-bark);
 }
+
+/* Узкий экран: метка над текстом задания, а не сбоку — иначе текст рвётся по словам */
+@media (max-width: 560px) {
+  .tracker {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .text {
+    font-size: var(--text-s);
+  }
+}

@@ -45,8 +45,9 @@ class ProfileApiTests {
         mvc.perform(get("/api/state"))
                 .andExpect(jsonPath("$.player.onboarded").value(false))
                 .andExpect(jsonPath("$.player.appearance.skin").value("light"))
-                .andExpect(jsonPath("$.player.appearance.hair").value("short"))
-                .andExpect(jsonPath("$.player.appearance.accessory").value("none"));
+                .andExpect(jsonPath("$.player.appearance.hair").value("bob"))
+                .andExpect(jsonPath("$.player.appearance.accessory").value("leaf_clip"))
+                .andExpect(jsonPath("$.player.appearance.bag").value("backpack"));
     }
 
     @Test
@@ -96,11 +97,11 @@ class ProfileApiTests {
     @Test
     void catalogDescribesAppearanceSlots() throws Exception {
         mvc.perform(get("/api/catalog"))
-                .andExpect(jsonPath("$.appearance", hasSize(6)))
+                .andExpect(jsonPath("$.appearance", hasSize(7)))
                 .andExpect(jsonPath("$.appearance[0].key").value("skin"))
                 .andExpect(jsonPath("$.appearance[0].kind").value("COLOR"))
                 .andExpect(jsonPath("$.appearance[0].options[0].color").value("#f7e1d2"))
-                .andExpect(jsonPath("$.appearance[1].options", hasSize(6)));
+                .andExpect(jsonPath("$.appearance[1].options", hasSize(7)));
     }
 
     private ResultActions save(String name, String appearanceJson) throws Exception {
