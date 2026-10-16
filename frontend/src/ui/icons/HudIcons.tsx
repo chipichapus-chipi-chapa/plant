@@ -76,3 +76,26 @@ export const CollectionIcon = () =>
       <rect x="10" y="7" width="1" height="1" fill="var(--c-parchment)" />
     </>,
   )
+
+/** Шестерёнка — настройки. */
+export const SettingsIcon = () =>
+  svg(
+    <>
+      {[
+        [7, 1, 2, 3],
+        [7, 12, 2, 3],
+        [1, 7, 3, 2],
+        [12, 7, 3, 2],
+        [3, 3, 2, 2],
+        [11, 3, 2, 2],
+        [3, 11, 2, 2],
+        [11, 11, 2, 2],
+      ].map(([x, y, w, h]) => (
+        <rect key={`${x}-${y}`} x={x} y={y} width={w} height={h} fill="var(--c-ink)" />
+      ))}
+      <rect x="4" y="4" width="8" height="8" fill="var(--c-ink)" />
+      <rect x="5" y="5" width="6" height="6" fill="var(--c-wood)" />
+      <rect x="5" y="5" width="6" height="1" fill="var(--c-parchment)" />
+      <rect x="7" y="7" width="2" height="2" fill="var(--c-ink)" />
+    </>,
+  )

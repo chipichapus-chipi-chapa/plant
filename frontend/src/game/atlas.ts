@@ -6,7 +6,8 @@ export type Frame = { x: number; y: number; w: number; h: number }
 
 export type Atlas = { image: HTMLImageElement; frames: Record<string, Frame> }
 
-const BASE = '/assets/'
+// BASE_URL — путь сайта: «/» локально, «/plant/» на GitHub Pages
+const BASE = `${import.meta.env.BASE_URL}assets/`
 
 let loading: Promise<Atlas> | null = null
 

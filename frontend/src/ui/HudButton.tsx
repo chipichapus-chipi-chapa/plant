@@ -9,12 +9,15 @@ type Props = {
   badge?: string
   /** Кнопка — цель текущего задания: мягко светится, над ней покачивается «!» */
   highlight?: boolean
+  /** Компактная: только иконка (подпись — во всплывающей подсказке и для читалок экрана) */
+  compact?: boolean
 }
 
 /** Кнопка панели действий: деревянная табличка с пиксельной иконкой и подписью. */
-export function HudButton({ icon, label, onClick, badge, highlight }: Props) {
+export function HudButton({ icon, label, onClick, badge, highlight, compact }: Props) {
+  const className = [styles.button, highlight && styles.highlight, compact && styles.compact].filter(Boolean).join(' ')
   return (
-    <button type="button" className={highlight ? `${styles.button} ${styles.highlight}` : styles.button} onClick={onClick}>
+    <button type="button" className={className} onClick={onClick} title={compact ? label : undefined} aria-label={compact ? label : undefined}>
       {highlight && (
         <svg className={styles.bang} width="14" height="30" viewBox="0 0 7 15" shapeRendering="crispEdges" aria-hidden="true">
           {/* тот же «!», что и в саду: контур, светлая левая грань, точка */}
@@ -28,7 +31,7 @@ export function HudButton({ icon, label, onClick, badge, highlight }: Props) {
         </svg>
       )}
       <span className={styles.icon}>{icon}</span>
-      <span className={styles.label}>{label}</span>
+      {!compact && <span className={styles.label}>{label}</span>}
       {badge && <span className={styles.badge}>{badge}</span>}
     </button>
   )

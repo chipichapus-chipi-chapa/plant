@@ -1,0 +1,46 @@
+.panel {
+  display: grid;
+  gap: var(--space-3);
+  min-width: min(420px, 80vw);
+}
+
+.row {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.label {
+  color: var(--c-bark);
+  font-size: var(--text-s);
+}
+
+.options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.on,
+.off {
+  padding: var(--space-1) var(--space-3);
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+  box-shadow: 0 0 0 var(--px) var(--c-ink);
+}
+
+.on {
+  background: var(--c-sun);
+  color: var(--c-ink);
+}
+
+.off {
+  background: var(--c-parchment-shade);
+  color: var(--c-bark);
+}
+
+.note {
+  margin: 0;
+  color: var(--c-bark);
+  font-size: 13px;
+}
