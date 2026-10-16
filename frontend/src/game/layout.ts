@@ -140,6 +140,31 @@ export function fitScale(availableWidth: number, map: GardenMap, availableHeight
   return Math.max(0.25, Math.min(4, fit))
 }
 
+/**
+ * Масштаб «на весь экран»: сад заполняет окно целиком, без полос по краям. Если пропорции карты
+ * и экрана не совпадают, часть карты уходит за край — её показывает камера, следуя за героем.
+ */
+export function coverScale(width: number, height: number, map: GardenMap): number {
+  if (width <= 0 || height <= 0) return 1
+  return Math.max(width / (map.width * TILE), height / (map.height * TILE))
+}
+
+/**
+ * Камера: левый верхний угол видимой части карты (в логических пикселях). Герой — по центру,
+ * но камера не заезжает за края карты. Округляем до целого пикселя, чтобы картинка не дрожала.
+ */
+export function cameraAt(
+  focus: { x: number; y: number },
+  view: { width: number; height: number },
+  map: GardenMap,
+): { x: number; y: number } {
+  const clamp = (v: number, max: number) => Math.round(Math.min(Math.max(0, v), Math.max(0, max)))
+  return {
+    x: clamp(focus.x - view.width / 2, map.width * TILE - view.width),
+    y: clamp(focus.y - view.height / 2, map.height * TILE - view.height),
+  }
+}
+
 /** Что показать игроку о клетке: постройка важнее тайла под ней. */
 export function describeCell(map: GardenMap, cell: Cell): { name: string; description: string; plantable: boolean } | null {
   if (!inBounds(map, cell)) return null

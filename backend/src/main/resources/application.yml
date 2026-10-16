@@ -18,9 +18,10 @@ spring:
       enabled: true
 
 server:
-  port: 8081
+  port: ${PORT:8081}
   # Локальный режим без авторизации: сервер доступен только с этой машины.
-  address: 127.0.0.1
+  # На хостинге SERVER_ADDRESS=0.0.0.0 разрешён только вместе с TELEGRAM_BOT_TOKEN (вход через Telegram).
+  address: ${SERVER_ADDRESS:127.0.0.1}
 
 management:
   endpoints:

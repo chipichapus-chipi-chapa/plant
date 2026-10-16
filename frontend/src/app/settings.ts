@@ -1,4 +1,5 @@
 import { createContext, useContext } from 'react'
+import { telegramFullscreen } from './telegram'
 
 /**
  * Настройки игры. Это удобства конкретного устройства (на телефоне может хотеться посветлее),
@@ -40,6 +41,7 @@ export const textDelay = (speed: Settings['textSpeed']) => (speed === 'instant' 
 
 /** Полноэкранный режим: на телефоне заодно просим горизонтальную ориентацию (если браузер умеет). */
 export async function enterFullscreen(): Promise<void> {
+  if (telegramFullscreen(true)) return
   try {
     if (!document.fullscreenElement) await document.documentElement.requestFullscreen()
     const orientation = screen.orientation as ScreenOrientation & { lock?: (o: string) => Promise<void> }
@@ -50,6 +52,7 @@ export async function enterFullscreen(): Promise<void> {
 }
 
 export async function exitFullscreen(): Promise<void> {
+  if (telegramFullscreen(false)) return
   try {
     if (document.fullscreenElement) await document.exitFullscreen()
   } catch {
