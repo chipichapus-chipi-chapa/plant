@@ -22,12 +22,13 @@ public record MentorContent(Speaker speaker, String intro, List<String> idle, Li
      * goal — строка задания на экране; target — куда указывает стрелка.
      * offer — необязательный разговор, в котором Вереск сам даёт поручение: пока он не состоялся,
      * над наставником горит «!», а задание на экране — «поговорите с Вереском».
+     * param — уточнение условия: например, какое растение вырастить (GROWN); null — любое.
      */
     public record Step(String key, Condition condition, String hint, String done, String goal, Target target,
-                       String offer) {
+                       String offer, String param) {
 
         public Step(String key, Condition condition, String hint, String done, String goal, Target target) {
-            this(key, condition, hint, done, goal, target, null);
+            this(key, condition, hint, done, goal, target, null, null);
         }
     }
 
@@ -73,6 +74,8 @@ public record MentorContent(Speaker speaker, String intro, List<String> idle, Li
         for (Step step : tutorial) {
             require(step.condition() != null, "у шага " + step.key() + " нет условия");
             require(step.goal() != null, "у шага " + step.key() + " нет текста задания");
+            require(step.condition() != Condition.PROP_AWAKENED || step.target() != null && step.target().prop() != null,
+                    "у шага " + step.key() + " условие PROP_AWAKENED, но цель — не постройка");
             Target t = step.target();
             require(t != null && java.util.stream.Stream.of(t.hud(), t.prop(), t.tile()).filter(java.util.Objects::nonNull).count() == 1,
                     "у шага " + step.key() + " должна быть ровно одна цель");
