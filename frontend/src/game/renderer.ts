@@ -1,5 +1,6 @@
 import type { GardenMap, GardenObject } from '../api/types'
 import type { Atlas } from './atlas'
+import { hoeFrame, weedParticles, type WeedEffect } from './effects'
 import { TILE, tileFrame, type Cell } from './layout'
 
 /** Кадр персонажа: 32×48, низ — по низу клетки. */
@@ -42,6 +43,8 @@ export type Scene = {
    * open (замок открыт). Нет такого кадра в атласе — рисуется обычный.
    */
   variants?: ReadonlyMap<string, string>
+  /** Идущие анимации: прополка (мотыга и вылетающие сорняки) */
+  effects?: WeedEffect[]
   /** Насколько горят лампы (0..1): в помещении сначала темно, потом свет разгорается */
   lightLevel?: number
   /** Ступни идущего игрока: вокруг него ореол, снимающий сумерки */
@@ -91,6 +94,8 @@ export function drawGarden(
     drawFrame(ctx, atlas, sprite.frame, sprite.x, sprite.y)
   }
   while (next < people.length) drawCharacter(ctx, people[next++])
+
+  for (const effect of scene.effects ?? []) drawWeeding(ctx, atlas, effect, time - effect.at, scene.aura)
 
   drawLighting(
     ctx,
@@ -310,6 +315,35 @@ function drawCharacter(ctx: CanvasRenderingContext2D, c: CharacterSprite) {
   ctx.scale(-1, 1)
   ctx.drawImage(c.image, 0, 0)
   ctx.restore()
+}
+
+/**
+ * Прополка: мотыга в руках у персонажа (со стороны грядки) и клочки сорняков, вылетающие из клетки.
+ * Рисуется до света — анимация живёт в тех же сумерках, что и сад.
+ */
+function drawWeeding(ctx: CanvasRenderingContext2D, atlas: Atlas, effect: WeedEffect, t: number, player?: { x: number; y: number } | null) {
+  const hoe = hoeFrame(t)
+  if (hoe && player) {
+    const targetX = effect.cell.x * TILE + TILE / 2
+    const left = targetX < player.x - 4
+    const x = Math.round(player.x + (left ? -18 : 2))
+    const y = Math.round(player.y - 24)
+    if (left) {
+      ctx.save()
+      ctx.translate(x + 16, y)
+      ctx.scale(-1, 1)
+      drawFrame(ctx, atlas, `fx_hoe_${hoe}`, 0, 0)
+      ctx.restore()
+    } else {
+      drawFrame(ctx, atlas, `fx_hoe_${hoe}`, x, y)
+    }
+  }
+  for (const p of weedParticles(effect, t)) {
+    ctx.fillStyle = '#0e0b0a'
+    ctx.fillRect(p.x - 1, p.y - 1, p.size + 2, p.size + 2) // контур, как у всех спрайтов
+    ctx.fillStyle = p.color
+    ctx.fillRect(p.x, p.y, p.size, p.size)
+  }
 }
 
 /** Кадр постройки с учётом её состояния; если особого кадра нет — обычный. */

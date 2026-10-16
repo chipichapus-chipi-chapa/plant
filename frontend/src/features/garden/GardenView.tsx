@@ -4,6 +4,7 @@ import { plantSeed, weedBed } from '../../api/game'
 import type { Catalog, Door, GameState, GardenMap, Puzzle } from '../../api/types'
 import { frameImage, loadAtlas, type Atlas } from '../../game/atlas'
 import { composeCharacterFrames } from '../../game/character'
+import { WEED_MS, type WeedEffect } from '../../game/effects'
 import { GardenCanvas } from '../../game/GardenCanvas'
 import { isClickable, isNear, markerPoint, promptCell, promptPoint, sameThing, WEEDING_TOOLS, type Objective } from '../../game/guidance'
 import type { Facing } from '../../game/movement'
@@ -73,6 +74,8 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
   const [reading, setReading] = useState<{ title: string; text: string } | null>(null)
   // замок крупным планом поверх сада
   const [lock, setLock] = useState<Puzzle | null>(null)
+  // идёт прополка: анимация мотыги, персонаж стоит
+  const [weeding, setWeeding] = useState<WeedEffect | null>(null)
   const [atlas, setAtlas] = useState<AtlasLoad>({ status: 'loading' })
   // клетка перед персонажем: если с ней можно что-то сделать, над ней загорается «!»
   const [facing, setFacing] = useState<Cell | null>(null)
@@ -121,6 +124,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     for (const key of awakened) variants.set(key, 'awakened')
     return {
       objects: home ? state.garden.objects : [],
+      effects: weeding ? [weeding] : [],
       awakened,
       variants,
       sparkles: new Set(catalog.spots.filter((spot) => !searched.has(spot.key)).map((spot) => spot.propKey)),
@@ -129,7 +133,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
       prompt: facing && isClickable(facing, state, catalog, map) ? promptPoint(facing, map) : null,
       marker: objective ? markerPoint(objective.target, map, state) : null,
     }
-  }, [atlas, state, catalog, facing, objective, map, home])
+  }, [atlas, state, catalog, facing, objective, map, home, weeding])
 
   const playerFrames = useMemo(
     () => (atlas.status === 'ready' ? composeCharacterFrames(atlas.atlas, state.player.appearance, catalog.appearance) : null),
@@ -273,7 +277,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
             onSelect={select}
             onPlayerMove={onPlayerMove}
             onAction={act}
-            inputEnabled={inputEnabled && dialogue === null && reading === null && lock === null && fade === 'none'}
+            inputEnabled={inputEnabled && dialogue === null && reading === null && lock === null && fade === 'none' && weeding === null}
             lightUp={!home}
           />
         ) : (
@@ -320,6 +324,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
             onEnter={travel}
             onRead={setReading}
             onLock={setLock}
+            onWeeding={setWeeding}
             onChanged={onChanged}
           />
         ) : tooFar ? (
@@ -366,10 +371,11 @@ type CellInfoProps = {
   onEnter: (door: Door) => void
   onRead: (letter: { title: string; text: string }) => void
   onLock: (puzzle: Puzzle) => void
+  onWeeding: (effect: WeedEffect | null) => void
   onChanged: () => Promise<void>
 }
 
-function CellInfo({ cell, map, state, catalog, now, planting, onPlant, onEnter, onRead, onLock, onChanged }: CellInfoProps) {
+function CellInfo({ cell, map, state, catalog, now, planting, onPlant, onEnter, onRead, onLock, onWeeding, onChanged }: CellInfoProps) {
   const object = map.key === HOME ? objectAt(state.garden.objects, cell) : undefined
   if (object) {
     const name = catalog.species.find((s) => s.key === object.speciesKey)?.name ?? object.speciesKey
@@ -422,7 +428,9 @@ function CellInfo({ cell, map, state, catalog, now, planting, onPlant, onEnter, 
   }
 
   if (!prop && map.key === HOME && map.tiles[map.rows[cell.y]?.[cell.x] ?? '']?.type === 'overgrown') {
-    return <WeedInfo cell={cell} name={info.name} description={info.description} state={state} onChanged={onChanged} />
+    return (
+      <WeedInfo cell={cell} name={info.name} description={info.description} state={state} onWeeding={onWeeding} onChanged={onChanged} />
+    )
   }
   const spot = prop && catalog.spots.find((s) => s.propKey === prop.key)
   if (spot) {
@@ -481,12 +489,19 @@ function CellInfo({ cell, map, state, catalog, now, planting, onPlant, onEnter, 
   )
 }
 
-/** Заросшая грядка: прополоть, если есть лопата и грабли. Прополотая клетка станет обычной грядкой. */
-function WeedInfo({ cell, name, description, state, onChanged }: {
+const sleep = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms))
+
+/**
+ * Заросшая грядка: прополоть, если есть лопата и грабли. Прополотая клетка станет обычной грядкой.
+ * Анимация (мотыга, вылетающие сорняки) начинается сразу, запрос к серверу идёт параллельно;
+ * грядка меняется ближе к концу анимации, когда клочки уже падают.
+ */
+function WeedInfo({ cell, name, description, state, onWeeding, onChanged }: {
   cell: Cell
   name: string
   description: string
   state: GameState
+  onWeeding: (effect: WeedEffect | null) => void
   onChanged: () => Promise<void>
 }) {
   const [busy, setBusy] = useState(false)
@@ -495,17 +510,20 @@ function WeedInfo({ cell, name, description, state, onChanged }: {
 
   const weed = async () => {
     setBusy(true)
+    onWeeding({ kind: 'weed', cell, at: performance.now() })
     try {
-      const result = await weedBed(cell.x, cell.y)
+      const [result] = await Promise.all([weedBed(cell.x, cell.y), sleep(WEED_MS - 250)])
+      await onChanged()
       toast({
         message: result.remaining > 0
           ? `Грядка прополота. Заросших клеток осталось: ${result.remaining}.`
           : 'Последний сорняк сдался! Расскажите Вереску.',
       })
-      await onChanged()
+      await sleep(250)
     } catch (e) {
       toast({ message: e instanceof ApiError ? (e.detail ?? e.title) : 'Не получилось прополоть. Попробуйте ещё раз.' })
     } finally {
+      onWeeding(null)
       setBusy(false)
     }
   }

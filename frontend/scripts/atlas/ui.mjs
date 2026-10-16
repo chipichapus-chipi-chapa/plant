@@ -54,11 +54,33 @@ function symbol(kind) {
   return s
 }
 
+/**
+ * Мотыга в руках у персонажа (смотрит вправо; влево игра отражает кадр).
+ * up — замах над головой, down — удар: железко уткнулось в землю.
+ */
+function hoe(down) {
+  const s = new Sprite(16, 16)
+  const [x0, y0, x1, y1] = down ? [2, 4, 12, 13] : [3, 13, 10, 2]
+  s.line(x0, y0, x1, y1, R.wood[4])
+  s.line(x0 + 1, y0, x1 + 1, y1, R.wood[2])
+  if (down) {
+    s.rect(11, 12, 4, 3, R.silver[3])
+    s.rect(11, 14, 4, 1, R.silver[1])
+  } else {
+    s.rect(9, 1, 4, 3, R.silver[3])
+    s.rect(12, 1, 1, 3, R.silver[1])
+  }
+  s.outline(INK)
+  return s
+}
+
 export function uiFrames() {
   return {
     fx_bubble: bang(),
     fx_interact: bang(),
     fx_sparkle: sparkle(),
+    fx_hoe_up: hoe(false),
+    fx_hoe_down: hoe(true),
     ...Object.fromEntries(['drop', 'sun', 'moon', 'leaf'].map((k) => [`sym_${k}`, symbol(k)])),
   }
 }
