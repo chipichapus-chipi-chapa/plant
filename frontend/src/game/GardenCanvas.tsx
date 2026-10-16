@@ -130,7 +130,8 @@ export function GardenCanvas(props: Props) {
   useEffect(() => {
     const wrap = wrapRef.current
     if (!wrap) return
-    const update = () => setScale(fitScale(wrap.clientWidth, map, window.innerHeight - RESERVED_HEIGHT))
+    // поле игры задаёт высоту обёртки; если её нет (старая раскладка) — берём высоту окна
+    const update = () => setScale(fitScale(wrap.clientWidth, map, wrap.clientHeight || window.innerHeight - RESERVED_HEIGHT))
     const observer = new ResizeObserver(update)
     observer.observe(wrap)
     window.addEventListener('resize', update)
