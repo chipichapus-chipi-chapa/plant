@@ -141,24 +141,25 @@ export function fitScale(availableWidth: number, map: GardenMap, availableHeight
 }
 
 /**
- * Масштаб «на весь экран»: сад заполняет окно целиком, без полос по краям. Если пропорции карты
- * и экрана не совпадают, часть карты уходит за край — её показывает камера, следуя за героем.
+ * Масштаб «на весь экран»: локация целиком входит в окно и занимает его по большей стороне.
+ * Если пропорции карты и экрана не совпадают, по краям остаются тёмные поля.
  */
-export function coverScale(width: number, height: number, map: GardenMap): number {
+export function containScale(width: number, height: number, map: GardenMap): number {
   if (width <= 0 || height <= 0) return 1
-  return Math.max(width / (map.width * TILE), height / (map.height * TILE))
+  return Math.min(width / (map.width * TILE), height / (map.height * TILE))
 }
 
 /**
  * Камера: левый верхний угол видимой части карты (в логических пикселях). Герой — по центру,
- * но камера не заезжает за края карты. Округляем до целого пикселя, чтобы картинка не дрожала.
+ * но камера не заезжает за края карты. Если карта меньше окна, она стоит по центру
+ * (камера уходит в минус — это ширина тёмного поля). Округляем до целого пикселя, чтобы картинка не дрожала.
  */
 export function cameraAt(
   focus: { x: number; y: number },
   view: { width: number; height: number },
   map: GardenMap,
 ): { x: number; y: number } {
-  const clamp = (v: number, max: number) => Math.round(Math.min(Math.max(0, v), Math.max(0, max)))
+  const clamp = (v: number, max: number) => Math.round(max < 0 ? max / 2 : Math.min(Math.max(0, v), max))
   return {
     x: clamp(focus.x - view.width / 2, map.width * TILE - view.width),
     y: clamp(focus.y - view.height / 2, map.height * TILE - view.height),

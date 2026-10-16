@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { GardenMap, GardenObject } from '../api/types'
-import { cameraAt, cellAtPoint, coverScale, describeCell, fitScale, minutesUntilNextStage, nextGrowthRefresh, objectAt, propAt, tileFrame, variant } from './layout'
+import { cameraAt, cellAtPoint, containScale, describeCell, fitScale, minutesUntilNextStage, nextGrowthRefresh, objectAt, propAt, tileFrame, variant } from './layout'
 
 const t = (type: string, plantable = false) => ({ type, name: type, description: '', plantable })
 
@@ -107,14 +107,19 @@ describe('рост', () => {
 })
 
 describe('камера на весь экран', () => {
-  const big = { width: 16, height: 10 } as never
+  const big = { width: 16, height: 10 } as never // 512×320 px
 
-  it('сад заполняет экран целиком: берём больший из масштабов', () => {
-    expect(coverScale(1024, 400, big)).toBe(2) // по ширине 1024/512
-    expect(coverScale(512, 640, big)).toBe(2) // по высоте 640/320
+  it('локация целиком входит в окно: берём меньший из масштабов', () => {
+    expect(containScale(1024, 400, big)).toBe(1.25) // по высоте 400/320, ширина 640 ≤ 1024
+    expect(containScale(512, 640, big)).toBe(1) // по ширине 512/512
   })
 
-  it('герой в центре, но камера не выходит за края карты', () => {
+  it('карта меньше окна стоит по центру, поля поровну с двух сторон', () => {
+    expect(cameraAt({ x: 10, y: 10 }, { width: 800, height: 320 }, big)).toEqual({ x: -144, y: 0 })
+    expect(cameraAt({ x: 10, y: 10 }, { width: 512, height: 400 }, big)).toEqual({ x: 0, y: -40 })
+  })
+
+  it('если карта больше окна — герой в центре, но камера не выходит за края', () => {
     const view = { width: 256, height: 320 }
     expect(cameraAt({ x: 256, y: 160 }, view, big)).toEqual({ x: 128, y: 0 })
     expect(cameraAt({ x: 10, y: 10 }, view, big)).toEqual({ x: 0, y: 0 })

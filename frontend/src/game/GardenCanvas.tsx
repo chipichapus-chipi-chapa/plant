@@ -4,11 +4,14 @@ import type { Atlas } from './atlas'
 import { directionFor, type CharacterFrames } from './character'
 import { useSettings } from '../app/settings'
 import { Fireflies } from './Fireflies'
-import { cameraAt, coverScale, inBounds, TILE, type Cell } from './layout'
+import { cameraAt, containScale, inBounds, TILE, type Cell } from './layout'
 import { blockedCells, cellOf, facingCell, walk, walkerAt, type Facing, type Walker } from './movement'
 import { isPlaying, strikeLift } from './effects'
 import { drawGarden, LAMP_LIGHT_UP_MS, lampLevel, type Scene } from './renderer'
 import styles from './GardenCanvas.module.css'
+
+/** Поля вокруг локации — как сумерки в саду (--c-night) */
+const LETTERBOX = '#120e0d'
 
 
 const KEYS: Record<string, [number, number]> = {
@@ -97,7 +100,7 @@ export function GardenCanvas(props: Props) {
   const bufferRef = useRef<HTMLCanvasElement | null>(null)
   // размер поля в CSS-пикселях; масштаб — «на весь экран», лишнее показывает камера
   const [size, setSize] = useState({ width: 0, height: 0 })
-  const scale = coverScale(size.width, size.height, map)
+  const scale = containScale(size.width, size.height, map)
   const cameraRef = useRef({ x: 0, y: 0 })
   const sizeRef = useRef(size)
   const [touch] = useState(coarsePointer)
@@ -264,13 +267,15 @@ export function GardenCanvas(props: Props) {
       }
       drawGarden(bufferCtx, p.map, p.atlas, scene)
 
-      // камера: видимая часть карты вокруг героя, не заезжая за края
+      // камера: карта целиком и по центру; тёмные поля по краям — если пропорции не совпали
       const view = { width: cssWidth / s, height: cssHeight / s }
       const camera = cameraAt({ x: w.x, y: w.y - TILE / 2 }, view, p.map)
       cameraRef.current = camera
+      const k = s * dpr
       ctx.imageSmoothingEnabled = false
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      ctx.drawImage(buffer, camera.x, camera.y, view.width, view.height, 0, 0, canvas.width, canvas.height)
+      ctx.fillStyle = LETTERBOX
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(buffer, Math.round(-camera.x * k), Math.round(-camera.y * k), Math.round(buffer.width * k), Math.round(buffer.height * k))
       const lines = look.current.scanlines ? scanlines(ctx, Math.max(2, Math.round(dpr * 3))) : null
       if (lines) {
         ctx.fillStyle = lines
