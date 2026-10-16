@@ -16,7 +16,7 @@ export type CharacterSprite = {
   image: CanvasImageSource
   flip?: boolean
   lift?: number
-  /** Свет, который персонаж несёт с собой (фонарь, ореол), — смещение от ступней */
+  /** Неподвижный свет у стоящего персонажа (фонарь Вереска) — смещение от ступней */
   light?: Light
 }
 
@@ -37,6 +37,8 @@ export type Scene = {
   prompt?: { x: number; y: number } | null
   /** Точка над целью текущего задания (стрелка) */
   marker?: { x: number; y: number } | null
+  /** Ступни идущего игрока: вокруг него ореол, снимающий сумерки */
+  aura?: { x: number; y: number } | null
   /** Время в мс — для покачивания стрелки */
   time?: number
 }
@@ -89,6 +91,7 @@ export function drawGarden(
     map,
     awakened,
     characters.flatMap((c) => (c.light ? [{ ...c.light, x: c.px + c.light.x, y: c.py + c.light.y }] : [])),
+    scene.aura && { x: scene.aura.x, y: scene.aura.y + AURA.lift },
   )
 
   // Всё, что должно читаться в темноте, — после света: мерцание тайников, «!» и стрелка
@@ -137,62 +140,93 @@ const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => 
 const AMBIENT_CENTER = 0.32
 const AMBIENT_EDGE = 0.8
 
-type StaticLight = { key: string; ambient: Float32Array; light: Float32Array; canvas: HTMLCanvasElement; image: ImageData }
-let staticLight: StaticLight | null = null
+type LightLayer = { key: string; dark: HTMLCanvasElement; work: HTMLCanvasElement }
+let layer: LightLayer | null = null
 
 /**
  * Сумерки и свет. Темнота и тёплые ореолы ложатся ступенями через матрицу Байера —
- * без плавных градиентов, чтобы свет оставался пиксельным. Неподвижный свет считается один раз,
- * подвижный (фонарь в руке, ореол игрока) добавляется каждый кадр только в своём квадрате.
+ * без плавных градиентов, чтобы свет оставался пиксельным.
+ *
+ * Дорогая попиксельная часть считается один раз — пока не изменятся карта и неподвижный свет
+ * (постройки, фонарь стоящего Вереска). Ореол идущего игрока — готовая картинка, которая каждый кадр
+ * «вырезает» темноту вокруг него (destination-out): два drawImage вместо пересчёта всей карты.
  */
-function drawLighting(ctx: CanvasRenderingContext2D, map: GardenMap, awakened: ReadonlySet<string>, moving: Light[]) {
+function drawLighting(ctx: CanvasRenderingContext2D, map: GardenMap, awakened: ReadonlySet<string>, still: Light[], aura?: { x: number; y: number } | null) {
   const w = map.width * TILE
   const h = map.height * TILE
-  const key = `${map.key}|${[...awakened].sort().join(',')}`
-  if (staticLight?.key !== key) {
-    const ambient = new Float32Array(w * h)
-    const light = new Float32Array(w * h)
-    for (let y = 0; y < h; y++)
-      for (let x = 0; x < w; x++) {
-        const nx = (x - w / 2) / (w / 2)
-        const ny = (y - h * 0.45) / (h / 2)
-        const edge = Math.min(1, Math.max(0, Math.hypot(nx * 0.85, ny) - 0.35) / 0.75)
-        ambient[y * w + x] = AMBIENT_CENTER + (AMBIENT_EDGE - AMBIENT_CENTER) * edge * edge
-      }
-    for (const l of propLights(map, awakened)) addLight(light, w, h, l)
-    const canvas = document.createElement('canvas')
-    canvas.width = w
-    canvas.height = h
-    staticLight = { key, ambient, light, canvas, image: new ImageData(w, h) }
-  }
-  const { ambient, light, canvas, image } = staticLight
-  const total = moving.length ? light.slice() : light
-  for (const l of moving) addLight(total, w, h, l)
+  const key = `${map.key}|${[...awakened].sort().join(',')}|${still.map((l) => `${l.x},${l.y},${l.radius}`).join(';')}`
+  if (layer?.key !== key) layer = { key, dark: bakeDarkness(w, h, [...propLights(map, awakened), ...still]), work: layer?.work ?? document.createElement('canvas') }
 
+  if (!aura) {
+    ctx.drawImage(layer.dark, 0, 0)
+    return
+  }
+  const { dark, work } = layer
+  if (work.width !== w || work.height !== h) {
+    work.width = w
+    work.height = h
+  }
+  const wctx = work.getContext('2d')!
+  wctx.globalCompositeOperation = 'copy'
+  wctx.drawImage(dark, 0, 0)
+  wctx.globalCompositeOperation = 'destination-out'
+  const sprite = auraSprite()
+  wctx.drawImage(sprite, Math.round(aura.x - sprite.width / 2), Math.round(aura.y - sprite.height / 2))
+  wctx.globalCompositeOperation = 'source-over'
+  ctx.drawImage(work, 0, 0)
+}
+
+/** Темнота с неподвижным светом — попиксельно, один раз на карту и набор огней. */
+function bakeDarkness(w: number, h: number, lights: Light[]): HTMLCanvasElement {
+  const light = new Float32Array(w * h)
+  for (const l of lights) addLight(light, w, h, l)
+  const image = new ImageData(w, h)
   const data = image.data
   for (let y = 0; y < h; y++)
     for (let x = 0; x < w; x++) {
+      const nx = (x - w / 2) / (w / 2)
+      const ny = (y - h * 0.45) / (h / 2)
+      const edge = Math.min(1, Math.max(0, Math.hypot(nx * 0.85, ny) - 0.35) / 0.75)
+      const ambient = AMBIENT_CENTER + (AMBIENT_EDGE - AMBIENT_CENTER) * edge * edge
       const i = y * w + x
-      const lit = Math.min(1, total[i])
+      const lit = Math.min(1, light[i])
       const threshold = BAYER[(y & 3) * 4 + (x & 3)]
       // темнота: 5 ступеней, свет её съедает
-      const dark = Math.floor(ambient[i] * (1 - lit) * 4 + threshold) / 4
+      const dark = Math.floor(ambient * (1 - lit) * 4 + threshold) / 4
       const o = i * 4
       if (lit > 0.35 && Math.floor((lit - 0.35) * 3 + threshold) > 0) {
-        data[o] = 255
-        data[o + 1] = 168
-        data[o + 2] = 72
-        data[o + 3] = 34 // тёплый отсвет лампы
+        data.set([255, 168, 72, 34], o) // тёплый отсвет лампы
       } else {
-        data[o] = 8
-        data[o + 1] = 7
-        data[o + 2] = 12
-        data[o + 3] = Math.round(dark * 0.92 * 255)
+        data.set([8, 7, 12, Math.round(dark * 0.92 * 255)], o)
       }
     }
-  const lctx = canvas.getContext('2d')!
-  lctx.putImageData(image, 0, 0)
-  ctx.drawImage(canvas, 0, 0)
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  canvas.getContext('2d')!.putImageData(image, 0, 0)
+  return canvas
+}
+
+/** Ореол игрока: насколько он снимает темноту вокруг — ступенями через Байера, к краю слабее. */
+const AURA = { radius: 44, strength: 0.5, lift: -14 }
+let aura: HTMLCanvasElement | null = null
+function auraSprite(): HTMLCanvasElement {
+  if (aura) return aura
+  const size = AURA.radius * 2
+  const image = new ImageData(size, size)
+  for (let y = 0; y < size; y++)
+    for (let x = 0; x < size; x++) {
+      const d = Math.hypot(x - AURA.radius, y - AURA.radius) / AURA.radius
+      if (d >= 1) continue
+      const cut = Math.min(1, (1 - d) * (1 - d) * 1.6 * AURA.strength)
+      const step = Math.floor(cut * 4 + BAYER[(y & 3) * 4 + (x & 3)]) / 4
+      image.data.set([0, 0, 0, Math.round(step * 255)], (y * size + x) * 4)
+    }
+  aura = document.createElement('canvas')
+  aura.width = size
+  aura.height = size
+  aura.getContext('2d')!.putImageData(image, 0, 0)
+  return aura
 }
 
 /** Прибавить свет одного источника: мягкий спад к краю радиуса. */

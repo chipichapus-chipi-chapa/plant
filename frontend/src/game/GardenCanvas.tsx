@@ -55,9 +55,6 @@ const STICK_RADIUS = 48
 const WALK_CYCLE = [1, 0, 2, 0] as const
 const STEP_MS = 130
 
-/** Мягкий ореол вокруг игрока: в сумерках его всегда видно. */
-const PLAYER_AURA = { x: 0, y: -14, radius: 44, strength: 0.5 }
-
 /** Кадр под направление взгляда: влево — боковой кадр, отражённый. */
 function frameFor(frames: CharacterFrames, facing: Facing, step: number) {
   const { direction, flip } = directionFor(facing)
@@ -219,8 +216,11 @@ export function GardenCanvas(props: Props) {
         canvas.style.height = `${cssHeight}px`
       }
       const buffer = (bufferRef.current ??= document.createElement('canvas'))
-      buffer.width = p.map.width * TILE
-      buffer.height = p.map.height * TILE
+      // размер задаём только при смене карты: присваивание width пересоздаёт холст и стоит заметно
+      if (buffer.width !== p.map.width * TILE || buffer.height !== p.map.height * TILE) {
+        buffer.width = p.map.width * TILE
+        buffer.height = p.map.height * TILE
+      }
       const bufferCtx = buffer.getContext('2d')
       if (!bufferCtx) return
 
@@ -228,10 +228,12 @@ export function GardenCanvas(props: Props) {
       const scene: Scene = {
         ...p.scene,
         time,
+        // вокруг игрока мягкий ореол: в сумерках его всегда видно
+        aura: { x: w.x, y: w.y },
         characters: [
           ...p.scene.characters,
           // на шаге тело чуть приподнимается — походка пружинит
-          { px: w.x, py: w.y, ...frameFor(p.player.frames, w.facing, step), lift: step ? 1 : 0, light: PLAYER_AURA },
+          { px: w.x, py: w.y, ...frameFor(p.player.frames, w.facing, step), lift: step ? 1 : 0 },
         ],
       }
       drawGarden(bufferCtx, p.map, p.atlas, scene)
