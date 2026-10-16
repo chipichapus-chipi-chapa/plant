@@ -123,7 +123,7 @@ INSERT INTO artifact_def (key, name, crystal_category, description, legend, acqu
     ('hearth_lantern', 'Фонарь очага', 'amber',
         'Маленький фонарь с янтарным стеклом. Даже потухший, он греет руки.',
         'Когда-то в поместье его зажигали в первый холодный вечер — и все собирались на кухне.',
-        'Его свет помнят стены поместья. Само поместье — далеко за садом.',
+        'Его свет помнят стены поместья. Само поместье — за чащей, куда не пускает сторож.',
         'Когда-нибудь согреет целый дом.', 3)
 ON CONFLICT (key) DO UPDATE SET
     name = EXCLUDED.name,
@@ -152,6 +152,10 @@ INSERT INTO discovery_spot (key, prop_key, found_text, empty_text, requires_awak
         'Вы снимаете с гвоздей лопату и грабли. Забор будто выдыхает с облегчением.',
         'На заборе остались только гвозди и светлые пятна там, где висели инструменты.',
         NULL, NULL, NULL),
+    ('hearth_glow', 'hearth',
+        'В остывшей золе — маленький фонарь с янтарным стеклом. Он тёплый, хотя печь давно не топили.',
+        'В печи только зола. Фонарь очага уже у вас — и он всё такой же тёплый.',
+        NULL, NULL, 'hearth_lantern'),
     ('bridge_compass', 'bridge-post',
         'Между мокрыми камнями у опоры — старый компас. Стрелка дрожит и показывает не на север, а куда-то в чащу.',
         'У опоры моста только мох и холодная вода. Компас уже у вас.',
@@ -164,13 +168,14 @@ ON CONFLICT (key) DO UPDATE SET
     locked_text = EXCLUDED.locked_text,
     artifact_key = EXCLUDED.artifact_key;
 
-DELETE FROM discovery_spot_reward WHERE spot_key IN ('rock_cache', 'shed_corner', 'fence_tools', 'bridge_compass');
+DELETE FROM discovery_spot_reward WHERE spot_key IN ('rock_cache', 'shed_corner', 'fence_tools', 'bridge_compass', 'hearth_glow');
 INSERT INTO discovery_spot_reward (spot_key, item_key, quantity) VALUES
     ('rock_cache', 'shard_amethyst', 2),
     ('rock_cache', 'shard_emerald', 1),
     ('shed_corner', 'sun_spark', 1),
     ('fence_tools', 'garden_tools', 1),
-    ('bridge_compass', 'life_seed', 3);
+    ('bridge_compass', 'life_seed', 3),
+    ('hearth_glow', 'sun_spark', 1);
 
 -- Загадки ---------------------------------------------------------------------
 -- Подсказка к ящику — в письме прежнего садовника (content/gardens/shed.json, постройка letter).
