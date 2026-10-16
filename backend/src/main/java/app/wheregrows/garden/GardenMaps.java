@@ -55,8 +55,27 @@ public class GardenMaps {
         return maps.values().stream().flatMap(m -> m.props().stream()).filter(p -> p.key().equals(key)).findFirst();
     }
 
+    /** Поручение жителя по ключу (на любой карте) — вместе с жителем, который его даёт. */
+    public Optional<NpcErrand> errand(String key) {
+        return errands().stream().filter(e -> e.errand().key().equals(key)).findFirst();
+    }
+
+    public List<NpcErrand> errands() {
+        return maps.values().stream().flatMap(m -> m.npcsOrEmpty().stream())
+                .filter(n -> n.errand() != null)
+                .map(n -> new NpcErrand(n, n.errand()))
+                .toList();
+    }
+
+    public record NpcErrand(GardenMap.Npc npc, GardenMap.Errand errand) {
+    }
+
     /** Двери ведут на существующие карты, в свободную клетку; ключи построек не повторяются между картами. */
     private void validateDoors() {
+        long errandKeys = errands().stream().map(e -> e.errand().key()).distinct().count();
+        if (errandKeys != errands().size()) {
+            throw new IllegalStateException("Ключи поручений жителей повторяются");
+        }
         long props = maps.values().stream().mapToLong(m -> m.props().size()).sum();
         long distinct = maps.values().stream().flatMap(m -> m.props().stream()).map(GardenMap.Prop::key).distinct().count();
         if (props != distinct) {
@@ -72,6 +91,8 @@ public class GardenMaps {
                 map.require(target != null, "дверь " + prop.key() + " ведёт на несуществующую карту " + door.map());
                 map.require(target.contains(door.x(), door.y()) && target.propAt(door.x(), door.y()) == null,
                         "дверь " + prop.key() + " ведёт в занятую или несуществующую клетку");
+                map.require(door.requires() == null || prop(door.requires()).isPresent(),
+                        "дверь " + prop.key() + " требует несуществующую постройку " + door.requires());
             }
         }
     }

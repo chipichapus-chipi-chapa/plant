@@ -135,21 +135,50 @@ class MentorApiTests {
                 .andExpect(jsonPath("$.gift[1].itemKey").value("seed_chamomile"));
         assertThat(quantity("seed_chamomile")).isEqualTo(2);
 
+        // дальше — следующее поручение: починить тачку
         mvc.perform(get("/api/state"))
-                .andExpect(jsonPath("$.mentor.nextDialogue").doesNotExist())
-                .andExpect(jsonPath("$.mentor.hasNews").value(false));
+                .andExpect(jsonPath("$.mentor.nextDialogue").value("offer_repair"))
+                .andExpect(jsonPath("$.mentor.hasNews").value(true));
         finish("idle_rest").andExpect(status().isOk()).andExpect(jsonPath("$.gift").isEmpty());
     }
 
     @Test
-    void errandMustBeReceivedEvenIfAlreadyDone() throws Exception {
+    void gardenErrandsFollowRealProgress() throws Exception {
+        finishTutorial();
+        jdbc.update("INSERT INTO player_flag SELECT ?, f, now() FROM unnest(ARRAY["
+                + "'ack_take_tools','ack_weed','offered_repair']) AS f", playerId);
+        mvc.perform(get("/api/state")).andExpect(jsonPath("$.mentor.nextDialogue").value("hint_repair"));
+
+        // тачка починена → благодарность с подарком
+        jdbc.update("INSERT INTO player_world_object VALUES (?, 'wheelbarrow', 'AWAKENED', now())", playerId);
+        finish("done_repair").andExpect(jsonPath("$.gift[0].itemKey").value("seed_sunflower"));
+
+        // бочка уже наполнена до поручения — Вереск сразу благодарит, поручение не нужно
+        jdbc.update("INSERT INTO player_world_object VALUES (?, 'barrel', 'AWAKENED', now())", playerId);
+        mvc.perform(get("/api/state"))
+                .andExpect(jsonPath("$.mentor.nextDialogue").value("done_barrel"))
+                .andExpect(jsonPath("$.mentor.hasNews").value(true));
+        finish("done_barrel").andExpect(status().isOk());
+
+        // подсолнух: только что посаженный не считается, выросший — считается
+        finish("offer_sunflower");
+        jdbc.update("INSERT INTO garden_object (player_id, x, y, kind, species_key, planted_at) "
+                + "VALUES (?, 3, 5, 'PLANT', 'sunflower', now())", playerId);
+        mvc.perform(get("/api/state")).andExpect(jsonPath("$.mentor.nextDialogue").value("hint_sunflower"));
+        jdbc.update("UPDATE garden_object SET planted_at = now() - interval '11 hours' WHERE player_id = ?", playerId);
+        mvc.perform(get("/api/state")).andExpect(jsonPath("$.mentor.nextDialogue").value("done_sunflower"));
+    }
+
+    @Test
+    void errandAlreadyDoneIsThankedRightAway() throws Exception {
         finishTutorial();
         jdbc.update("INSERT INTO player_discovery VALUES (?, 'fence_tools', now())", playerId);
 
         mvc.perform(get("/api/state"))
                 .andExpect(jsonPath("$.mentor.steps[4].done").value(true))
-                .andExpect(jsonPath("$.mentor.nextDialogue").value("offer_tools"));
-        finish("done_take_tools").andExpect(status().isConflict());
+                .andExpect(jsonPath("$.mentor.nextDialogue").value("done_take_tools"));
+        finish("offer_tools").andExpect(status().isConflict());
+        finish("done_take_tools").andExpect(status().isOk());
     }
 
     private void finishTutorial() {

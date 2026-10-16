@@ -5,6 +5,7 @@ import { directionFor, type CharacterFrames } from './character'
 import { Fireflies } from './Fireflies'
 import { cellAtPoint, fitScale, inBounds, TILE, type Cell } from './layout'
 import { blockedCells, cellOf, facingCell, walk, walkerAt, type Facing, type Walker } from './movement'
+import { isPlaying, strikeLift } from './effects'
 import { drawGarden, LAMP_LIGHT_UP_MS, lampLevel, type Scene } from './renderer'
 import styles from './GardenCanvas.module.css'
 
@@ -61,6 +62,12 @@ const STEP_MS = 130
 function frameFor(frames: CharacterFrames, facing: Facing, step: number) {
   const { direction, flip } = directionFor(facing)
   return { image: frames[direction][step], flip }
+}
+
+/** Пока персонаж полет, он приседает в такт ударам мотыги. */
+function workLift(scene: Scene, time: number): number {
+  const effect = scene.effects?.find((e) => isPlaying(e, time))
+  return effect ? strikeLift(time - effect.at) : 0
 }
 
 const scanlineCache = new Map<number, CanvasPattern | null>()
@@ -123,7 +130,8 @@ export function GardenCanvas(props: Props) {
   useEffect(() => {
     const wrap = wrapRef.current
     if (!wrap) return
-    const update = () => setScale(fitScale(wrap.clientWidth, map, window.innerHeight - RESERVED_HEIGHT))
+    // поле игры задаёт высоту обёртки; если её нет (старая раскладка) — берём высоту окна
+    const update = () => setScale(fitScale(wrap.clientWidth, map, wrap.clientHeight || window.innerHeight - RESERVED_HEIGHT))
     const observer = new ResizeObserver(update)
     observer.observe(wrap)
     window.addEventListener('resize', update)
@@ -197,7 +205,10 @@ export function GardenCanvas(props: Props) {
 
       // «!» над целью задания покачивается — пока он виден, кадр перерисовывается постоянно
       const lighting = !!p.lightUp && now - enteredAt < LAMP_LIGHT_UP_MS + 50
-      const animated = !!p.scene.marker || lighting
+      const working = (p.scene.effects ?? []).some((e) => isPlaying(e, now))
+      // мыши иногда шевелят ушами — пока они в локации, кадр перерисовывается постоянно
+      const lively = p.scene.characters.some((c) => c.idle)
+      const animated = !!p.scene.marker || lighting || working || lively
       if (moving || animated || dirtyRef.current) {
         dirtyRef.current = moving // после остановки нарисуем ещё один кадр — без подпрыгивания
         draw(moving ? WALK_CYCLE[Math.floor(now / STEP_MS) % WALK_CYCLE.length] : 0, now)
@@ -239,7 +250,7 @@ export function GardenCanvas(props: Props) {
         characters: [
           ...p.scene.characters,
           // на шаге тело чуть приподнимается — походка пружинит
-          { px: w.x, py: w.y, ...frameFor(p.player.frames, w.facing, step), lift: step ? 1 : 0 },
+          { px: w.x, py: w.y, ...frameFor(p.player.frames, w.facing, step), lift: step ? 1 : workLift(p.scene, time) },
         ],
       }
       drawGarden(bufferCtx, p.map, p.atlas, scene)
