@@ -197,7 +197,7 @@ function LoadError({ error, onRetry }: { error: ApiError; onRetry: () => void })
       <Panel title="Калитка не открывается" className={styles.errorPanel}>
         <p className={styles.empty}>
           {error.kind === 'network'
-            ? 'Сервер сада не отвечает. Если вы разрабатываете игру — проверьте, что backend запущен.'
+            ? 'Сервер сада не отвечает. Если игра давно не открывалась, он просыпается около минуты — попробуйте ещё раз.'
             : `Сервер ответил: «${error.detail ?? error.title}».`}
         </p>
         <Button onClick={onRetry}>Попробовать ещё раз</Button>

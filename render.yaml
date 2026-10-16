@@ -1,0 +1,25 @@
+# Render Blueprint: сервер игры собирается из backend/Dockerfile при каждом пуше в main.
+# Секреты (sync: false) Render спросит один раз при создании — в репозитории их нет.
+services:
+  - type: web
+    name: where-it-grows
+    runtime: docker
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /actuator/health
+    autoDeploy: true
+    envVars:
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: SPRING_DATASOURCE_URL
+        sync: false
+      - key: SPRING_DATASOURCE_USERNAME
+        sync: false
+      - key: SPRING_DATASOURCE_PASSWORD
+        sync: false
+      - key: GAME_CORS_ALLOWED_ORIGINS
+        value: https://chipichapus-chipi-chapa.github.io
+      # у бесплатной базы Neon мало соединений
+      - key: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE
+        value: "4"

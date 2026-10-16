@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { enterFullscreen, exitFullscreen, useSettings, type Settings } from '../../app/settings'
+import { isFullscreen, onFullscreenChange } from '../../app/telegram'
 import styles from './SettingsPanel.module.css'
 
 type Choice<K extends keyof Settings> = { key: K; label: string; options: { value: Settings[K]; label: string }[] }
@@ -22,13 +23,9 @@ const CHOICES = [
 /** Настройки: вид и удобство. Сохраняются в этом браузере. */
 export function SettingsPanel() {
   const { settings, change } = useSettings()
-  const [fullscreen, setFullscreen] = useState(() => !!document.fullscreenElement)
+  const [fullscreen, setFullscreen] = useState(isFullscreen)
 
-  useEffect(() => {
-    const update = () => setFullscreen(!!document.fullscreenElement)
-    document.addEventListener('fullscreenchange', update)
-    return () => document.removeEventListener('fullscreenchange', update)
-  }, [])
+  useEffect(() => onFullscreenChange(() => setFullscreen(isFullscreen())), [])
 
   return (
     <div className={styles.panel}>
