@@ -100,23 +100,23 @@ cd frontend && npm run atlas
 | Сайт (фронтенд) | GitHub Pages — https://chipichapus-chipi-chapa.github.io/plant/ | сам, при пуше в `main` |
 | Сервер (Spring Boot) | Render, бесплатно, по `render.yaml` | сам, при пуше в `main` |
 | База (PostgreSQL) | Neon, бесплатно | миграции Flyway при старте сервера |
-| Бот | @BotFather, кода у бота нет | — |
+| Бот | живёт в том же сервере (webhook) | сам: при старте сервер регистрирует webhook и кнопку «Играть» |
 
 Вход — по подписи Telegram: сервер проверяет `initData` токеном бота, у каждого игрока свой прогресс.
 
 ### Запуск — по шагам
 
 - [x] **GitHub Pages** включён (Settings → Pages → Source: GitHub Actions).
-- [ ] **Neon** — войти через GitHub, создать проект, скопировать строку подключения *без* `-pooler`:
+- [x] **Neon** — войти через GitHub, создать проект, скопировать строку подключения *без* `-pooler`:
       `postgresql://USER:PASSWORD@HOST/DB?sslmode=require`.
-- [ ] **Render** — войти через GitHub → New → Blueprint → репозиторий `plant`. Render спросит:
+- [x] **Render** — войти через GitHub → New → Blueprint → репозиторий `plant`. Render спросит:
       - `SPRING_DATASOURCE_URL` = `jdbc:postgresql://HOST/DB?sslmode=require`
       - `SPRING_DATASOURCE_USERNAME` = `USER`, `SPRING_DATASOURCE_PASSWORD` = `PASSWORD`
       - `TELEGRAM_BOT_TOKEN` = токен от @BotFather (только здесь — **никогда** не в репозиторий)
-- [ ] **Адрес сервера для сайта** — Settings → Secrets and variables → Actions → Variables:
+- [x] **Адрес сервера для сайта** — Settings → Secrets and variables → Actions → Variables:
       `API_URL` = адрес от Render (`https://….onrender.com`, без `/` в конце), затем Actions → Pages → Run workflow.
-- [ ] **Бот** — @BotFather → `/mybots` → бот → Bot Settings → Menu Button →
-      `https://chipichapus-chipi-chapa.github.io/plant/`, подпись «Играть».
+- [x] **Бот** — настраивается сам: сервер при старте ставит webhook и кнопку меню «Играть»,
+      на `/start` и любое сообщение бот отвечает приветствием с кнопкой входа в сад.
 
 Бесплатный сервер засыпает после 15 минут тишины: первый вход после паузы ждёт около минуты.
 Подробности и устройство входа — [docs/DEPLOY.md](docs/DEPLOY.md).
