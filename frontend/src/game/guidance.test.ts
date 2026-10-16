@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Catalog, GameState } from '../api/types'
+import type { Catalog, GameState, GardenMap } from '../api/types'
 import { currentObjective, isClickable, isInteractive, isNear, markerPoint, promptCell, sameThing } from './guidance'
 
 const map = {
@@ -10,13 +10,27 @@ const map = {
   tiles: {
     '.': { type: 'grass', name: '', description: '', plantable: false },
     s: { type: 'soil', name: '', description: '', plantable: true },
+    S: { type: 'overgrown', name: '', description: '', plantable: false },
   },
-  rows: ['..ss', '....'],
+  rows: ['..ss', '...S'],
   props: [{ key: 'rock-2', kind: 'rock', x: 0, y: 1, width: 1, height: 1, name: '', description: '' }],
+}
+
+// сарай изнутри: дверь наружу в (1,1)
+const shed: GardenMap = {
+  key: 'shed',
+  name: 'Сарай',
+  width: 3,
+  height: 2,
+  tiles: { '.': { type: 'floor', name: '', description: '', plantable: false } },
+  rows: ['...', '...'],
+  props: [{ key: 'exit', kind: 'door_exit', x: 1, y: 1, width: 1, height: 1, name: '', description: '', door: { map: 'home', x: 0, y: 0, facing: 'down', label: 'Выйти' } }],
 }
 
 const catalog = {
   garden: map,
+  locations: [map, shed],
+  puzzles: [],
   items: [{ key: 'seed_radish', kind: 'SEED', name: '', description: '', price: 2, speciesKey: 'radish', crystalCategory: null }],
   spots: [{ key: 'rock_cache', propKey: 'rock-2' }],
   recipes: [],
@@ -24,10 +38,12 @@ const catalog = {
     intro: 'intro',
     meetGoal: 'Поговорите',
     reportGoal: 'Расскажите',
+    offerGoal: 'Вереск хочет попросить',
     tutorial: [
       { key: 'create_habit', goal: 'Запишите дело', target: { hud: 'habits', prop: null, tile: null } },
       { key: 'plant', goal: 'Посадите', target: { hud: null, prop: null, tile: 'soil' } },
       { key: 'inspect', goal: 'Осмотрите', target: { hud: null, prop: 'rock-2', tile: null } },
+      { key: 'weed', goal: 'Прополите', target: { hud: null, prop: null, tile: 'overgrown' }, offer: 'offer_weed' },
     ],
   },
 } as unknown as Catalog
@@ -35,14 +51,16 @@ const catalog = {
 const state = (patch: Partial<GameState>): GameState =>
   ({
     inventory: [],
-    garden: { objects: [] },
+    garden: { objects: [], weeded: [] },
     searchedSpots: [],
+    solvedPuzzles: [],
     worldObjects: [],
     mentor: { nextDialogue: null, hasNews: false, steps: [] },
     ...patch,
   }) as unknown as GameState
 
-const steps = (...s: [string, boolean, boolean][]) => s.map(([key, done, acknowledged]) => ({ key, done, acknowledged }))
+const steps = (...s: [string, boolean, boolean, boolean?][]) =>
+  s.map(([key, done, acknowledged, offered = true]) => ({ key, done, acknowledged, offered }))
 
 describe('задание от Вереска', () => {
   it('сначала — познакомиться', () => {
@@ -67,6 +85,11 @@ describe('задание от Вереска', () => {
     expect(currentObjective(withSeeds, catalog)?.target).toEqual({ kind: 'tile', type: 'soil' })
   })
 
+  it('поручение сначала надо получить у Вереска — даже если дело уже сделано', () => {
+    const s = state({ mentor: { nextDialogue: 'offer_weed', hasNews: true, steps: steps(['weed', true, false, false]) } })
+    expect(currentObjective(s, catalog)).toEqual({ text: 'Вереск хочет попросить', target: { kind: 'mentor' } })
+  })
+
   it('после обучения заданий нет', () => {
     const s = state({ mentor: { nextDialogue: null, hasNews: false, steps: steps(['create_habit', true, true]) } })
     expect(currentObjective(s, catalog)).toBeNull()
@@ -75,25 +98,38 @@ describe('задание от Вереска', () => {
 
 describe('стрелка и «!»', () => {
   it('стрелка указывает на первую свободную грядку', () => {
-    const s = state({ garden: { objects: [{ x: 2, y: 0 } as never] } })
+    const s = state({ garden: { objects: [{ x: 2, y: 0 } as never], weeded: [] } })
     expect(markerPoint({ kind: 'tile', type: 'soil' }, map, s)).toEqual({ x: 3 * 32 + 16, y: -2 })
   })
 
+  it('если цель снаружи, а игрок в сарае, стрелка указывает на дверь', () => {
+    expect(markerPoint({ kind: 'mentor' }, shed, state({}))).toEqual({ x: 1.5 * 32, y: 30 })
+  })
+
+  it('заросшую грядку можно прополоть, только когда есть инструменты', () => {
+    expect(isInteractive({ x: 3, y: 1 }, state({}), catalog, map)).toBe(false)
+    expect(isInteractive({ x: 3, y: 1 }, state({ inventory: [{ itemKey: 'garden_tools', quantity: 1 }] }), catalog, map)).toBe(true)
+  })
+
+  it('у двери всегда «!»', () => {
+    expect(isInteractive({ x: 1, y: 1 }, state({}), catalog, shed)).toBe(true)
+  })
+
   it('«!» загорается у неосмотренного тайника и свободной грядки (если есть семена)', () => {
-    expect(isInteractive({ x: 0, y: 1 }, state({}), catalog)).toBe(true)
-    expect(isInteractive({ x: 0, y: 1 }, state({ searchedSpots: ['rock_cache'] }), catalog)).toBe(false)
-    expect(isInteractive({ x: 2, y: 0 }, state({}), catalog)).toBe(false)
-    expect(isInteractive({ x: 2, y: 0 }, state({ inventory: [{ itemKey: 'seed_radish', quantity: 1 }] }), catalog)).toBe(true)
-    expect(isInteractive({ x: 1, y: 1 }, state({}), catalog)).toBe(false)
+    expect(isInteractive({ x: 0, y: 1 }, state({}), catalog, map)).toBe(true)
+    expect(isInteractive({ x: 0, y: 1 }, state({ searchedSpots: ['rock_cache'] }), catalog, map)).toBe(false)
+    expect(isInteractive({ x: 2, y: 0 }, state({}), catalog, map)).toBe(false)
+    expect(isInteractive({ x: 2, y: 0 }, state({ inventory: [{ itemKey: 'seed_radish', quantity: 1 }] }), catalog, map)).toBe(true)
+    expect(isInteractive({ x: 1, y: 1 }, state({}), catalog, map)).toBe(false)
   })
 
   it('описание есть у всего, что стоит в саду: тайник (и после поиска), растение, грядка с семенами', () => {
-    expect(isClickable({ x: 0, y: 1 }, state({ searchedSpots: ['rock_cache'] }), catalog)).toBe(true)
-    expect(isClickable({ x: 2, y: 0 }, state({ garden: { objects: [{ x: 2, y: 0 } as never] } }), catalog)).toBe(true)
-    expect(isClickable({ x: 2, y: 0 }, state({ inventory: [{ itemKey: 'seed_radish', quantity: 1 }] }), catalog)).toBe(true)
+    expect(isClickable({ x: 0, y: 1 }, state({ searchedSpots: ['rock_cache'] }), catalog, map)).toBe(true)
+    expect(isClickable({ x: 2, y: 0 }, state({ garden: { objects: [{ x: 2, y: 0 } as never], weeded: [] } }), catalog, map)).toBe(true)
+    expect(isClickable({ x: 2, y: 0 }, state({ inventory: [{ itemKey: 'seed_radish', quantity: 1 }] }), catalog, map)).toBe(true)
     // пустая грядка без семян и простая трава — без таблички
-    expect(isClickable({ x: 2, y: 0 }, state({}), catalog)).toBe(false)
-    expect(isClickable({ x: 1, y: 1 }, state({}), catalog)).toBe(false)
+    expect(isClickable({ x: 2, y: 0 }, state({}), catalog, map)).toBe(false)
+    expect(isClickable({ x: 1, y: 1 }, state({}), catalog, map)).toBe(false)
   })
 
   it('нажатие по «!» над объектом — то же, что по объекту', () => {

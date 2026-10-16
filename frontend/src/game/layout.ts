@@ -5,6 +5,9 @@ import type { GardenMap, GardenObject, GardenProp, TileType } from '../api/types
 
 export const TILE = 32
 
+/** Ключ домашнего сада: здесь стоит Вереск и растут посадки. */
+export const HOME = 'home'
+
 export type Cell = { x: number; y: number }
 
 /** Где стоит персонаж игрока: на тропинке у двери сарая. */
@@ -44,6 +47,21 @@ export function neighbourMask(map: GardenMap, x: number, y: number, type: string
   return (same(0, -1) ? 1 : 0) | (same(1, 0) ? 2 : 0) | (same(0, 1) ? 4 : 0) | (same(-1, 0) ? 8 : 0)
 }
 
+/**
+ * Карта сада с учётом изменений игрока: прополотая заросшая грядка («S») становится обычной («s»).
+ * Дальше всё — отрисовка, проходимость, посадка — работает с этой картой как с обычной.
+ */
+export function withWeeded(map: GardenMap, weeded: Cell[]): GardenMap {
+  if (weeded.length === 0) return map
+  const soil = Object.entries(map.tiles).find(([, t]) => t.type === 'soil')?.[0]
+  if (!soil) return map
+  const rows = map.rows.map((row) => row.split(''))
+  for (const { x, y } of weeded) {
+    if (map.tiles[rows[y]?.[x] ?? '']?.type === 'overgrown') rows[y][x] = soil
+  }
+  return { ...map, rows: rows.map((r) => r.join('')) }
+}
+
 /** Кадр атласа для клетки. Забор выбирает кусок по соседям: горизонтальный, вертикальный или столб в углу. */
 export function tileFrame(map: GardenMap, x: number, y: number): string {
   const type = tileAt(map, x, y)?.type ?? 'grass'
@@ -59,6 +77,11 @@ export function tileFrame(map: GardenMap, x: number, y: number): string {
       return 'prop_gate'
     case 'weeds':
       return `weeds_${variant(x, y, 3)}`
+    case 'floor':
+      return `floor_${variant(x, y, 3)}`
+    case 'wall':
+      // лицевая сторона стены видна, если под ней пол; иначе — тёмный верх стены
+      return tileAt(map, x, y + 1)?.type === 'floor' ? `wall_face_${variant(x, y, 2)}` : 'wall_top'
     case 'path':
     case 'soil':
     case 'overgrown':

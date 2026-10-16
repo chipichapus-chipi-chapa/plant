@@ -37,6 +37,11 @@ export type Scene = {
   prompt?: { x: number; y: number } | null
   /** Точка над целью текущего задания (стрелка) */
   marker?: { x: number; y: number } | null
+  /**
+   * Состояние постройки → свой кадр: awakened (пробуждена, починена), searched (обыскана),
+   * open (замок открыт). Нет такого кадра в атласе — рисуется обычный.
+   */
+  variants?: ReadonlyMap<string, string>
   /** Ступни идущего игрока: вокруг него ореол, снимающий сумерки */
   aura?: { x: number; y: number } | null
   /** Время в мс — для покачивания стрелки */
@@ -69,8 +74,7 @@ export function drawGarden(
   const sprites = [
     ...map.props.map((p) => ({
       bottom: p.y + p.height,
-      // пробуждённый магический объект рисуется своим кадром
-      frame: awakened.has(p.key) ? `prop_${p.kind}_awakened` : `prop_${p.kind}`,
+      frame: propFrame(atlas, p.kind, scene.variants?.get(p.key) ?? (awakened.has(p.key) ? 'awakened' : null)),
       x: p.x * TILE,
       y: p.y * TILE,
     })),
@@ -125,6 +129,9 @@ const PROP_LIGHTS: Record<string, [number, number, number, number][]> = {
     [83, 102, 38, 0.75],
   ],
   basin_awakened: [[16, 14, 40, 0.8]],
+  // в сарае: лампа на табурете и лунный свет из двери
+  lamp: [[16, 10, 70, 1]],
+  door_exit: [[16, 20, 34, 0.45]],
 }
 
 function propLights(map: GardenMap, awakened: ReadonlySet<string>): Light[] {
@@ -254,6 +261,12 @@ function drawCharacter(ctx: CanvasRenderingContext2D, c: CharacterSprite) {
   ctx.scale(-1, 1)
   ctx.drawImage(c.image, 0, 0)
   ctx.restore()
+}
+
+/** Кадр постройки с учётом её состояния; если особого кадра нет — обычный. */
+function propFrame(atlas: Atlas, kind: string, variant: string | null): string {
+  const special = variant && `prop_${kind}_${variant}`
+  return special && atlas.frames[special] ? special : `prop_${kind}`
 }
 
 function drawFrame(ctx: CanvasRenderingContext2D, atlas: Atlas, name: string, x: number, y: number) {

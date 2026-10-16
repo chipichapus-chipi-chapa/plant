@@ -64,3 +64,21 @@
 .count {
   color: var(--c-bark);
 }
+
+/* Письмо: бумажные абзацы с отступом, как от руки */
+.letter {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 34em;
+  font-size: var(--text-m);
+  line-height: 1.5;
+}
+
+.letter p {
+  margin: 0;
+}
+
+.letter p:last-child {
+  text-align: right;
+  font-style: italic;
+}

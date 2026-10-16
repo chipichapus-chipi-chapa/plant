@@ -31,7 +31,7 @@ type Props = {
   standing: Cell[]
   atlas: Atlas
   /** Кадры игрока по направлениям и фазам шага */
-  player: { frames: CharacterFrames; start: Cell }
+  player: { frames: CharacterFrames; start: Cell; facing?: Facing }
   onSelect: (cell: Cell | null) => void
   /** Персонаж перешёл в другую клетку или повернулся к другой клетке */
   onPlayerMove: (at: Cell, facing: Cell) => void
@@ -92,7 +92,7 @@ export function GardenCanvas(props: Props) {
 
   // Всё, что читает игровой цикл, лежит в ref: цикл не перезапускается на каждый рендер React
   const latest = useRef(props)
-  const walkerRef = useRef<Walker>(walkerAt(player.start))
+  const walkerRef = useRef<Walker>(walkerAt(player.start, player.facing))
   const keysRef = useRef(new Set<string>())
   const stickRef = useRef({ dx: 0, dy: 0 })
   const dirtyRef = useRef(true)

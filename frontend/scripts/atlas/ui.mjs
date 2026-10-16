@@ -39,6 +39,38 @@ function sparkle() {
   return s
 }
 
+/** Символы на колёсиках замка 12×12: капля, солнце, луна, лист. */
+function symbol(kind) {
+  const s = new Sprite(12, 12)
+  if (kind === 'drop') {
+    for (let y = 1; y < 11; y++) {
+      const half = y < 5 ? (y - 1) * 0.6 : 3.5 - Math.max(0, y - 8) * 0.9
+      for (let x = Math.round(6 - half); x <= Math.round(5 + half); x++) s.px(x, y, x < 5 ? R.dew[4] : R.dew[2])
+    }
+    s.px(4, 6, P.white)
+  } else if (kind === 'sun') {
+    s.shadedEllipse(6, 6, 3, 3, R.lamp.slice(2))
+    for (const [x, y] of [[6, 0], [6, 11], [0, 6], [11, 6], [2, 2], [10, 2], [2, 10], [10, 10]]) s.px(x, y, R.lamp[3])
+  } else if (kind === 'moon') {
+    s.shadedEllipse(6, 6, 4.5, 4.5, R.bone.slice(1))
+    for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) if ((x - 8.5) ** 2 + (y - 4.5) ** 2 < 14) s.clear(x, y)
+  } else {
+    for (let y = 2; y < 10; y++) {
+      const half = 3.5 - Math.abs(y - 5.5) * 0.8
+      for (let x = Math.round(6 - half); x <= Math.round(6 + half); x++) s.px(x + Math.round((y - 6) * -0.3), y, x < 6 ? R.leaf[5] : R.leaf[4])
+    }
+    s.line(4, 10, 8, 3, R.leaf[2])
+  }
+  s.outline(INK)
+  return s
+}
+
 export function uiFrames() {
-  return { fx_bubble: bang(), fx_interact: bang(), fx_arrow: questArrow(), fx_sparkle: sparkle() }
+  return {
+    fx_bubble: bang(),
+    fx_interact: bang(),
+    fx_arrow: questArrow(),
+    fx_sparkle: sparkle(),
+    ...Object.fromEntries(['drop', 'sun', 'moon', 'leaf'].map((k) => [`sym_${k}`, symbol(k)])),
+  }
 }

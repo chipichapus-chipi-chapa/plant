@@ -1,5 +1,5 @@
 import { apiFetch } from './client'
-import type { CastResult, Catalog, CompletionResult, DayCompletionResult, FinishDialogueResult, HabitHistory, GameState, GardenObject, Habit, HabitInput, PurchaseResult, SearchResult } from './types'
+import type { AttemptResult, CastResult, Catalog, CompletionResult, DayCompletionResult, FinishDialogueResult, HabitHistory, GameState, GardenObject, Habit, HabitInput, PurchaseResult, SearchResult, WeedResult } from './types'
 
 export const fetchGameState = () => apiFetch<GameState>('/api/state')
 export const fetchCatalog = () => apiFetch<Catalog>('/api/catalog')
@@ -25,6 +25,14 @@ export const purchaseItem = (itemKey: string, quantity: number, idempotencyKey: 
 
 export const plantSeed = (x: number, y: number, seedItemKey: string) =>
   apiFetch<GardenObject>('/api/garden/plantings', { method: 'POST', body: JSON.stringify({ x, y, seedItemKey }) })
+
+/** Прополоть заросшую грядку (нужны лопата и грабли в сумке) */
+export const weedBed = (x: number, y: number) =>
+  apiFetch<WeedResult>('/api/garden/weedings', { method: 'POST', body: JSON.stringify({ x, y }) })
+
+/** Попробовать открыть замок: неверная комбинация ничего не стоит */
+export const attemptPuzzle = (puzzleKey: string, answer: string[]) =>
+  apiFetch<AttemptResult>(`/api/puzzles/${puzzleKey}/attempts`, { method: 'POST', body: JSON.stringify({ answer }) })
 
 export const castRecipe = (recipeKey: string) =>
   apiFetch<CastResult>(`/api/magic/recipes/${recipeKey}/cast`, { method: 'POST' })

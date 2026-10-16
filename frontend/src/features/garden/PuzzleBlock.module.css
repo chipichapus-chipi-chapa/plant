@@ -1,0 +1,52 @@
+.puzzle {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.prompt,
+.note {
+  margin: 0;
+}
+
+.note {
+  color: var(--c-bark);
+}
+
+/* Колёсики замка: символ между стрелками, как на кодовом замке */
+.dials {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.dial {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  background: var(--c-parchment-shade);
+  box-shadow: 0 0 0 var(--px) var(--c-ink);
+}
+
+.turn {
+  padding: 0 var(--space-2);
+  border: 0;
+  background: none;
+  color: var(--c-bark);
+  font: inherit;
+  cursor: pointer;
+}
+
+.turn:hover,
+.turn:focus-visible {
+  color: var(--c-ink);
+}
+
+.symbol {
+  width: 36px;
+  height: 36px;
+  image-rendering: pixelated;
+}
+
+.name {
+  font-size: 13px;
+}

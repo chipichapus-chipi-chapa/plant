@@ -1,6 +1,6 @@
 import type { Catalog, GameState } from '../../api/types'
 import { CrystalIcon } from '../../ui/icons/CrystalIcon'
-import { SeedPacketIcon } from '../../ui/icons/SeedPacketIcon'
+import { ItemIcon } from '../../ui/icons/ItemIcon'
 import styles from './InventoryPanel.module.css'
 
 type Props = {
@@ -19,7 +19,7 @@ export function InventoryPanel({ inventory, catalog }: Props) {
     return item ? [{ crystal, item, quantity: quantities.get(item.key) ?? 0 }] : []
   })
   const things = catalog.items
-    .filter((item) => (item.kind === 'SEED' || item.kind === 'DECOR') && (quantities.get(item.key) ?? 0) > 0)
+    .filter((item) => (item.kind === 'SEED' || item.kind === 'DECOR' || item.kind === 'TOOL') && (quantities.get(item.key) ?? 0) > 0)
     .map((item) => ({ item, quantity: quantities.get(item.key)! }))
 
   return (
@@ -46,7 +46,7 @@ export function InventoryPanel({ inventory, catalog }: Props) {
         <ul className={styles.list}>
           {things.map(({ item, quantity }) => (
             <li key={item.key} className={styles.row} title={item.description}>
-              <SeedPacketIcon />
+              <ItemIcon itemKey={item.key} kind={item.kind} />
               <span className={styles.name}>{item.name}</span>
               <span className={styles.qty}>×{quantity}</span>
             </li>
