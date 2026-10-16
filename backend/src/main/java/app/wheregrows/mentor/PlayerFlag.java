@@ -26,7 +26,7 @@ public class PlayerFlag {
     protected PlayerFlag() {
     }
 
-    PlayerFlag(long playerId, String flag, Instant setAt) {
+    public PlayerFlag(long playerId, String flag, Instant setAt) {
         this.id = new Id(playerId, flag);
         this.setAt = setAt;
     }

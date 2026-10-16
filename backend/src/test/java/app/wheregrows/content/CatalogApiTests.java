@@ -49,7 +49,7 @@ class CatalogApiTests {
                 .andExpect(jsonPath("$.locations[?(@.key == 'shed')].props[?(@.key == 'shed-exit')].door.map").value("home"))
                 .andExpect(jsonPath("$.locations[?(@.key == 'shed')].props[?(@.key == 'letter')].read").isNotEmpty())
                 // на тропе живут мыши со своими разговорами
-                .andExpect(jsonPath("$.locations[?(@.key == 'east')].npcs[*].key").value(org.hamcrest.Matchers.containsInAnyOrder("krupka", "shorokh", "vetosh")))
+                .andExpect(jsonPath("$.locations[?(@.key == 'east')].npcs[*].key").value(org.hamcrest.Matchers.containsInAnyOrder("krupka", "shorokh", "vetosh", "khmur")))
                 .andExpect(jsonPath("$.recipes[?(@.key == 'repair_wheelbarrow')].actionLabel").value("Починить"));
     }
 }

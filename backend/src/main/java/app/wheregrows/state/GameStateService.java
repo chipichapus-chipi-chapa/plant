@@ -14,6 +14,7 @@ import app.wheregrows.player.PlayerProfile;
 import app.wheregrows.player.PlayerProfileRepository;
 import app.wheregrows.player.ProfileService;
 import app.wheregrows.puzzle.PuzzleService;
+import app.wheregrows.errand.ErrandService;
 
 @Service
 class GameStateService {
@@ -28,12 +29,14 @@ class GameStateService {
     private final ProfileService profileService;
     private final MentorService mentor;
     private final PuzzleService puzzles;
+    private final ErrandService errands;
 
     GameStateService(PlayerProfileRepository profiles, InventoryItemRepository inventory, HabitService habits,
                      GameCalendar calendar, GardenService garden, MagicService magic,
                      ExplorationService exploration, ProfileService profileService, MentorService mentor,
-                     PuzzleService puzzles) {
+                     PuzzleService puzzles, ErrandService errands) {
         this.puzzles = puzzles;
+        this.errands = errands;
         this.mentor = mentor;
         this.profileService = profileService;
         this.magic = magic;
@@ -68,6 +71,7 @@ class GameStateService {
                                 a.getFoundWhere()))
                         .toList(),
                 mentor.progress(playerId),
-                puzzles.solvedPuzzles(playerId));
+                puzzles.solvedPuzzles(playerId),
+                errands.states(playerId));
     }
 }

@@ -1,5 +1,5 @@
 import { apiFetch } from './client'
-import type { AttemptResult, CastResult, Catalog, CompletionResult, DayCompletionResult, FinishDialogueResult, HabitHistory, GameState, GardenObject, Habit, HabitInput, PurchaseResult, SearchResult, WeedResult } from './types'
+import type { AttemptResult, CastResult, ErrandResult, Catalog, CompletionResult, DayCompletionResult, FinishDialogueResult, HabitHistory, GameState, GardenObject, Habit, HabitInput, PurchaseResult, SearchResult, WeedResult } from './types'
 
 export const fetchGameState = () => apiFetch<GameState>('/api/state')
 export const fetchCatalog = () => apiFetch<Catalog>('/api/catalog')
@@ -29,6 +29,12 @@ export const plantSeed = (x: number, y: number, seedItemKey: string) =>
 /** Прополоть заросшую грядку (нужны лопата и грабли в сумке) */
 export const weedBed = (x: number, y: number) =>
   apiFetch<WeedResult>('/api/garden/weedings', { method: 'POST', body: JSON.stringify({ x, y }) })
+
+/** Житель попросил — поручение взято */
+export const acceptErrand = (key: string) => apiFetch<unknown>(`/api/errands/${key}/accept`, { method: 'POST' })
+
+/** Выполнить поручение: отдать вещи или показать находку */
+export const completeErrand = (key: string) => apiFetch<ErrandResult>(`/api/errands/${key}/complete`, { method: 'POST' })
 
 /** Попробовать открыть замок: неверная комбинация ничего не стоит */
 export const attemptPuzzle = (puzzleKey: string, answer: string[]) =>

@@ -59,7 +59,9 @@ INSERT INTO item_def (key, kind, name, description, price, species_key, crystal_
     ('garden_tools', 'TOOL', 'Лопата и грабли',
         'Сняты с забора. Ручки отполированы чьими-то ладонями — сорнякам теперь не поздоровится.', NULL, NULL, NULL),
     ('repair_kit',   'TOOL', 'Ремонтный набор',
-        'Гаечный ключ, молоток и пара новых шплинтов. Пахнет маслом и чужой аккуратностью.', NULL, NULL, NULL)
+        'Гаечный ключ, молоток и пара новых шплинтов. Пахнет маслом и чужой аккуратностью.', NULL, NULL, NULL),
+    ('old_lantern',  'TOOL', 'Старый фонарь',
+        'Фонарь прежнего садовника. Стекло в трещинках, но фитиль цел — с ним не страшно и в чаще.', NULL, NULL, NULL)
 ON CONFLICT (key) DO UPDATE SET
     kind = EXCLUDED.kind,
     name = EXCLUDED.name,

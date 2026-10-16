@@ -45,7 +45,27 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
      * но без наград и флагов: первый разговор — знакомство (talks[0]), дальше — случайный из остальных.
      */
     public record Npc(String key, String name, String kind, int x, int y, String description, List<String> talks,
-                      Map<String, app.wheregrows.mentor.MentorContent.Dialogue> dialogues) {
+                      Map<String, app.wheregrows.mentor.MentorContent.Dialogue> dialogues, Errand errand) {
+    }
+
+    /**
+     * Поручение жителя. GIVE — отдать вещи (give), SHOW — показать находку (spot обыскан).
+     * offer — разговор-просьба, waiting — пока не сделано, thanks — благодарность; reward выдаётся один раз.
+     * leaves — житель уходит с дороги, когда поручение выполнено (сторож на тропе).
+     */
+    public record Errand(String key, Kind kind, String goal, List<app.wheregrows.economy.ItemGrant> give, String spot,
+                         List<app.wheregrows.economy.ItemGrant> reward, String offer, String waiting, String thanks,
+                         boolean leaves) {
+
+        public enum Kind { GIVE, SHOW }
+
+        public List<app.wheregrows.economy.ItemGrant> giveOrEmpty() {
+            return give == null ? List.of() : give;
+        }
+
+        public List<app.wheregrows.economy.ItemGrant> rewardOrEmpty() {
+            return reward == null ? List.of() : reward;
+        }
     }
 
     private static final java.util.Set<String> FACINGS = java.util.Set.of("up", "down", "left", "right");
@@ -85,6 +105,15 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
             require(contains(npc.x(), npc.y()) && propAt(npc.x(), npc.y()) == null, "житель " + npc.key() + " стоит вне карты или в постройке");
             require(npc.talks() != null && !npc.talks().isEmpty(), "житель " + npc.key() + " молчит: нет talks");
             npc.talks().forEach(t -> require(npc.dialogues().containsKey(t), "у жителя " + npc.key() + " нет разговора " + t));
+            Errand errand = npc.errand();
+            if (errand != null) {
+                for (String d : java.util.Arrays.asList(errand.offer(), errand.waiting(), errand.thanks())) {
+                    require(d != null && npc.dialogues().containsKey(d), "у поручения " + errand.key() + " нет разговора " + d);
+                }
+                require(errand.goal() != null, "у поручения " + errand.key() + " нет текста задания");
+                require(errand.kind() != Errand.Kind.GIVE || !errand.giveOrEmpty().isEmpty(), "поручение " + errand.key() + ": нечего отдавать");
+                require(errand.kind() != Errand.Kind.SHOW || errand.spot() != null, "поручение " + errand.key() + ": нечего показывать");
+            }
             npc.dialogues().forEach((key, dialogue) -> {
                 require(dialogue.nodes().containsKey(dialogue.start()), npc.key() + "." + key + ": нет стартовой реплики");
                 dialogue.nodes().forEach((id, node) -> {

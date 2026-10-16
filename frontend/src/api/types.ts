@@ -53,6 +53,25 @@ export type Npc = {
   description: string
   talks: string[]
   dialogues: Record<string, Dialogue>
+  /** Поручение жителя, если есть */
+  errand?: Errand | null
+}
+
+/**
+ * Поручение жителя: GIVE — отдать вещи, SHOW — показать находку (spot обыскан).
+ * offer — просьба, waiting — пока не сделано, thanks — благодарность. leaves — житель уходит с дороги.
+ */
+export type Errand = {
+  key: string
+  kind: 'GIVE' | 'SHOW'
+  goal: string
+  give: ItemGrant[] | null
+  spot: string | null
+  reward: ItemGrant[] | null
+  offer: string
+  waiting: string
+  thanks: string
+  leaves: boolean
 }
 
 /** Карта локации (сад, сарай изнутри): строки символов, легенда символов и постройки поверх тайлов */
@@ -177,6 +196,8 @@ export type GameState = {
   garden: { objects: GardenObject[]; weeded: { x: number; y: number }[] }
   /** Разгаданные загадки */
   solvedPuzzles: string[]
+  /** Поручения жителей: попросили ли и сделано ли */
+  errands: { key: string; offered: boolean; done: boolean }[]
   /** Пробуждённые объекты мира; нет в списке — объект спит */
   worldObjects: { objectKey: string; state: 'AWAKENED' }[]
   /** Обысканные места находок */
@@ -258,3 +279,6 @@ export type WeedResult = { x: number; y: number; remaining: number }
 
 /** Итог попытки открыть замок: solved — открыт (сейчас или раньше), reward — что получено этой попыткой */
 export type AttemptResult = { puzzleKey: string; solved: boolean; text: string; reward: ItemGrant[] }
+
+/** Итог поручения: что отдано и что получено */
+export type ErrandResult = { key: string; given: ItemGrant[]; reward: ItemGrant[] }
