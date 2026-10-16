@@ -12,7 +12,18 @@ import app.wheregrows.economy.ItemGrant;
  * если шаг использует уже известное условие ({@link Condition}).
  */
 public record MentorContent(Speaker speaker, String intro, List<String> idle, List<Step> tutorial,
-                            Map<String, Dialogue> dialogues, String meetGoal, String reportGoal, String offerGoal) {
+                            Map<String, Dialogue> dialogues, String meetGoal, String reportGoal, String offerGoal,
+                            Map<String, String> secrets) {
+
+    public MentorContent(Speaker speaker, String intro, List<String> idle, List<Step> tutorial,
+                         Map<String, Dialogue> dialogues, String meetGoal, String reportGoal, String offerGoal) {
+        this(speaker, intro, idle, tutorial, dialogues, meetGoal, reportGoal, offerGoal, Map.of());
+    }
+
+    /** Пасхалки: «слот:вариант» облика игрока (например, accessory:wizard_hat) → особый разговор. */
+    public Map<String, String> secretsOrEmpty() {
+        return secrets == null ? Map.of() : secrets;
+    }
 
     public record Speaker(String key, String name) {
     }
@@ -70,6 +81,7 @@ public record MentorContent(Speaker speaker, String intro, List<String> idle, Li
     void validate() {
         require(dialogues.containsKey(intro), "нет вступительного диалога " + intro);
         idle.forEach(key -> require(dialogues.containsKey(key), "нет диалога " + key));
+        secretsOrEmpty().values().forEach(key -> require(dialogues.containsKey(key), "нет секретного диалога " + key));
         require(meetGoal != null && reportGoal != null, "нет текстов заданий meetGoal / reportGoal");
         for (Step step : tutorial) {
             require(step.condition() != null, "у шага " + step.key() + " нет условия");
