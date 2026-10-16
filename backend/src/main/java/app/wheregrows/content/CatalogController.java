@@ -14,8 +14,9 @@ import app.wheregrows.magic.RecipeRepository;
 import app.wheregrows.mentor.MentorContent;
 import app.wheregrows.mentor.MentorContentLoader;
 import app.wheregrows.player.AppearanceSlotRepository;
+import app.wheregrows.puzzle.PuzzleRepository;
 
-/** Каталог одинаков для всех игроков: категории кристаллов, растения, предметы с ценами и карта сада. */
+/** Каталог одинаков для всех игроков: категории кристаллов, растения, предметы с ценами, карты локаций, загадки. */
 @RestController
 class CatalogController {
 
@@ -28,10 +29,13 @@ class CatalogController {
     private final DiscoverySpotRepository spots;
     private final AppearanceSlotRepository appearance;
     private final MentorContentLoader mentor;
+    private final PuzzleRepository puzzles;
 
     CatalogController(CrystalCategoryRepository crystals, PlantSpeciesRepository species, ItemDefinitionRepository items,
                       GardenMaps gardens, RecipeRepository recipes, ArtifactRepository artifacts,
-                      DiscoverySpotRepository spots, AppearanceSlotRepository appearance, MentorContentLoader mentor) {
+                      DiscoverySpotRepository spots, AppearanceSlotRepository appearance, MentorContentLoader mentor,
+                      PuzzleRepository puzzles) {
+        this.puzzles = puzzles;
         this.mentor = mentor;
         this.appearance = appearance;
         this.recipes = recipes;
@@ -57,9 +61,10 @@ class CatalogController {
                                 i.getDescription(), i.getPrice(), i.getSpeciesKey(), i.getCrystalCategory()))
                         .toList(),
                 gardens.home(),
+                gardens.all(),
                 recipes.findAllByOrderBySortOrderAsc().stream()
                         .map(r -> new CatalogResponse.Recipe(r.getKey(), r.getName(), r.getDescription(),
-                                r.getTargetObjectKey(), r.getResultText(),
+                                r.getTargetObjectKey(), r.getResultText(), r.getActionLabel(),
                                 r.getIngredients().stream()
                                         .map(i -> new CatalogResponse.Ingredient(i.itemKey(), i.quantity()))
                                         .toList()))
@@ -78,12 +83,27 @@ class CatalogController {
                                         .map(o -> new CatalogResponse.AppearanceOption(o.key(), o.name(), o.color()))
                                         .toList()))
                         .toList(),
-                mentor.content());
+                mentor.content(),
+                // ответ не раскрываем — только символы и число колёсиков
+                puzzles.findAll(Sort.by("key")).stream()
+                        .map(p -> new CatalogResponse.Puzzle(p.getKey(), p.getPropKey(), p.getPrompt(), p.getDials(),
+                                p.getSymbols().stream().map(s -> new CatalogResponse.PuzzleSymbol(s.key(), s.name())).toList()))
+                        .toList());
     }
 
+    /**
+     * @param garden    домашний сад (то же, что первая из locations; оставлен для простоты клиента)
+     * @param locations все локации: сад, сарай изнутри…
+     */
     record CatalogResponse(List<Crystal> crystals, List<Species> species, List<Item> items, GardenMap garden,
-                           List<Recipe> recipes, List<Artifact> artifacts, List<Spot> spots,
-                           List<AppearanceSlot> appearance, MentorContent mentor) {
+                           List<GardenMap> locations, List<Recipe> recipes, List<Artifact> artifacts, List<Spot> spots,
+                           List<AppearanceSlot> appearance, MentorContent mentor, List<Puzzle> puzzles) {
+
+        record Puzzle(String key, String propKey, String prompt, int dials, List<PuzzleSymbol> symbols) {
+        }
+
+        record PuzzleSymbol(String key, String name) {
+        }
 
         record AppearanceSlot(String key, String name, String kind, List<AppearanceOption> options) {
         }
@@ -99,7 +119,7 @@ class CatalogController {
         }
 
         record Recipe(String key, String name, String description, String targetObjectKey, String resultText,
-                      List<Ingredient> ingredients) {
+                      String actionLabel, List<Ingredient> ingredients) {
         }
 
         record Ingredient(String itemKey, int quantity) {

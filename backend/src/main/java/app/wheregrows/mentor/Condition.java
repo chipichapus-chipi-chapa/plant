@@ -9,5 +9,9 @@ public enum Condition {
     /** В саду что-то посажено. */
     PLANTED,
     /** Осмотрено место находки или пробуждён объект мира. */
-    WORLD_INTERACTION
+    WORLD_INTERACTION,
+    /** Сняты инструменты с забора. */
+    TOOLS_TAKEN,
+    /** Прополоты все заросшие грядки домашнего сада. */
+    BEDS_WEEDED
 }

@@ -72,6 +72,7 @@ class GardenApiTests {
     void cleanSlate() {
         playerId = currentPlayer.id();
         jdbc.update("DELETE FROM garden_object");
+        jdbc.update("DELETE FROM player_tile");
         jdbc.update("DELETE FROM inventory_item");
         clock.set(START);
     }
@@ -184,6 +185,38 @@ class GardenApiTests {
 
         assertThat(planted).isEqualTo(1);
         assertThat(quantity("seed_chamomile")).isEqualTo(4);
+    }
+
+    @Test
+    void weedingNeedsToolsAndTurnsOvergrownBedIntoSoil() throws Exception {
+        weed(2, 2)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("Голыми руками эти сорняки не взять. Лопата и грабли висят на заборе."));
+
+        give("garden_tools", 1);
+        weed(2, 2).andExpect(status().isCreated()).andExpect(jsonPath("$.remaining").value(11));
+        weed(2, 2).andExpect(status().isConflict());
+        assertThat(quantity("garden_tools")).isEqualTo(1); // инструменты не тратятся
+
+        // прополотая клетка — уже обычная грядка
+        give("seed_radish", 1);
+        plant(2, 2, "seed_radish").andExpect(status().isCreated());
+        mvc.perform(get("/api/state"))
+                .andExpect(jsonPath("$.garden.weeded", hasSize(1)))
+                .andExpect(jsonPath("$.garden.weeded[0].x").value(2));
+    }
+
+    @Test
+    void onlyOvergrownBedsCanBeWeeded() throws Exception {
+        give("garden_tools", 1);
+        weed(3, 5).andExpect(status().isBadRequest());  // обычная грядка
+        weed(2, 1).andExpect(status().isBadRequest());  // трава
+        weed(16, 2).andExpect(status().isBadRequest()); // за краем карты
+    }
+
+    private ResultActions weed(int x, int y) throws Exception {
+        return mvc.perform(post("/api/garden/weedings").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"x\":" + x + ",\"y\":" + y + "}"));
     }
 
     private ResultActions plant(int x, int y, String seed) throws Exception {

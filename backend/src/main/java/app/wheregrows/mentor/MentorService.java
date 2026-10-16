@@ -54,12 +54,15 @@ public class MentorService {
         for (MentorContent.Step step : content.tutorial()) {
             boolean done = conditions.met(playerId, step.condition());
             boolean acknowledged = set.contains("ack_" + step.key());
-            steps.add(new MentorProgress.StepState(step.key(), done, acknowledged));
+            boolean offered = step.offer() == null || set.contains("offered_" + step.key());
+            steps.add(new MentorProgress.StepState(step.key(), done, acknowledged, offered));
             if (next == null && !acknowledged) {
-                next = done ? step.done() : step.hint();
+                // поручение сначала надо получить, даже если дело уже сделано заранее
+                next = !offered ? step.offer() : done ? step.done() : step.hint();
             }
         }
-        boolean news = next != null && (next.equals(content.intro()) || content.doneDialogues().contains(next));
+        boolean news = next != null && (next.equals(content.intro()) || content.doneDialogues().contains(next)
+                || content.offerDialogues().contains(next));
         return new MentorProgress(next, news, steps);
     }
 

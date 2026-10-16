@@ -37,4 +37,15 @@ class CatalogApiTests {
                 .andExpect(jsonPath("$.items[?(@.key == 'seed_radish')].price").value(2))
                 .andExpect(jsonPath("$.items[?(@.key == 'seed_radish')].speciesKey").value("radish"));
     }
+
+    @Test
+    void catalogListsLocationsConnectedByDoors() throws Exception {
+        mvc.perform(get("/api/catalog"))
+                .andExpect(jsonPath("$.locations", hasSize(2)))
+                .andExpect(jsonPath("$.locations[0].key").value("home"))
+                .andExpect(jsonPath("$.locations[0].props[?(@.key == 'shed')].door.map").value("shed"))
+                .andExpect(jsonPath("$.locations[1].props[?(@.key == 'shed-exit')].door.map").value("home"))
+                .andExpect(jsonPath("$.locations[1].props[?(@.key == 'letter')].read").isNotEmpty())
+                .andExpect(jsonPath("$.recipes[?(@.key == 'repair_wheelbarrow')].actionLabel").value("Починить"));
+    }
 }

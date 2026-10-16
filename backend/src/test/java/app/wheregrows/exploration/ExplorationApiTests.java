@@ -161,7 +161,7 @@ class ExplorationApiTests {
         mvc.perform(get("/api/catalog"))
                 .andExpect(jsonPath("$.artifacts", hasSize(3)))
                 .andExpect(jsonPath("$.artifacts[0].acquisitionHint").value("Ищите там, куда падает свет пробуждённой чаши."))
-                .andExpect(jsonPath("$.spots", hasSize(2)))
+                .andExpect(jsonPath("$.spots", hasSize(3)))
                 .andExpect(jsonPath("$.spots[0].reward").doesNotExist());
     }
 
