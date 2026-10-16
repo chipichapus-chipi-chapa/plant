@@ -49,6 +49,8 @@ export type Scene = {
   effects?: WeedEffect[]
   /** Насколько горят лампы (0..1): в помещении сначала темно, потом свет разгорается */
   lightLevel?: number
+  /** Насколько густые сумерки (1 — как задумано, меньше — светлее; из настроек) */
+  dim?: number
   /** Ступни идущего игрока: вокруг него ореол, снимающий сумерки */
   aura?: { x: number; y: number } | null
   /** Время в мс — для покачивания «!» над целью задания */
@@ -107,6 +109,7 @@ export function drawGarden(
     characters.flatMap((c) => (c.light ? [{ ...c.light, x: c.px + c.light.x, y: c.py + c.light.y }] : [])),
     scene.aura && { x: scene.aura.x, y: scene.aura.y + AURA.lift },
     scene.lightLevel ?? 1,
+    scene.dim ?? 1,
   )
 
   // Всё, что должно читаться в темноте, — после света: мерцание тайников и знаки «!»
@@ -168,11 +171,15 @@ const PROP_LIGHTS: Record<string, [number, number, number, number, Glow?][]> = {
     [137, 58, 44, 0.8],
     [112, 84, 44, 0.6],
   ],
-  // исполинские лилии и цветущая вишня светятся изнутри светло-розовым
-  giant_lily: [
+  // исполинские лилии (когда проснулись) и цветущая вишня светятся изнутри светло-розовым
+  // пробуждённые — уснувшие лилии не светятся
+  giant_lily_awakened: [
     [30, 24, 70, 1, PETAL_GLOW],
     [49, 38, 40, 0.7, PETAL_GLOW],
   ],
+  // зажжённый фонарь поместья и фонарик на причале
+  lamp_post_awakened: [[16, 6, 60, 0.9]],
+  dock: [[90, 8, 40, 0.6]],
   blossom_tree: [[32, 30, 58, 0.7, PETAL_GLOW]],
 }
 
@@ -226,6 +233,7 @@ function drawLighting(
   still: Light[],
   aura: { x: number; y: number } | null | undefined,
   level: number,
+  dim: number,
 ) {
   const w = map.width * TILE
   const h = map.height * TILE
@@ -239,7 +247,7 @@ function drawLighting(
   parts.forEach(([dark, alpha], i) => {
     if (alpha <= 0) return
     const source = aura ? cutAura(dark, aura, layerWork(i, w, h)) : dark
-    ctx.globalAlpha = alpha
+    ctx.globalAlpha = alpha * dim
     ctx.drawImage(source, 0, 0)
   })
   ctx.globalAlpha = 1

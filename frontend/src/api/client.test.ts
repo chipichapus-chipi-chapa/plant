@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError, apiFetch } from './client'
 
 const respond = (body: unknown, status = 200) => async () =>
@@ -31,5 +31,31 @@ describe('apiFetch', () => {
       throw new TypeError('Failed to fetch')
     }
     await expect(apiFetch('/api/x', undefined, offline)).rejects.toMatchObject({ kind: 'network', status: null })
+  })
+
+  describe('в Telegram', () => {
+    afterEach(() => vi.unstubAllGlobals())
+
+    it('прикладывает подписанную initData и часовой пояс', async () => {
+      vi.stubGlobal('window', { Telegram: { WebApp: { initData: 'user=1&hash=ab' } } })
+      let headers: Record<string, string> = {}
+      const capture = async (_: RequestInfo | URL, init?: RequestInit) => {
+        headers = init?.headers as Record<string, string>
+        return new Response('{}', { status: 200 })
+      }
+      await apiFetch('/api/x', undefined, capture)
+      expect(headers['X-Telegram-Init-Data']).toBe('user=1&hash=ab')
+      expect(headers['X-Timezone']).toBeTruthy()
+    })
+
+    it('в обычном браузере ничего не добавляет', async () => {
+      let headers: Record<string, string> = {}
+      const capture = async (_: RequestInfo | URL, init?: RequestInit) => {
+        headers = init?.headers as Record<string, string>
+        return new Response('{}', { status: 200 })
+      }
+      await apiFetch('/api/x', undefined, capture)
+      expect(headers['X-Telegram-Init-Data']).toBeUndefined()
+    })
   })
 })

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { GardenMap, GardenObject } from '../api/types'
-import { cellAtPoint, describeCell, fitScale, minutesUntilNextStage, nextGrowthRefresh, objectAt, propAt, tileFrame, variant } from './layout'
+import { cameraAt, cellAtPoint, containScale, describeCell, fitScale, minutesUntilNextStage, nextGrowthRefresh, objectAt, propAt, tileFrame, variant } from './layout'
 
 const t = (type: string, plantable = false) => ({ type, name: type, description: '', plantable })
 
@@ -47,10 +47,10 @@ describe('геометрия', () => {
     expect(cellAtPoint(63.9, 64, 2)).toEqual({ x: 0, y: 1 })
   })
 
-  it('заполняет доступную ширину, но не больше ×3', () => {
+  it('заполняет доступную ширину, но не больше ×4', () => {
     expect(fitScale(128, map)).toBe(1) // карта 128 px шириной
     expect(fitScale(224, map)).toBe(1.75)
-    expect(fitScale(5000, map)).toBe(3)
+    expect(fitScale(5000, map)).toBe(4)
   })
 
   it('учитывает высоту, чтобы под садом оставалось место для кнопок', () => {
@@ -103,5 +103,26 @@ describe('рост', () => {
   it('планирует обновление к ближайшей смене стадии', () => {
     expect(nextGrowthRefresh([plant(1, '2026-10-15T10:05:00Z'), plant(2, '2026-10-15T10:02:00Z')], now)).toBe(120_500)
     expect(nextGrowthRefresh([plant(1, null)], now)).toBeNull()
+  })
+})
+
+describe('камера на весь экран', () => {
+  const big = { width: 16, height: 10 } as never // 512×320 px
+
+  it('локация целиком входит в окно: берём меньший из масштабов', () => {
+    expect(containScale(1024, 400, big)).toBe(1.25) // по высоте 400/320, ширина 640 ≤ 1024
+    expect(containScale(512, 640, big)).toBe(1) // по ширине 512/512
+  })
+
+  it('карта меньше окна стоит по центру, поля поровну с двух сторон', () => {
+    expect(cameraAt({ x: 10, y: 10 }, { width: 800, height: 320 }, big)).toEqual({ x: -144, y: 0 })
+    expect(cameraAt({ x: 10, y: 10 }, { width: 512, height: 400 }, big)).toEqual({ x: 0, y: -40 })
+  })
+
+  it('если карта больше окна — герой в центре, но камера не выходит за края', () => {
+    const view = { width: 256, height: 320 }
+    expect(cameraAt({ x: 256, y: 160 }, view, big)).toEqual({ x: 128, y: 0 })
+    expect(cameraAt({ x: 10, y: 10 }, view, big)).toEqual({ x: 0, y: 0 })
+    expect(cameraAt({ x: 500, y: 300 }, view, big)).toEqual({ x: 256, y: 0 })
   })
 })

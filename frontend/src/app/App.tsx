@@ -7,20 +7,25 @@ import { GardenView } from '../features/garden/GardenView'
 import { HabitTracker } from '../features/habits/HabitTracker'
 import { InventoryPanel } from '../features/inventory/InventoryPanel'
 import { ToastProvider } from '../features/notifications/Toasts'
-import { QuestTracker } from '../features/mentor/QuestTracker'
+import { QuestMenu } from '../features/mentor/QuestMenu'
+import { SettingsPanel } from '../features/settings/SettingsPanel'
 import { ShopPanel } from '../features/shop/ShopPanel'
 import { currentObjective } from '../game/guidance'
 import { Button } from '../ui/Button'
 import { HudButton } from '../ui/HudButton'
-import { BagIcon, CollectionIcon, ShopIcon, TrackerIcon } from '../ui/icons/HudIcons'
+import { BagIcon, CollectionIcon, SettingsIcon, ShopIcon, TrackerIcon } from '../ui/icons/HudIcons'
 import { LifeSeedIcon } from '../ui/icons/LifeSeedIcon'
 import { SunSparkIcon } from '../ui/icons/SunSparkIcon'
 import { Panel } from '../ui/Panel'
 import { Window } from '../ui/Window'
 import styles from './App.module.css'
+import { RotateHint } from './RotateHint'
+import { enterFullscreen } from './settings'
+import { SettingsProvider } from './SettingsProvider'
+import { Splash } from './Splash'
 import { useGame } from './useGame'
 
-type OpenWindow = 'habits' | 'shop' | 'bag' | 'collection' | 'character' | null
+type OpenWindow = 'habits' | 'shop' | 'bag' | 'collection' | 'character' | 'settings' | null
 
 /**
  * Главный экран — игровое поле во весь экран: сад в центре, всё остальное лежит поверх него, как в игре.
@@ -28,7 +33,23 @@ type OpenWindow = 'habits' | 'shop' | 'bag' | 'collection' | 'character' | null
  * тоже в поле. Привычки, лавка и сумка открываются окнами поверх сада.
  */
 export function App() {
+  return (
+    <SettingsProvider>
+      <Game />
+    </SettingsProvider>
+  )
+}
+
+const coarsePointer = () => window.matchMedia?.('(pointer: coarse)').matches ?? false
+
+function Game() {
   const { game, reload, refresh } = useGame()
+  // заставка при запуске; на телефоне «начать» заодно включает полный экран и горизонталь
+  const [started, setStarted] = useState(false)
+  const start = useCallback(() => {
+    setStarted(true)
+    if (coarsePointer()) void enterFullscreen()
+  }, [])
   const [open, setOpen] = useState<OpenWindow>(null)
   const close = useCallback(() => setOpen(null), [])
   const objective = game.status === 'ready' ? currentObjective(game.state, game.catalog) : null
@@ -48,32 +69,34 @@ export function App() {
             catalog={game.catalog}
             onChanged={refresh}
             onEditCharacter={() => setOpen('character')}
-            inputEnabled={open === null && game.state.player.onboarded}
+            inputEnabled={started && open === null && game.state.player.onboarded}
             objective={objective}
             hud={{
-              top:
-                objective && game.state.player.onboarded ? (
-                  <QuestTracker objective={objective} speaker={game.catalog.mentor.speaker.name} onOpenHud={openHud} />
-                ) : null,
+              top: game.state.player.onboarded ? (
+                <QuestMenu objective={objective} state={game.state} catalog={game.catalog} onOpenHud={openHud} />
+              ) : null,
               corner: <PlayerBadge state={game.state} />,
               toolbar: (
                 <nav className={styles.toolbar} aria-label="Действия">
                   <HudButton
+                    compact
                     icon={<TrackerIcon />}
                     label="Привычки"
                     onClick={() => setOpen('habits')}
                     badge={habitsBadge(game.state)}
                     highlight={isTarget('habits')}
                   />
-                  <HudButton icon={<ShopIcon />} label="Лавка" onClick={() => setOpen('shop')} highlight={isTarget('shop')} />
-                  <HudButton icon={<BagIcon />} label="Сумка" onClick={() => setOpen('bag')} highlight={isTarget('bag')} />
+                  <HudButton compact icon={<ShopIcon />} label="Лавка" onClick={() => setOpen('shop')} highlight={isTarget('shop')} />
+                  <HudButton compact icon={<BagIcon />} label="Сумка" onClick={() => setOpen('bag')} highlight={isTarget('bag')} />
                   <HudButton
+                    compact
                     icon={<CollectionIcon />}
                     label="Коллекция"
                     onClick={() => setOpen('collection')}
                     highlight={isTarget('collection')}
                     badge={game.state.artifacts.length > 0 ? String(game.state.artifacts.length) : undefined}
                   />
+                  <HudButton compact icon={<SettingsIcon />} label="Настройки" onClick={() => setOpen('settings')} />
                 </nav>
               ),
             }}
@@ -100,13 +123,22 @@ export function App() {
           </Window>
         )}
 
+        {open === 'settings' && (
+          <Window title="Настройки" onClose={close}>
+            <SettingsPanel />
+          </Window>
+        )}
+
         {game.status === 'ready' && open === 'collection' && (
           <Window title="Коллекция находок" onClose={close}>
             <CollectionPanel state={game.state} catalog={game.catalog} />
           </Window>
         )}
 
-        {game.status === 'ready' && !game.state.player.onboarded && (
+        {!started && game.status !== 'error' && <Splash ready={game.status === 'ready'} onStart={start} />}
+        <RotateHint />
+
+        {game.status === 'ready' && started && !game.state.player.onboarded && (
           <Window title="Новый садовник" onClose={close} dismissible={false}>
             <CharacterEditor state={game.state} catalog={game.catalog} firstTime onDone={refresh} onCancel={close} />
           </Window>
@@ -165,7 +197,7 @@ function LoadError({ error, onRetry }: { error: ApiError; onRetry: () => void })
       <Panel title="Калитка не открывается" className={styles.errorPanel}>
         <p className={styles.empty}>
           {error.kind === 'network'
-            ? 'Сервер сада не отвечает. Если вы разрабатываете игру — проверьте, что backend запущен.'
+            ? 'Сервер сада не отвечает. Если игра давно не открывалась, он просыпается около минуты — попробуйте ещё раз.'
             : `Сервер ответил: «${error.detail ?? error.title}».`}
         </p>
         <Button onClick={onRetry}>Попробовать ещё раз</Button>

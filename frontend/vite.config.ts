@@ -7,6 +7,8 @@ import { defineConfig } from 'vite'
 const backend = 'http://127.0.0.1:8081'
 
 export default defineConfig({
+  // На GitHub Pages сайт живёт в подпапке /<репозиторий>/, путь передаёт сборка в Actions
+  base: process.env.VITE_BASE ?? '/',
   plugins: [react()],
   server: {
     port: 5173,

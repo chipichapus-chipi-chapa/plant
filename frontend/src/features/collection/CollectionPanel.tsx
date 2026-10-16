@@ -15,13 +15,22 @@ export function CollectionPanel({ state, catalog }: Props) {
   const colors = new Map(catalog.crystals.map((c) => [c.key, c]))
   const placeName = (spotKey: string) => {
     const propKey = catalog.spots.find((s) => s.key === spotKey)?.propKey
-    return catalog.garden.props.find((p) => p.key === propKey)?.name ?? 'где-то в саду'
+    // находки бывают во всех локациях: в сарае, на тропе, в поместье, у озера
+    return catalog.locations.flatMap((l) => l.props).find((p) => p.key === propKey)?.name ?? 'где-то в саду'
   }
+  // секретки — тайники без мерцания: сколько уже найдено, без подсказок где
+  const secrets = catalog.spots.filter((s) => s.hidden)
+  const secretsFound = secrets.filter((s) => state.searchedSpots.includes(s.key)).length
 
   return (
     <div className={styles.collection}>
       <p className={styles.counter}>
         Найдено: {found.size} из {catalog.artifacts.length}
+        {secrets.length > 0 && (
+          <>
+            {' · '}Секреты: {secretsFound} из {secrets.length}
+          </>
+        )}
       </p>
       <ul className={styles.list}>
         {catalog.artifacts.map((artifact) => {

@@ -6,7 +6,7 @@ import { frameImage, loadAtlas, type Atlas } from '../../game/atlas'
 import { composeCharacterFrames } from '../../game/character'
 import { WEED_MS, type WeedEffect } from '../../game/effects'
 import { GardenCanvas } from '../../game/GardenCanvas'
-import { doorOpen, isClickable, isNear, markerPoint, npcAt, promptCell, promptPoint, sameThing, WEEDING_TOOLS, type Objective } from '../../game/guidance'
+import { doorOpen, errandReady, isClickable, isNear, markerPoint, npcAt, promptCell, promptPoint, sameThing, WEEDING_TOOLS, type Objective } from '../../game/guidance'
 import type { Facing } from '../../game/movement'
 import { standingAt, type Scene } from '../../game/renderer'
 import {
@@ -18,6 +18,7 @@ import {
   objectAt,
   PLAYER_SPOT,
   propAt,
+  withRevived,
   withWeeded,
   type Cell,
 } from '../../game/layout'
@@ -46,6 +47,26 @@ type Props = {
   objective: Objective | null
   /** Интерфейс поверх поля: задание (сверху слева), счётчик (сверху справа), кнопки панели (снизу) */
   hud: { top: ReactNode; corner: ReactNode; toolbar: ReactNode }
+}
+
+/**
+ * Пасхалка: если облик игрока совпал с «слот:вариант» из секретов персонажа — особый разговор.
+ * Показывается один раз (помнит браузер): секрет, который повторяется, перестаёт быть секретом.
+ */
+function secretTalk(secrets: Record<string, string> | null | undefined, appearance: Record<string, string>, who: string): string | null {
+  for (const [match, dialogue] of Object.entries(secrets ?? {})) {
+    const [slot, option] = match.split(':')
+    if (appearance[slot] !== option) continue
+    const key = `secret-${who}-${dialogue}`
+    try {
+      if (window.localStorage.getItem(key) === '1') continue
+      window.localStorage.setItem(key, '1')
+    } catch {
+      // хранилище недоступно — пасхалка просто покажется ещё раз
+    }
+    return dialogue
+  }
+  return null
 }
 
 /** Портрет мыши: вся мышь целиком — она маленькая и сидит внизу кадра 32×48. */
@@ -92,6 +113,9 @@ const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce
 /** Фонарь на посохе Вереска — смещение от его ступней; в сумерках он светит тёплым пятном. */
 const MENTOR_LANTERN = { x: 13, y: -35, radius: 46, strength: 0.85 }
 
+/** Сенсорный экран: подсказка про управление — пальцем, а не клавишами. */
+const touchScreen = window.matchMedia?.('(pointer: coarse)').matches ?? false
+
 const sameCell = (a: Cell, b: Cell) => a.x === b.x && a.y === b.y
 
 /** Сад и другие локации (сарай изнутри), табличка о выбранном объекте, посадка, прополка, двери. */
@@ -104,11 +128,12 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
   // уходит с дороги (но договаривает благодарность до конца)
   const map = useMemo((): GardenMap => {
     const base = catalog.locations.find((l) => l.key === location.key) ?? catalog.garden
-    const map = base.key === HOME ? withWeeded(base, state.garden.weeded) : base
+    const awake = new Set(state.worldObjects.map((w) => w.objectKey))
+    const map = withRevived(base.key === HOME ? withWeeded(base, state.garden.weeded) : base, awake)
     const gone = (n: Npc) =>
       !!n.errand?.leaves && !!state.errands.find((e) => e.key === n.errand!.key)?.done && chat?.npc.key !== n.key
     return map.npcs?.some(gone) ? { ...map, npcs: map.npcs.filter((n) => !gone(n)) } : map
-  }, [catalog, location.key, state.garden.weeded, state.errands, chat])
+  }, [catalog, location.key, state.garden.weeded, state.worldObjects, state.errands, chat])
   // читаем письмо — текст в окне поверх сада
   const [reading, setReading] = useState<{ title: string; text: string } | null>(null)
   // замок крупным планом поверх сада
@@ -173,7 +198,8 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
       effects: weeding ? [weeding] : [],
       awakened,
       variants,
-      sparkles: new Set(catalog.spots.filter((spot) => !searched.has(spot.key)).map((spot) => spot.propKey)),
+      // секретки не мерцают: догадаться надо самому
+      sparkles: new Set(catalog.spots.filter((spot) => !spot.hidden && !searched.has(spot.key)).map((spot) => spot.propKey)),
       characters: [
         ...(home && mentorImage ? [standingAt(MENTOR_SPOT, mentorImage, MENTOR_LANTERN)] : []),
         ...(map.npcs ?? []).flatMap((npc) => {
@@ -218,6 +244,9 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
 
   const [dialogue, setDialogue] = useState<string | null>(null)
   const talk = () => {
+    // пасхалка от облика — когда у Вереска нет новостей (поручения и благодарности важнее)
+    const secret = !state.mentor.hasNews && secretTalk(catalog.mentor.secrets, state.player.appearance, 'vereshk')
+    if (secret) return setDialogue(secret)
     const idle = catalog.mentor.idle
     setDialogue(state.mentor.nextDialogue ?? idle[Math.floor(Math.random() * idle.length)])
   }
@@ -262,15 +291,45 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     const status = errand && state.errands.find((e) => e.key === errand.key)
     if (errand && !status?.offered) return setChat({ npc, dialogue: errand.offer, accept: errand })
     if (errand && !status?.done) return setChat({ npc, dialogue: errand.waiting })
-    setChat({ npc, dialogue: nextTalk(npc) })
+    const secret = secretTalk(npc.secrets, state.player.appearance, npc.key)
+    setChat({ npc, dialogue: secret ?? nextTalk(npc) })
   }
 
   const isMentor = (cell: Cell) => home && sameCell(cell, MENTOR_SPOT)
 
-  /** Описание объекта перед персонажем: открыть (если над ним горит «!»). */
+  /**
+   * Житель: сразу — без табличек и кнопок. Поручение готово — отдаём (сервер списывает вещи
+   * вместе с наградой), и житель благодарит; иначе просто разговор.
+   */
+  const [handing, setHanding] = useState(false)
+  const meet = async (npc: Npc) => {
+    if (!errandReady(npc, state) || handing) return talkTo(npc)
+    setHanding(true)
+    try {
+      const result = await completeErrand(npc.errand!.key)
+      if (result.reward.length) toast({ message: `${npc.name} благодарит.`, reward: describeReward(result.reward, catalog) })
+      setChat({ npc, dialogue: npc.errand!.thanks })
+      await onChanged()
+    } catch (e) {
+      toast({ message: e instanceof ApiError ? (e.detail ?? e.title) : 'Не получилось. Попробуйте ещё раз.' })
+    } finally {
+      setHanding(false)
+    }
+  }
+
+  /** Нажали на что-то рядом: с персонажем — сразу действие, у предмета — описание. */
   const open = (cell: Cell) => {
-    setSelected(cell)
     setTooFar(false)
+    if (isMentor(cell)) {
+      setSelected(null)
+      return talk()
+    }
+    const npc = npcAt(map, cell)
+    if (npc) {
+      setSelected(null)
+      return void meet(npc)
+    }
+    setSelected(cell)
     setNow(Date.now())
   }
 
@@ -281,15 +340,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
   const act = () => {
     const facing = facingRef.current
     if (!facing) return
-    if (isMentor(facing)) {
-      talk()
-      return
-    }
-    const npc = npcAt(map, facing)
-    if (npc) {
-      talkTo(npc)
-      return
-    }
+    if (isMentor(facing) || npcAt(map, facing)) return open(facing)
     if (!isClickable(facing, state, catalog, map)) return
     if (!selected || !sameThing(selected, facing, map)) {
       open(facing)
@@ -376,26 +427,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
 
       <div className={styles.bottom}>
         <div className={selected || tooFar || showHint ? styles.info : styles.infoHidden} aria-live="polite" ref={infoRef}>
-          {selected && isMentor(selected) ? (
-            <div className={styles.cell}>
-              <p className={styles.text}>
-                <strong>{catalog.mentor.speaker.name}.</strong> Опирается на посох и делает вид, что не ждёт, когда с ним заговорят.
-              </p>
-              <div>
-                <Button onClick={talk}>Поговорить</Button>
-              </div>
-            </div>
-          ) : selected && npcAt(map, selected) ? (
-            <div className={styles.cell}>
-              <p className={styles.text}>
-                <strong>{npcAt(map, selected)!.name}.</strong> {npcAt(map, selected)!.description}
-              </p>
-              <div>
-                <Button onClick={() => talkTo(npcAt(map, selected)!)}>Поговорить</Button>
-              </div>
-              <ErrandInfo npc={npcAt(map, selected)!} state={state} catalog={catalog} onDone={(npc) => setChat({ npc, dialogue: npc.errand!.thanks })} onChanged={onChanged} />
-            </div>
-          ) : selected && sameCell(selected, playerCell) ? (
+          {selected && sameCell(selected, playerCell) ? (
             <div className={styles.cell}>
               <p className={styles.text}>
                 <strong>{state.player.displayName}.</strong> Это вы. Сад, кажется, уже привык к вашим шагам.
@@ -423,7 +455,9 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
             <span className={styles.hint}>Подойдите поближе: когда над ним загорится «!», нажмите на него.</span>
           ) : showHint ? (
             <span className={styles.hint}>
-              Стрелки или WASD — идти. Подойдите к предмету — загорится «!»: нажмите на него или E, чтобы рассмотреть.
+              {touchScreen
+                ? 'Ведите пальцем по саду — идти. Нажмите на «!» над предметом или на жителя.'
+                : 'Стрелки или WASD — идти. Подойдите к предмету — загорится «!»: нажмите на него или E.'}
             </span>
           ) : null}
         </div>
@@ -657,54 +691,5 @@ function WeedInfo({ cell, name, description, state, onWeeding, onChanged }: {
         <p className={styles.hint}>Лопата и грабли висят на северном заборе.</p>
       )}
     </div>
-  )
-}
-
-/**
- * Поручение жителя в табличке: что просили и кнопка «Отдать…» / «Показать находку».
- * Вещи списывает сервер вместе с наградой; не хватает — ничего не списано.
- */
-function ErrandInfo({ npc, state, catalog, onDone, onChanged }: {
-  npc: Npc
-  state: GameState
-  catalog: Catalog
-  onDone: (npc: Npc) => void
-  onChanged: () => Promise<void>
-}) {
-  const [busy, setBusy] = useState(false)
-  const toast = useToast()
-  const errand = npc.errand
-  const status = errand && state.errands.find((e) => e.key === errand.key)
-  if (!errand || !status?.offered || status.done) return null
-
-  const nameOf = (key: string) => catalog.items.find((i) => i.key === key)?.name ?? key
-  const have = (key: string) => state.inventory.find((e) => e.itemKey === key)?.quantity ?? 0
-  const give = errand.give ?? []
-  const enough = errand.kind === 'SHOW' ? state.searchedSpots.includes(errand.spot ?? '') : give.every((g) => have(g.itemKey) >= g.quantity)
-  const label = errand.kind === 'SHOW' ? 'Показать находку' : `Отдать: ${give.map((g) => `${nameOf(g.itemKey)} ×${g.quantity}`).join(', ')}`
-
-  const complete = async () => {
-    setBusy(true)
-    try {
-      const result = await completeErrand(errand.key)
-      if (result.reward.length) toast({ message: `${npc.name} благодарит.`, reward: describeReward(result.reward, catalog) })
-      onDone(npc)
-      await onChanged()
-    } catch (e) {
-      toast({ message: e instanceof ApiError ? (e.detail ?? e.title) : 'Не получилось. Попробуйте ещё раз.' })
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <>
-      <p className={styles.hint}>Поручение: {errand.goal}.</p>
-      <div>
-        <Button onClick={() => void complete()} disabled={busy || !enough}>
-          {label}
-        </Button>
-      </div>
-    </>
   )
 }

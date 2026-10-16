@@ -75,7 +75,7 @@ class CatalogController {
                         .toList(),
                 // содержимое тайников не раскрываем — только где можно искать
                 spots.findAll(Sort.by("key")).stream()
-                        .map(s -> new CatalogResponse.Spot(s.getKey(), s.getPropKey()))
+                        .map(s -> new CatalogResponse.Spot(s.getKey(), s.getPropKey(), s.isHidden(), s.getActionLabel()))
                         .toList(),
                 appearance.findAllByOrderBySortOrderAsc().stream()
                         .map(slot -> new CatalogResponse.AppearanceSlot(slot.getKey(), slot.getName(), slot.getKind(),
@@ -115,7 +115,8 @@ class CatalogController {
                         String acquisitionHint, String effectText) {
         }
 
-        record Spot(String key, String propKey) {
+        /** hidden — секретка (без мерцания); actionLabel — надпись на кнопке. */
+        record Spot(String key, String propKey, boolean hidden, String actionLabel) {
         }
 
         record Recipe(String key, String name, String description, String targetObjectKey, String resultText,

@@ -62,6 +62,17 @@ export function withWeeded(map: GardenMap, weeded: Cell[]): GardenMap {
   return { ...map, rows: rows.map((r) => r.join('')) }
 }
 
+/**
+ * Карта с оживлением: клетки, у которых в легенде есть revive, превращаются в другой символ,
+ * когда их постройка пробуждена (засохшие клумбы расцветают, когда в колодце снова вода).
+ */
+export function withRevived(map: GardenMap, awakened: ReadonlySet<string>): GardenMap {
+  const changes = Object.entries(map.tiles).filter(([, t]) => t.revive && awakened.has(t.revive.when))
+  if (changes.length === 0) return map
+  const swap = new Map(changes.map(([symbol, t]) => [symbol, t.revive!.tile]))
+  return { ...map, rows: map.rows.map((row) => row.split('').map((c) => swap.get(c) ?? c).join('')) }
+}
+
 /** Кадр атласа для клетки. Забор выбирает кусок по соседям: горизонтальный, вертикальный или столб в углу. */
 export function tileFrame(map: GardenMap, x: number, y: number): string {
   const type = tileAt(map, x, y)?.type ?? 'grass'
@@ -91,6 +102,10 @@ export function tileFrame(map: GardenMap, x: number, y: number): string {
       return 'bridge'
     case 'flowers':
       return `flowers_${variant(x, y, 3)}`
+    case 'dry_bed':
+      return `dry_bed_${variant(x, y, 3)}`
+    case 'reeds':
+      return `reeds_${variant(x, y, 3)}`
     case 'rug':
       return `rug_${neighbourMask(map, x, y, 'rug')}`
     case 'floor':
@@ -115,14 +130,40 @@ export function cellAtPoint(px: number, py: number, scale: number): Cell {
 }
 
 /**
- * Масштаб сада под доступную ширину и высоту (не больше ×3, не меньше ×0.25).
+ * Масштаб сада под доступную ширину и высоту (не больше ×4, не меньше ×0.25).
  * Масштаб дробный: на обычном ноутбуке целый ×1 оставил бы сад крошечным, а ×2 не влез бы.
  * Сцена рисуется в буфер 1:1 и растягивается без сглаживания, поэтому пиксели остаются чёткими,
  * лишь часть из них на экранный пиксель шире соседних.
  */
 export function fitScale(availableWidth: number, map: GardenMap, availableHeight = Infinity): number {
   const fit = Math.min(availableWidth / (map.width * TILE), availableHeight / (map.height * TILE))
-  return Math.max(0.25, Math.min(3, fit))
+  return Math.max(0.25, Math.min(4, fit))
+}
+
+/**
+ * Масштаб «на весь экран»: локация целиком входит в окно и занимает его по большей стороне.
+ * Если пропорции карты и экрана не совпадают, по краям остаются тёмные поля.
+ */
+export function containScale(width: number, height: number, map: GardenMap): number {
+  if (width <= 0 || height <= 0) return 1
+  return Math.min(width / (map.width * TILE), height / (map.height * TILE))
+}
+
+/**
+ * Камера: левый верхний угол видимой части карты (в логических пикселях). Герой — по центру,
+ * но камера не заезжает за края карты. Если карта меньше окна, она стоит по центру
+ * (камера уходит в минус — это ширина тёмного поля). Округляем до целого пикселя, чтобы картинка не дрожала.
+ */
+export function cameraAt(
+  focus: { x: number; y: number },
+  view: { width: number; height: number },
+  map: GardenMap,
+): { x: number; y: number } {
+  const clamp = (v: number, max: number) => Math.round(max < 0 ? max / 2 : Math.min(Math.max(0, v), max))
+  return {
+    x: clamp(focus.x - view.width / 2, map.width * TILE - view.width),
+    y: clamp(focus.y - view.height / 2, map.height * TILE - view.height),
+  }
 }
 
 /** Что показать игроку о клетке: постройка важнее тайла под ней. */

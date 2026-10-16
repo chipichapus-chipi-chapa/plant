@@ -8,18 +8,17 @@
   overflow: hidden;
 }
 
-/* Обёртка ровно по размеру канваса: на ней лежит слой светлячков */
+/* Сцена во всё поле: канвас и слой светлячков */
 .stage {
   position: relative;
+  width: 100%;
+  height: 100%;
   line-height: 0;
-  /* сад будто подсвечен лампой: тёплое свечение вокруг рамки */
-  box-shadow: 0 0 40px 6px rgb(255 176 96 / 0.18);
 }
 
 .canvas {
   display: block;
   image-rendering: pixelated;
-  box-shadow: 0 0 0 var(--px) var(--c-ink);
   cursor: pointer;
   touch-action: manipulation;
 }

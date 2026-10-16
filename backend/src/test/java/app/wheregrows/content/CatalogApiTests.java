@@ -41,7 +41,7 @@ class CatalogApiTests {
     @Test
     void catalogListsLocationsConnectedByDoors() throws Exception {
         mvc.perform(get("/api/catalog"))
-                .andExpect(jsonPath("$.locations", hasSize(5)))
+                .andExpect(jsonPath("$.locations", hasSize(6)))
                 .andExpect(jsonPath("$.locations[0].key").value("home"))
                 .andExpect(jsonPath("$.locations[0].props[?(@.key == 'shed')].door.map").value("shed"))
                 // калитка ведёт на тропу, только когда её пробудили
@@ -50,6 +50,9 @@ class CatalogApiTests {
                 .andExpect(jsonPath("$.locations[?(@.key == 'shed')].props[?(@.key == 'letter')].read").isNotEmpty())
                 // на тропе живут мыши со своими разговорами
                 .andExpect(jsonPath("$.locations[?(@.key == 'east')].npcs[*].key").value(org.hamcrest.Matchers.containsInAnyOrder("krupka", "shorokh", "vetosh", "khmur")))
-                .andExpect(jsonPath("$.recipes[?(@.key == 'repair_wheelbarrow')].actionLabel").value("Починить"));
+                .andExpect(jsonPath("$.recipes[?(@.key == 'repair_wheelbarrow')].actionLabel").value("Починить"))
+                // к озеру — только когда Мята довольна садом; засохшие клумбы оживают от воды в колодце
+                .andExpect(jsonPath("$.locations[?(@.key == 'manor')].props[?(@.key == 'lake-path')].door.requiresErrand").value("myata_garden"))
+                .andExpect(jsonPath("$.locations[?(@.key == 'manor')].tiles.d.revive.when").value("manor-well"));
     }
 }

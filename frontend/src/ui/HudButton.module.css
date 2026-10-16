@@ -116,3 +116,25 @@
     font-size: 12px;
   }
 }
+
+/* Компактная кнопка — квадратная табличка с иконкой: в игровом поле занимает мало места */
+.compact {
+  min-width: 0;
+  padding: var(--space-1);
+}
+
+.compact .icon {
+  width: 32px;
+  height: 32px;
+}
+
+.compact .bang {
+  top: -30px;
+}
+
+@media (max-height: 480px) {
+  .compact .icon {
+    width: 26px;
+    height: 26px;
+  }
+}

@@ -187,6 +187,11 @@ class MentorApiTests {
     }
 
     @Test
+    void secretTalksAreAllowedAnytimeWithoutGifts() throws Exception {
+        finish("secret_wizard").andExpect(status().isOk()).andExpect(jsonPath("$.gift").isEmpty());
+    }
+
+    @Test
     void smallTalkIsAlwaysAllowedAndUnknownIsNotFound() throws Exception {
         finish("idle_east").andExpect(status().isOk());
         finish("secret_ending").andExpect(status().isNotFound());

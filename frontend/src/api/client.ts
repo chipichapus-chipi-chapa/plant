@@ -5,6 +5,8 @@
  * ошибки одним способом и показывал человеку понятный текст.
  */
 
+import { telegramInitData } from '../app/telegram'
+
 /** network — до сервера не достучаться (нет сети или шлюз не видит backend); http — сервер ответил ошибкой */
 export type ApiErrorKind = 'network' | 'http'
 
@@ -38,12 +40,30 @@ async function readProblem(response: Response): Promise<ProblemDetail> {
   }
 }
 
+/**
+ * Адрес сервера. Локально пусто — запросы идут через прокси Vite; на GitHub Pages сервер живёт
+ * на другом домене, и адрес задаётся при сборке (VITE_API_URL).
+ */
+const API_URL = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')
+
+/** Вход через Telegram: подписанная initData и часовой пояс (по нему сервер считает «сегодня»). */
+function loginHeaders(): Record<string, string> {
+  const initData = telegramInitData()
+  if (!initData) return {}
+  return { 'X-Telegram-Init-Data': initData, 'X-Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone }
+}
+
 export async function apiFetch<T>(path: string, init?: RequestInit, fetchImpl: typeof fetch = fetch): Promise<T> {
   let response: Response
   try {
-    response = await fetchImpl(path, {
+    response = await fetchImpl(API_URL + path, {
       ...init,
-      headers: { Accept: 'application/json', ...(init?.body ? { 'Content-Type': 'application/json' } : {}), ...init?.headers },
+      headers: {
+        Accept: 'application/json',
+        ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+        ...loginHeaders(),
+        ...init?.headers,
+      },
     })
   } catch {
     throw new ApiError('network', null, 'Нет связи с сервером', null)

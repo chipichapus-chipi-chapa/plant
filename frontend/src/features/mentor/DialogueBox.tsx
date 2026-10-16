@@ -4,6 +4,7 @@ import { finishDialogue } from '../../api/game'
 import type { Catalog, Dialogue } from '../../api/types'
 import { frameImage, type Atlas } from '../../game/atlas'
 import { describeReward } from '../../lib/rewards'
+import { textDelay, useSettings } from '../../app/settings'
 import { useToast } from '../notifications/Toasts'
 import styles from './DialogueBox.module.css'
 
@@ -61,7 +62,6 @@ export function MentorDialogue({ dialogueKey, catalog, atlas, onClose, onChanged
   )
 }
 
-const SPEED_MS = 22
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
 
 /**
@@ -76,7 +76,9 @@ export function DialogueBox({ speaker, dialogue, atlas, onEnd, onClose }: Props)
   const portraitRef = useRef<HTMLCanvasElement>(null)
   const boxRef = useRef<HTMLDivElement>(null)
   const node = dialogue.nodes[nodeId]
-  const instant = reducedMotion()
+  const { settings } = useSettings()
+  const delay = textDelay(settings.textSpeed)
+  const instant = reducedMotion() || delay === 0
   const shown = instant ? node.text.length : typed.node === nodeId ? typed.count : 0
   const complete = shown >= node.text.length
 
@@ -88,14 +90,14 @@ export function DialogueBox({ speaker, dialogue, atlas, onEnd, onClose }: Props)
     ctx.drawImage(image, speaker.crop[0], speaker.crop[1], 32, 32, 0, 0, 32, 32)
   }, [atlas, speaker.frame, speaker.crop])
 
-  // Текст печатается по буквам; при «уменьшить движение» появляется сразу
+  // Текст печатается по буквам (скорость — в настройках); при «уменьшить движение» появляется сразу
   useEffect(() => {
     if (instant || complete) return
     const timer = window.setInterval(() => {
       setTyped((t) => (t.node === nodeId ? { node: nodeId, count: t.count + 1 } : { node: nodeId, count: 1 }))
-    }, SPEED_MS)
+    }, delay)
     return () => window.clearInterval(timer)
-  }, [nodeId, instant, complete])
+  }, [nodeId, instant, complete, delay])
 
   useEffect(() => boxRef.current?.focus(), [])
 

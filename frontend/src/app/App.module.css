@@ -6,11 +6,11 @@
   background: radial-gradient(ellipse at 50% 45%, #15100d, var(--c-night) 70%);
 }
 
-/* Кнопки панели — в ряд внизу поля */
+/* Кнопки панели — компактным рядом в правом нижнем углу поля */
 .toolbar {
   display: flex;
-  justify-content: center;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  margin-left: auto;
 }
 
 .loading {

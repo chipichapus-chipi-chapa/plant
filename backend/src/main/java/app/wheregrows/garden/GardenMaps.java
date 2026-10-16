@@ -82,6 +82,14 @@ public class GardenMaps {
             throw new IllegalStateException("Ключи построек повторяются на разных картах");
         }
         for (GardenMap map : maps.values()) {
+            for (GardenMap.TileType tile : map.tiles().values()) {
+                map.require(tile.revive() == null || prop(tile.revive().when()).isPresent(),
+                        "клетка «" + tile.name() + "» оживает от несуществующей постройки");
+            }
+            for (NpcErrand e : errands()) {
+                e.errand().propsOrEmpty().forEach(key -> map.require(prop(key).isPresent(),
+                        "поручение " + e.errand().key() + " оживляет несуществующую постройку " + key));
+            }
             for (GardenMap.Prop prop : map.props()) {
                 GardenMap.Door door = prop.door();
                 if (door == null) {
@@ -93,6 +101,8 @@ public class GardenMaps {
                         "дверь " + prop.key() + " ведёт в занятую или несуществующую клетку");
                 map.require(door.requires() == null || prop(door.requires()).isPresent(),
                         "дверь " + prop.key() + " требует несуществующую постройку " + door.requires());
+                map.require(door.requiresErrand() == null || errand(door.requiresErrand()).isPresent(),
+                        "дверь " + prop.key() + " требует несуществующее поручение " + door.requiresErrand());
             }
         }
     }
