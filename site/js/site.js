@@ -73,7 +73,7 @@
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (bot) {
         if (!bot || !bot.url) return;
-        document.querySelectorAll('[data-bot]').forEach(function (a) { a.href = bot.url; a.hidden = false; });
+        document.querySelectorAll('[data-bot]').forEach(function (el) { if (el.tagName === 'A') el.href = bot.url; el.hidden = false; });
       })
       .catch(function () {});
   }
