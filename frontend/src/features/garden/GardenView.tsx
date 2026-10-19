@@ -659,19 +659,21 @@ function WeedInfo({ cell, name, description, state, onWeeding, onChanged }: {
   const weed = async () => {
     setBusy(true)
     onWeeding({ kind: 'weed', cell, at: performance.now() })
+    const request = weedBed(cell.x, cell.y)
+    // Управление выключено только на время анимации: ответ сервера может идти долго
+    // (бесплатный сервер просыпается около минуты), а стоять столбом всё это время нельзя.
+    void sleep(WEED_MS).then(() => onWeeding(null))
     try {
-      const [result] = await Promise.all([weedBed(cell.x, cell.y), sleep(WEED_MS - 250)])
+      const result = await request
       await onChanged()
       toast({
         message: result.remaining > 0
           ? `Грядка прополота. Заросших клеток осталось: ${result.remaining}.`
           : 'Последний сорняк сдался! Расскажите Вереску.',
       })
-      await sleep(250)
     } catch (e) {
       toast({ message: e instanceof ApiError ? (e.detail ?? e.title) : 'Не получилось прополоть. Попробуйте ещё раз.' })
     } finally {
-      onWeeding(null)
       setBusy(false)
     }
   }

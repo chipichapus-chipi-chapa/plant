@@ -11,4 +11,10 @@ public interface TelegramBotApi {
 
     /** Кнопка меню у поля ввода во всех чатах с ботом. */
     void setMenuButton(String text, String webAppUrl);
+
+    /** Простое сообщение без кнопок. */
+    void sendText(long chatId, String text);
+
+    /** Имя бота (без @) — для ссылок вида t.me/<имя>. */
+    String username();
 }

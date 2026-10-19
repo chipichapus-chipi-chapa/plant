@@ -45,7 +45,7 @@ class TelegramLoginApiTests {
         mvc.perform(get("/api/state").header("Origin", ORIGIN))
                 .andExpect(status().isUnauthorized())
                 .andExpect(header().string("Access-Control-Allow-Origin", ORIGIN))
-                .andExpect(jsonPath("$.title").value("Нужен вход через Telegram"));
+                .andExpect(jsonPath("$.title").value("Нужен вход"));
     }
 
     @Test
@@ -54,15 +54,15 @@ class TelegramLoginApiTests {
                 "auth_date", String.valueOf(Instant.now().getEpochSecond()),
                 "user", "{\"id\":1,\"first_name\":\"Хмур\"}"));
 
-        mvc.perform(get("/api/state").header(TelegramAuthFilter.INIT_DATA_HEADER, forged))
+        mvc.perform(get("/api/state").header(LoginFilter.INIT_DATA_HEADER, forged))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void firstLoginCreatesAProfileWithTelegramNameAndTimezone() throws Exception {
         mvc.perform(get("/api/state")
-                        .header(TelegramAuthFilter.INIT_DATA_HEADER, login(9001, "Крупка"))
-                        .header(TelegramAuthFilter.TIMEZONE_HEADER, "Europe/Moscow"))
+                        .header(LoginFilter.INIT_DATA_HEADER, login(9001, "Крупка"))
+                        .header(LoginFilter.TIMEZONE_HEADER, "Europe/Moscow"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.player.displayName").value("Крупка"))
                 .andExpect(jsonPath("$.player.timezone").value("Europe/Moscow"));
@@ -70,12 +70,12 @@ class TelegramLoginApiTests {
 
     @Test
     void eachTelegramUserHasTheirOwnProgress() throws Exception {
-        mvc.perform(get("/api/state").header(TelegramAuthFilter.INIT_DATA_HEADER, login(9002, "Мята")))
+        mvc.perform(get("/api/state").header(LoginFilter.INIT_DATA_HEADER, login(9002, "Мята")))
                 .andExpect(status().isOk());
-        mvc.perform(get("/api/state").header(TelegramAuthFilter.INIT_DATA_HEADER, login(9003, "Шуршик")))
+        mvc.perform(get("/api/state").header(LoginFilter.INIT_DATA_HEADER, login(9003, "Шуршик")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.player.displayName").value("Шуршик"));
-        mvc.perform(get("/api/state").header(TelegramAuthFilter.INIT_DATA_HEADER, login(9002, "Мята")))
+        mvc.perform(get("/api/state").header(LoginFilter.INIT_DATA_HEADER, login(9002, "Мята")))
                 .andExpect(jsonPath("$.player.displayName").value("Мята"));
     }
 
@@ -85,6 +85,18 @@ class TelegramLoginApiTests {
                         .header("Origin", ORIGIN)
                         .header("Access-Control-Request-Method", "GET")
                         .header("Access-Control-Request-Headers", "X-Telegram-Init-Data"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", ORIGIN));
+    }
+
+    /** Все заголовки, которые шлёт фронтенд, должны быть разрешены — иначе браузер молча блокирует запрос. */
+    @Test
+    void corsAllowsEveryHeaderTheFrontendSends() throws Exception {
+        mvc.perform(options("/api/shop/purchases")
+                        .header("Origin", ORIGIN)
+                        .header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers",
+                                "content-type,idempotency-key,x-telegram-init-data,x-timezone"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", ORIGIN));
     }

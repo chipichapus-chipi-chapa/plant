@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "test": "vitest run",
     "atlas": "node scripts/build-placeholder-atlas.mjs",
+    "icons": "node scripts/build-icons.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
