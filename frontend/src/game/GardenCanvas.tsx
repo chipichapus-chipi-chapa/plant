@@ -4,7 +4,7 @@ import type { Atlas } from './atlas'
 import { directionFor, type CharacterFrames } from './character'
 import { useSettings } from '../app/settings'
 import { Fireflies } from './Fireflies'
-import { cameraAt, containScale, inBounds, TILE, type Cell } from './layout'
+import { cameraAt, containScale, HOME, inBounds, TILE, type Cell } from './layout'
 import { blockedCells, cellOf, facingCell, walk, walkerAt, type Facing, type Walker } from './movement'
 import { isPlaying, strikeLift } from './effects'
 import { drawGarden, LAMP_LIGHT_UP_MS, lampLevel, surroundLayer, type Scene } from './renderer'
@@ -276,9 +276,10 @@ export function GardenCanvas(props: Props) {
       ctx.imageSmoothingEnabled = false
       ctx.fillStyle = LETTERBOX
       ctx.fillRect(0, 0, canvas.width, canvas.height)
-      // если пропорции экрана и карты разные — по краям не чёрные поля, а мир продолжается (лес, вода)
+      // если пропорции экрана и карты разные — в стартовом саду по краям продолжается мир (трава, заросли);
+      // в остальных локациях (у реки, поместье, озеро, комнаты) края уходят в темноту
       const pad = Math.ceil(Math.max(0, -camera.x, -camera.y) / TILE) + 1
-      if (pad > 1) {
+      if (pad > 1 && p.map.key === HOME) {
         const around = surroundLayer(p.map, p.atlas, pad)
         const shift = ((around.width / TILE - p.map.width) / 2) * TILE
         ctx.drawImage(around, Math.round((-camera.x - shift) * k), Math.round((-camera.y - shift) * k), Math.round(around.width * k), Math.round(around.height * k))
