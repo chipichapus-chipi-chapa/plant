@@ -101,6 +101,17 @@ class TelegramBotTests {
     }
 
     @Test
+    void idCommandTellsTheTelegramId() throws Exception {
+        mvc.perform(post("/telegram/webhook")
+                        .header("X-Telegram-Bot-Api-Secret-Token", secret())
+                        .contentType("application/json")
+                        .content("{\"message\":{\"chat\":{\"id\":55},\"from\":{\"id\":55},\"text\":\"/id\"}}"))
+                .andExpect(status().isOk());
+
+        assertThat(telegram.calls).contains("text 55 Ваш Telegram id: 55");
+    }
+
+    @Test
     void requestsWithoutTheSecretAreRejected() throws Exception {
         mvc.perform(post("/telegram/webhook")
                         .header("X-Telegram-Bot-Api-Secret-Token", "guess")

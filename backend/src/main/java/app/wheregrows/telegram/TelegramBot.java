@@ -117,6 +117,11 @@ class TelegramBot {
             });
             return;
         }
+        if (text.equals("/id") && from.canConvertToLong()) {
+            // для тестировщика: этот id добавляют в GAME_TESTERS на сервере — и в настройках игры появятся кнопки тестирования
+            api.sendText(chatId.asLong(), "Ваш Telegram id: " + from.asLong());
+            return;
+        }
         if (StringUtils.hasText(webAppUrl)) {
             api.sendWebAppButton(chatId.asLong(), GREETING, PLAY, webAppUrl);
         }

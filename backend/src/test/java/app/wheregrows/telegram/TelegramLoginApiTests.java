@@ -14,6 +14,7 @@ import app.wheregrows.TestcontainersConfiguration;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -24,7 +25,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "telegram.bot-token=" + TelegramLoginApiTests.TOKEN,
         // без адреса бот не регистрируется — тесты не ходят в настоящий Telegram
         "telegram.public-url=",
-        "game.cors.allowed-origins=https://example.github.io"})
+        "game.cors.allowed-origins=https://example.github.io",
+        "game.testers=4242, 777000"})
 @AutoConfigureMockMvc
 class TelegramLoginApiTests {
 
@@ -109,6 +111,22 @@ class TelegramLoginApiTests {
                         .header("Access-Control-Request-Headers", "x-device-token"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", "https://localhost"));
+    }
+
+    @Test
+    void testToolsAreClosedForOrdinaryPlayers() throws Exception {
+        mvc.perform(get("/api/state").header(LoginFilter.INIT_DATA_HEADER, login(9010, "Гость")))
+                .andExpect(jsonPath("$.tester").value(false));
+        mvc.perform(post("/api/test/resources").header(LoginFilter.INIT_DATA_HEADER, login(9010, "Гость")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void testersAreListedByTelegramId() throws Exception {
+        mvc.perform(get("/api/state").header(LoginFilter.INIT_DATA_HEADER, login(4242, "Тестировщик")))
+                .andExpect(jsonPath("$.tester").value(true));
+        mvc.perform(post("/api/test/resources").header(LoginFilter.INIT_DATA_HEADER, login(4242, "Тестировщик")))
+                .andExpect(status().isNoContent());
     }
 
     @Test

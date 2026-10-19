@@ -25,6 +25,7 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(GameException.class)
     ProblemDetail handleGame(GameException e) {
         HttpStatus status = e instanceof NotFoundException ? HttpStatus.NOT_FOUND
+                : e instanceof ForbiddenException ? HttpStatus.FORBIDDEN
                 : e instanceof ConflictException ? HttpStatus.CONFLICT
                 : HttpStatus.BAD_REQUEST;
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, e.getMessage());
