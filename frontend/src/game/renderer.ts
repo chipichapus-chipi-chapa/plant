@@ -1,7 +1,7 @@
 import type { GardenMap, GardenObject } from '../api/types'
 import type { Atlas } from './atlas'
 import { hoeFrame, weedParticles, type WeedEffect } from './effects'
-import { TILE, tileFrame, type Cell } from './layout'
+import { TILE, tileAt, tileFrame, type Cell } from './layout'
 
 /** Кадр персонажа: 32×48, низ — по низу клетки. */
 export const CHARACTER_WIDTH = 32
@@ -55,6 +55,8 @@ export type Scene = {
   aura?: { x: number; y: number } | null
   /** Время в мс — для покачивания «!» над целью задания */
   time?: number
+  /** Густота тумана над локацией (0 — нет, 1 — сплошной): Туманное озеро редеет день за днём */
+  fog?: number
 }
 
 /**
@@ -111,6 +113,8 @@ export function drawGarden(
     scene.lightLevel ?? 1,
     scene.dim ?? 1,
   )
+
+  if (scene.fog) drawFog(ctx, map, scene.fog, time)
 
   // Всё, что должно читаться в темноте, — после света: мерцание тайников и знаки «!»
   for (const prop of map.props) {
@@ -425,4 +429,44 @@ function drawFrame(ctx: CanvasRenderingContext2D, atlas: Atlas, name: string, x:
   const f = atlas.frames[name]
   if (!f) return // нет кадра — пропускаем, а не ломаем весь кадр сцены
   ctx.drawImage(atlas.image, f.x, f.y, f.w, f.h, x, y, f.w, f.h)
+}
+
+/** Сколько тумана держится над клеткой: над водой гуще всего, на берегу — лёгкая дымка. */
+const FOG_WEIGHT: Record<string, number> = { water: 1, reeds: 0.75, bridge: 0.7 }
+
+/**
+ * Туман: ровная дымка над водой и медленно плывущие клубы. Рисуется после света, лунно-серым, —
+ * чтобы в сумерках его было видно. Клубы детерминированы (без случайности на каждом кадре), иначе дрожат.
+ */
+function drawFog(ctx: CanvasRenderingContext2D, map: GardenMap, density: number, time: number) {
+  const w = map.width * TILE
+  const h = map.height * TILE
+  ctx.save()
+  for (let y = 0; y < map.height; y++) {
+    for (let x = 0; x < map.width; x++) {
+      const weight = FOG_WEIGHT[tileAt(map, x, y)?.type ?? ''] ?? 0.25
+      ctx.fillStyle = `rgba(168, 178, 184, ${(density * 0.42 * weight).toFixed(3)})`
+      ctx.fillRect(x * TILE, y * TILE, TILE, TILE)
+    }
+  }
+  const puffs = Math.round((map.width * map.height) / 7)
+  for (let i = 0; i < puffs; i++) {
+    const seed = Math.sin(i * 12.9898) * 43758.5453
+    const r1 = seed - Math.floor(seed)
+    const r2 = (seed * 7.13) % 1
+    const radius = 46 + r1 * 60
+    const speed = 4 + r2 * 6 // пикселей в секунду — очень медленно
+    const span = w + radius * 2
+    const x = ((r1 * span + (time / 1000) * speed) % span) - radius
+    const y = r2 * h + Math.sin(time / 3000 + i) * 6
+    const weight = FOG_WEIGHT[tileAt(map, Math.floor(x / TILE), Math.floor(y / TILE))?.type ?? ''] ?? 0.35
+    const alpha = density * 0.32 * weight
+    if (alpha < 0.01) continue
+    const g = ctx.createRadialGradient(x, y, 0, x, y, radius)
+    g.addColorStop(0, `rgba(196, 204, 208, ${alpha.toFixed(3)})`)
+    g.addColorStop(1, 'rgba(196, 204, 208, 0)')
+    ctx.fillStyle = g
+    ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2)
+  }
+  ctx.restore()
 }

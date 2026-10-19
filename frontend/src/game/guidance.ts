@@ -3,6 +3,7 @@
 // Всё считается для текущей локации (map): сад, сарай изнутри…
 
 import type { Catalog, Door, GameState, GardenMap, Npc } from '../api/types'
+import { fogCleared } from './fog'
 import { HOME, MENTOR_SPOT, objectAt, propAt, TILE, tileAt, type Cell } from './layout'
 import { CHARACTER_HEIGHT } from './renderer'
 
@@ -32,7 +33,8 @@ export function npcAt(map: GardenMap, cell: Cell): Npc | undefined {
 export function doorOpen(door: Door, state: GameState): boolean {
   const awake = !door.requires || state.worldObjects.some((w) => w.objectKey === door.requires)
   const errand = !door.requiresErrand || !!state.errands?.find((e) => e.key === door.requiresErrand)?.done
-  return awake && errand
+  const fog = !door.requiresFog || fogCleared(state.fog)
+  return awake && errand && fog
 }
 
 /**

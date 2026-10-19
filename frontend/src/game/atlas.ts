@@ -25,9 +25,14 @@ async function fetchAtlas(): Promise<Atlas> {
   if (!response.ok) throw new Error(`atlas.json: ${response.status}`)
   const manifest = (await response.json()) as { image: string; frames: Record<string, Frame> }
 
-  const image = new Image()
-  image.src = BASE + manifest.image
-  await image.decode()
+  // onload, а не image.decode(): decode в Chrome ждёт отрисовки страницы и зависает, пока окно свёрнуто
+  // или перекрыто (Telegram в фоне), — и игра застревала на «Раздвигаем ветки…»
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = () => reject(new Error(`${manifest.image}: не загрузилась`))
+    img.src = BASE + manifest.image
+  })
   return { image, frames: manifest.frames }
 }
 

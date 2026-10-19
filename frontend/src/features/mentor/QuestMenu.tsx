@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Catalog, GameState } from '../../api/types'
+import { fogCleared } from '../../game/fog'
 import type { Objective } from '../../game/guidance'
 import styles from './QuestMenu.module.css'
 
@@ -31,7 +32,11 @@ export function QuestMenu({ objective, state, catalog, onOpenHud }: Props) {
   const errands = catalog.locations
     .flatMap((l) => l.npcs ?? [])
     .filter((n) => n.errand && state.errands.some((e) => e.key === n.errand!.key && e.offered && !e.done))
-  const count = (objective ? 1 : 0) + errands.length
+  // Туман над озером: пока он не рассеялся, это тоже задание — возвращаться к привычкам
+  const fogMap = catalog.locations.find((l) => l.fog && l.key === state.fog?.map)
+  const fogTeller = fogMap?.npcs?.find((n) => n.key === fogMap.fog?.speaker)
+  const fog = state.fog?.started && !fogCleared(state.fog) && fogTeller ? state.fog : null
+  const count = (objective ? 1 : 0) + errands.length + (fog ? 1 : 0)
   if (count === 0) return null
 
   const toggle = () => {
@@ -64,6 +69,14 @@ export function QuestMenu({ objective, state, catalog, onOpenHud }: Props) {
                   <span className={styles.who}>Вереск</span> {objective.text}
                 </span>
               )}
+            </li>
+          )}
+          {fog && (
+            <li>
+              <span className={styles.item}>
+                <span className={styles.who}>{fogTeller!.name}</span> Туман над озером редеет — возвращайтесь к привычкам
+                <span className={styles.progress}> {fog.days}/{fog.needed}</span>
+              </span>
             </li>
           )}
           {errands.map((npc) => {

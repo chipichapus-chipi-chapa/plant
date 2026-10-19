@@ -49,7 +49,16 @@ export type Door = {
   requires?: string | null
   /** Поручение, которое сначала надо выполнить (Мята откроет тропу к озеру) */
   requiresErrand?: string | null
+  /** Плыть можно, когда туман над этой локацией рассеялся (лодка) */
+  requiresFog?: boolean | null
 }
+
+/**
+ * Туман над локацией: начинается после поручения after и редеет с каждым днём, когда отмечена
+ * хоть одна привычка; talks — разговоры жителя speaker: [густой, редеет, рассеялся];
+ * notches — постройка, на которой появляются зарубки по дням (причал).
+ */
+export type Fog = { after: string; days: number; speaker: string; talks: [string, string, string]; notches?: string | null }
 
 /** Житель локации (мышь): стоит в клетке, разговаривает; первый разговор — talks[0], дальше — случайный из остальных */
 export type Npc = {
@@ -98,6 +107,8 @@ export type GardenMap = {
   props: GardenProp[]
   /** Жители локации */
   npcs?: Npc[] | null
+  /** Туман (Туманное озеро) */
+  fog?: Fog | null
 }
 
 /** Магический рецепт: ингредиенты пробуждают постройку с карты (targetObjectKey) */
@@ -214,6 +225,11 @@ export type GameState = {
   solvedPuzzles: string[]
   /** Поручения жителей: попросили ли и сделано ли */
   errands: { key: string; offered: boolean; done: boolean }[]
+  /**
+   * Туман над озером; null — тумана в игре нет. started — сад поместья ожил и туман начал редеть;
+   * days — сколько дней-возвращений набралось (не больше needed).
+   */
+  fog: { map: string; started: boolean; days: number; needed: number } | null
   /** Пробуждённые объекты мира; нет в списке — объект спит */
   worldObjects: { objectKey: string; state: 'AWAKENED' }[]
   /** Обысканные места находок */
