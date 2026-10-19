@@ -28,7 +28,7 @@ class CorsConfig {
         cors.setAllowedOrigins(origins.stream().map(String::trim).filter(o -> !o.isEmpty()).toList());
         cors.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE"));
         // Idempotency-Key — у покупки в лавке: без него браузер не отправит ни одной покупки
-        cors.setAllowedHeaders(List.of("Content-Type", "Accept", "Idempotency-Key", "X-Telegram-Init-Data", "X-Timezone"));
+        cors.setAllowedHeaders(List.of("Content-Type", "Accept", "Idempotency-Key", "X-Telegram-Init-Data", "X-Device-Token", "X-Timezone"));
         cors.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", cors);

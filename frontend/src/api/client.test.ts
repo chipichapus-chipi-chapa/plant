@@ -58,4 +58,39 @@ describe('apiFetch', () => {
       expect(headers['X-Telegram-Init-Data']).toBeUndefined()
     })
   })
+
+  describe('в приложении (ключ устройства)', () => {
+    afterEach(() => vi.unstubAllEnvs())
+
+    it('заводит сад один раз и шлёт ключ в каждом запросе', async () => {
+      vi.stubEnv('VITE_DEVICE_LOGIN', 'true')
+      const sent: Record<string, string>[] = []
+      let registrations = 0
+      const server = async (url: RequestInfo | URL, init?: RequestInit) => {
+        if (String(url).endsWith('/api/auth/device')) {
+          registrations++
+          return new Response(JSON.stringify({ token: 'key-1' }), { status: 201 })
+        }
+        sent.push(init?.headers as Record<string, string>)
+        return new Response('{}', { status: 200 })
+      }
+      await Promise.all([apiFetch('/api/a', undefined, server), apiFetch('/api/b', undefined, server)])
+      expect(registrations).toBe(1)
+      expect(sent.map((h) => h['X-Device-Token'])).toEqual(['key-1', 'key-1'])
+    })
+
+    it('если сервер не знает ключ — заводит сад заново и повторяет запрос', async () => {
+      vi.stubEnv('VITE_DEVICE_LOGIN', 'true')
+      let next = 2
+      const server = async (url: RequestInfo | URL, init?: RequestInit) => {
+        if (String(url).endsWith('/api/auth/device')) {
+          return new Response(JSON.stringify({ token: `key-${next++}` }), { status: 201 })
+        }
+        const token = (init?.headers as Record<string, string>)['X-Device-Token']
+        return new Response('{}', { status: token === 'key-1' ? 401 : 200 })
+      }
+      // ключ из прошлого теста (key-1) сервер «забыл»
+      await expect(apiFetch('/api/x', undefined, server)).resolves.toEqual({})
+    })
+  })
 })

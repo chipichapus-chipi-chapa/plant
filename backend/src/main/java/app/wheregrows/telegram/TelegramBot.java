@@ -24,6 +24,8 @@ import tools.jackson.databind.JsonNode;
 class TelegramBot {
 
     static final String WEBHOOK_PATH = "/telegram/webhook";
+    /** Параметр /start из ссылки привязки приложения: link_<код> */
+    static final String LINK_PREFIX = "link_";
     static final String PLAY = "Играть";
     static final String GREETING = """
             Добро пожаловать в сад «Там, где растёт» 🌱
@@ -36,15 +38,19 @@ class TelegramBot {
     private static final Logger log = LoggerFactory.getLogger(TelegramBot.class);
 
     private final TelegramBotApi api;
+    private final DeviceAccounts devices;
+    private volatile String username;
     private final String secret;
     private final String publicUrl;
     private final String webAppUrl;
 
     TelegramBot(TelegramBotApi api,
+                DeviceAccounts devices,
                 @Value("${" + TelegramMode.TOKEN_PROPERTY + "}") String botToken,
                 @Value("${telegram.public-url:}") String publicUrl,
                 @Value("${telegram.web-app-url:}") String webAppUrl) {
         this.api = api;
+        this.devices = devices;
         // Секрет webhook выводится из токена: отдельная настройка не нужна, а снаружи его не угадать
         this.secret = HexFormat.of().formatHex(
                 TelegramInitData.hmac("webhook".getBytes(StandardCharsets.UTF_8), botToken.trim())).substring(0, 48);
@@ -62,11 +68,26 @@ class TelegramBot {
         try {
             api.setWebhook(publicUrl + WEBHOOK_PATH, secret);
             api.setMenuButton(PLAY, webAppUrl);
+            username();
             log.info("Бот подключён: webhook и кнопка «{}»", PLAY);
         } catch (RuntimeException e) {
             // без бота игра всё равно работает — сервер не падает
             log.warn("Не удалось зарегистрировать бота в Telegram: {}", e.getMessage());
         }
+    }
+
+    /** Имя бота для ссылок; спрашиваем у Telegram один раз. null — Telegram недоступен. */
+    String username() {
+        String name = username;
+        if (name == null) {
+            try {
+                name = api.username();
+                username = name;
+            } catch (RuntimeException e) {
+                log.warn("Не удалось узнать имя бота: {}", e.getMessage());
+            }
+        }
+        return name;
     }
 
     /** Запрос действительно от Telegram: он возвращает секрет, который мы передали при регистрации. */
@@ -75,12 +96,29 @@ class TelegramBot {
                 secret.getBytes(StandardCharsets.UTF_8), headerSecret.getBytes(StandardCharsets.UTF_8));
     }
 
-    /** На любое сообщение — приветствие с кнопкой входа в игру. */
+    /** «Старт» по ссылке из приложения связывает сад с Telegram; на остальное — приветствие с кнопкой входа. */
     void handle(JsonNode update) {
-        JsonNode chatId = update.path("message").path("chat").path("id");
-        if (!chatId.canConvertToLong() || !StringUtils.hasText(webAppUrl)) {
+        JsonNode message = update.path("message");
+        JsonNode chatId = message.path("chat").path("id");
+        if (!chatId.canConvertToLong()) {
             return;
         }
-        api.sendWebAppButton(chatId.asLong(), GREETING, PLAY, webAppUrl);
+        String text = message.path("text").asString("");
+        JsonNode from = message.path("from").path("id");
+        if (text.startsWith("/start " + LINK_PREFIX) && from.canConvertToLong()) {
+            String code = text.substring(("/start " + LINK_PREFIX).length()).trim();
+            api.sendText(chatId.asLong(), switch (devices.link(code, from.asLong())) {
+                case LINKED -> "Готово! Сад в приложении теперь связан с вашим Telegram 🌱\n"
+                        + "Вернитесь в приложение — оно обновится само.";
+                case SWITCHED -> "Готово! В приложении теперь ваш сад из Telegram 🌱\n"
+                        + "Вернитесь в приложение — оно обновится само.";
+                case EXPIRED -> "Ссылка устарела или уже использована. "
+                        + "Нажмите «Привязать Telegram» в настройках приложения ещё раз.";
+            });
+            return;
+        }
+        if (StringUtils.hasText(webAppUrl)) {
+            api.sendWebAppButton(chatId.asLong(), GREETING, PLAY, webAppUrl);
+        }
     }
 }

@@ -9,6 +9,8 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import tools.jackson.databind.JsonNode;
+
 /** Bot API поверх HTTPS. Токен — часть адреса (так устроен Telegram), поэтому адреса не логируются. */
 @Component
 @Conditional(TelegramMode.On.class)
@@ -38,6 +40,17 @@ class HttpTelegramBotApi implements TelegramBotApi {
     public void setMenuButton(String text, String webAppUrl) {
         call("setChatMenuButton", Map.of("menu_button",
                 Map.of("type", "web_app", "text", text, "web_app", Map.of("url", webAppUrl))));
+    }
+
+    @Override
+    public void sendText(long chatId, String text) {
+        call("sendMessage", Map.of("chat_id", chatId, "text", text));
+    }
+
+    @Override
+    public String username() {
+        JsonNode me = http.post().uri("getMe").retrieve().body(JsonNode.class);
+        return me == null ? null : me.path("result").path("username").asString(null);
     }
 
     private void call(String method, Map<String, ?> body) {

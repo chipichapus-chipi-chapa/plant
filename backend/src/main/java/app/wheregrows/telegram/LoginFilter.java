@@ -27,32 +27,41 @@ import app.wheregrows.player.LocalPlayerProvisioner;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * Вход через Telegram: каждый запрос к /api несёт подписанную initData в заголовке
- * {@value #INIT_DATA_HEADER}. Подпись верна — запрос выполняется от имени этого игрока
- * (при первом входе создаётся профиль), иначе 401.
+ * Вход для каждого запроса к /api — двумя способами:
+ * <ul>
+ *   <li>из Telegram Mini App — подписанная initData в заголовке {@value #INIT_DATA_HEADER};
+ *       подпись верна — запрос выполняется от имени этого игрока (при первом входе создаётся профиль);</li>
+ *   <li>из приложения (PWA) — ключ устройства в заголовке {@value #DEVICE_HEADER}, см. {@link DeviceAccounts}.</li>
+ * </ul>
+ * Иначе 401. Открыт только {@value #REGISTER_PATH}: через него приложение и получает ключ.
  */
 @Component
 @Conditional(TelegramMode.On.class)
-class TelegramAuthFilter extends OncePerRequestFilter {
+class LoginFilter extends OncePerRequestFilter {
 
     static final String INIT_DATA_HEADER = "X-Telegram-Init-Data";
+    static final String DEVICE_HEADER = "X-Device-Token";
     static final String TIMEZONE_HEADER = "X-Timezone";
-    static final String PLAYER_ATTRIBUTE = TelegramAuthFilter.class.getName() + ".player";
+    static final String REGISTER_PATH = "/api/auth/device";
+    static final String PLAYER_ATTRIBUTE = LoginFilter.class.getName() + ".player";
 
     private static final int MAX_NAME = 40;
 
     private final TelegramInitData initData;
+    private final DeviceAccounts devices;
     private final LocalPlayerProvisioner provisioner;
     private final JsonMapper json;
     /** telegram id → id игрока: профиль создаётся один раз, дальше база не нужна */
     private final Map<Long, Long> players = new ConcurrentHashMap<>();
 
-    TelegramAuthFilter(@Value("${" + TelegramMode.TOKEN_PROPERTY + "}") String botToken,
+    LoginFilter(@Value("${" + TelegramMode.TOKEN_PROPERTY + "}") String botToken,
                        @Value("${telegram.max-age:P1D}") Duration maxAge,
                        Clock clock,
                        JsonMapper json,
+                       DeviceAccounts devices,
                        LocalPlayerProvisioner provisioner) {
         this.initData = new TelegramInitData(botToken.trim(), maxAge, clock, json);
+        this.devices = devices;
         this.provisioner = provisioner;
         this.json = json;
     }
@@ -60,32 +69,44 @@ class TelegramAuthFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         // Предварительный CORS-запрос браузера идёт без заголовков — его пропускаем
-        return !request.getRequestURI().startsWith("/api/") || "OPTIONS".equals(request.getMethod());
+        return !request.getRequestURI().startsWith("/api/")
+                || "OPTIONS".equals(request.getMethod())
+                || REGISTER_PATH.equals(request.getRequestURI());
     }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        Optional<TelegramInitData.User> user = initData.verify(request.getHeader(INIT_DATA_HEADER));
-        if (user.isEmpty()) {
+        Optional<Long> player = telegramPlayer(request).or(() -> devicePlayer(request));
+        if (player.isEmpty()) {
             reject(response);
             return;
         }
-        TelegramInitData.User u = user.get();
-        Long playerId = players.get(u.id());
-        if (playerId == null) {
-            // создание профиля идемпотентно, так что два первых запроса подряд не помешают друг другу
-            playerId = provisioner.provision("tg:" + u.id(), displayName(u), timezone(request));
-            players.put(u.id(), playerId);
-        }
-        request.setAttribute(PLAYER_ATTRIBUTE, playerId);
+        request.setAttribute(PLAYER_ATTRIBUTE, player.get());
         chain.doFilter(request, response);
+    }
+
+    private Optional<Long> telegramPlayer(HttpServletRequest request) {
+        return initData.verify(request.getHeader(INIT_DATA_HEADER)).map(u -> {
+            Long playerId = players.get(u.id());
+            if (playerId == null) {
+                // создание профиля идемпотентно, так что два первых запроса подряд не помешают друг другу
+                playerId = provisioner.provision("tg:" + u.id(), displayName(u), timezone(request));
+                players.put(u.id(), playerId);
+            }
+            return playerId;
+        });
+    }
+
+    private Optional<Long> devicePlayer(HttpServletRequest request) {
+        String token = request.getHeader(DEVICE_HEADER);
+        return token == null || token.isBlank() ? Optional.empty() : devices.playerFor(token.trim());
     }
 
     private void reject(HttpServletResponse response) throws IOException {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED,
-                "Игра открывается из Telegram — через кнопку «Играть» у бота.");
-        problem.setTitle("Нужен вход через Telegram");
+                "Откройте игру через кнопку «Играть» у бота в Telegram или установите приложение.");
+        problem.setTitle("Нужен вход");
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
@@ -101,7 +122,7 @@ class TelegramAuthFilter extends OncePerRequestFilter {
     }
 
     /** Часовой пояс из браузера: по нему сервер решает, какой у игрока «сегодня». */
-    private static ZoneId timezone(HttpServletRequest request) {
+    static ZoneId timezone(HttpServletRequest request) {
         String zone = request.getHeader(TIMEZONE_HEADER);
         if (zone != null) {
             try {

@@ -46,25 +46,84 @@ async function readProblem(response: Response): Promise<ProblemDetail> {
  */
 const API_URL = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')
 
-/** Вход через Telegram: подписанная initData и часовой пояс (по нему сервер считает «сегодня»). */
-function loginHeaders(): Record<string, string> {
+const timezone = () => Intl.DateTimeFormat().resolvedOptions().timeZone
+
+/**
+ * Вход в приложении без регистрации: сервер один раз выдаёт ключ устройства, он хранится в браузере
+ * и уходит в каждом запросе. Включается при сборке сайта (VITE_DEVICE_LOGIN) — локальный сервер
+ * работает без входа. Читается при каждом вызове, чтобы тесты могли его переключать.
+ */
+export const deviceLoginEnabled = () => import.meta.env.VITE_DEVICE_LOGIN === 'true' && !telegramInitData()
+
+const DEVICE_KEY = 'where-grows-device'
+// если хранилище недоступно (приватный режим) — ключ живёт до закрытия вкладки
+let memoryToken: string | null = null
+let registering: Promise<string> | null = null
+
+function storedToken(): string | null {
+  try {
+    return localStorage.getItem(DEVICE_KEY) ?? memoryToken
+  } catch {
+    return memoryToken
+  }
+}
+
+function storeToken(token: string | null) {
+  memoryToken = token
+  try {
+    if (token) localStorage.setItem(DEVICE_KEY, token)
+    else localStorage.removeItem(DEVICE_KEY)
+  } catch {
+    // хранилище недоступно — обойдёмся памятью
+  }
+}
+
+/** Ключ устройства; при первом запуске сервер заводит новый сад. Параллельные запросы ждут одну регистрацию. */
+function deviceToken(fetchImpl: typeof fetch): Promise<string> {
+  const known = storedToken()
+  if (known) return Promise.resolve(known)
+  registering ??= (async () => {
+    const response = await fetchImpl(API_URL + '/api/auth/device', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'X-Timezone': timezone() },
+    })
+    if (!response.ok) throw new Error(`регистрация устройства: ${response.status}`)
+    const { token } = (await response.json()) as { token: string }
+    storeToken(token)
+    return token
+  })().finally(() => {
+    registering = null
+  })
+  return registering
+}
+
+/** Заголовки входа: из Telegram — подписанная initData, из приложения — ключ устройства. */
+async function loginHeaders(fetchImpl: typeof fetch): Promise<Record<string, string>> {
   const initData = telegramInitData()
-  if (!initData) return {}
-  return { 'X-Telegram-Init-Data': initData, 'X-Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone }
+  if (initData) return { 'X-Telegram-Init-Data': initData, 'X-Timezone': timezone() }
+  if (deviceLoginEnabled()) return { 'X-Device-Token': await deviceToken(fetchImpl), 'X-Timezone': timezone() }
+  return {}
 }
 
 export async function apiFetch<T>(path: string, init?: RequestInit, fetchImpl: typeof fetch = fetch): Promise<T> {
   let response: Response
   try {
-    response = await fetchImpl(API_URL + path, {
-      ...init,
-      headers: {
-        Accept: 'application/json',
-        ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
-        ...loginHeaders(),
-        ...init?.headers,
-      },
-    })
+    const send = async () =>
+      fetchImpl(API_URL + path, {
+        ...init,
+        headers: {
+          Accept: 'application/json',
+          ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+          ...(await loginHeaders(fetchImpl)),
+          ...init?.headers,
+        },
+      })
+    response = await send()
+    if (response.status === 401 && deviceLoginEnabled() && storedToken()) {
+      // сервер не знает этот ключ (например, база пересоздана) — заводим сад заново и повторяем один раз
+      storeToken(null)
+      response = await send()
+    }
   } catch {
     throw new ApiError('network', null, 'Нет связи с сервером', null)
   }

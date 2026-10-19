@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { enterFullscreen, exitFullscreen, useSettings, type Settings } from '../../app/settings'
 import { isFullscreen, onFullscreenChange } from '../../app/telegram'
+import { AppSection } from './AppSection'
 import styles from './SettingsPanel.module.css'
 
 type Choice<K extends keyof Settings> = { key: K; label: string; options: { value: Settings[K]; label: string }[] }
@@ -62,7 +63,8 @@ export function SettingsPanel() {
           </div>
         </div>
       ))}
-      <p className={styles.note}>Настройки хранятся в этом браузере. Прогресс игры — на сервере, его они не трогают.</p>
+      <AppSection />
+      <p className={styles.note}>Настройки хранятся на этом устройстве. Прогресс игры — на сервере, его они не трогают.</p>
     </div>
   )
 }

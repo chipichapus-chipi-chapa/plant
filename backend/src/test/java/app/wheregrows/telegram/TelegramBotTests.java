@@ -50,6 +50,16 @@ class TelegramBotTests {
         public void setMenuButton(String text, String webAppUrl) {
             calls.add("menu " + text + " " + webAppUrl);
         }
+
+        @Override
+        public void sendText(long chatId, String text) {
+            calls.add("text " + chatId + " " + text);
+        }
+
+        @Override
+        public String username() {
+            return "garden_test_bot";
+        }
     }
 
     @TestConfiguration(proxyBeanMethods = false)
