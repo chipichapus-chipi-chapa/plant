@@ -11,6 +11,7 @@ import app.wheregrows.garden.GardenService;
 import app.wheregrows.habit.HabitService.DailyRewards;
 import app.wheregrows.habit.HabitView;
 import app.wheregrows.mentor.MentorProgress;
+import app.wheregrows.story.FogService;
 
 /**
  * Снимок состояния игрока. Расширяется по мере появления механик (коллекция, магия).
@@ -20,7 +21,8 @@ import app.wheregrows.mentor.MentorProgress;
 record GameStateResponse(Player player, LocalDate today, List<InventoryEntry> inventory, List<HabitView> habits,
                          DailyRewards dailyRewards, Garden garden, List<WorldObject> worldObjects,
                          List<String> searchedSpots, List<CollectedArtifact> artifacts, MentorProgress mentor,
-                         List<String> solvedPuzzles, List<ErrandService.ErrandState> errands) {
+                         List<String> solvedPuzzles, List<ErrandService.ErrandState> errands,
+                         FogService.FogState fog) {
 
     /** Артефакт в коллекции: когда и где найден. Описание — в каталоге. */
     record CollectedArtifact(String key, Instant foundAt, String foundWhere) {

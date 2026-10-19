@@ -8,12 +8,24 @@ import java.util.Map;
  * постройки (props) лежат поверх тайлов. Хранится как контент в resources/content/gardens.
  */
 public record GardenMap(String key, String name, int width, int height, Map<String, TileType> tiles,
-                        List<String> rows, List<Prop> props, List<Npc> npcs) {
+                        List<String> rows, List<Prop> props, List<Npc> npcs, Fog fog) {
 
     /** Карта без жителей — для коротких описаний в тестах и простых локаций. */
     public GardenMap(String key, String name, int width, int height, Map<String, TileType> tiles,
                      List<String> rows, List<Prop> props) {
-        this(key, name, width, height, tiles, rows, props, List.of());
+        this(key, name, width, height, tiles, rows, props, List.of(), null);
+    }
+
+    /**
+     * Туман над локацией (Туманное озеро). Начинается, когда выполнено поручение after (сад поместья ожил),
+     * и редеет с каждым днём, в который игрок отметил хоть одну привычку; рассеивается за days таких дней.
+     * Пропуски ничего не отнимают — туман просто ждёт.
+     *
+     * @param speaker житель, который рассказывает о тумане
+     * @param talks   его разговоры: [густой, редеет, рассеялся]
+     * @param notches постройка, на которой появляются зарубки — по одной за день (причал)
+     */
+    public record Fog(String after, int days, String speaker, List<String> talks, String notches) {
     }
 
     public List<Npc> npcsOrEmpty() {
@@ -47,9 +59,16 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
 
     /**
      * Дверь: на какую карту ведёт, в какую клетку и куда персонаж будет смотреть; label — надпись на кнопке.
-     * requires — постройка, которую сначала надо пробудить (калитка, заросшая ежевикой), или null.
+     * requires — постройка, которую сначала надо пробудить (калитка, заросшая ежевикой), или null;
+ * requiresErrand — поручение, которое надо выполнить; requiresFog — туман на этой карте должен рассеяться (лодка).
      */
-    public record Door(String map, int x, int y, String facing, String label, String requires, String requiresErrand) {
+    public record Door(String map, int x, int y, String facing, String label, String requires, String requiresErrand,
+                       Boolean requiresFog) {
+
+        /** Лодка: плыть можно, когда туман рассеялся. Поле необязательное — у обычных дверей его нет. */
+        public boolean waitsForFog() {
+            return Boolean.TRUE.equals(requiresFog);
+        }
     }
 
     /**

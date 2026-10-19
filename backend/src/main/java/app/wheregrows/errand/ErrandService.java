@@ -31,7 +31,7 @@ import app.wheregrows.player.PlayerProfileRepository;
 public class ErrandService {
 
     static final String OFFERED = "errand_offered:";
-    static final String DONE = "errand_done:";
+    public static final String DONE = "errand_done:";
 
     private final GardenMaps maps;
     private final PlayerFlagRepository flags;

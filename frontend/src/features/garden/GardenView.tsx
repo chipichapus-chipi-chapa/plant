@@ -5,6 +5,7 @@ import type { Catalog, Door, Errand, GameState, GardenMap, Npc, Puzzle } from '.
 import { frameImage, loadAtlas, type Atlas } from '../../game/atlas'
 import { composeCharacterFrames } from '../../game/character'
 import { WEED_MS, type WeedEffect } from '../../game/effects'
+import { fogBand, fogDensity, fogTalk, notchesLine } from '../../game/fog'
 import { GardenCanvas } from '../../game/GardenCanvas'
 import { doorOpen, errandReady, isClickable, isNear, markerPoint, npcAt, promptCell, promptPoint, sameThing, WEEDING_TOOLS, type Objective } from '../../game/guidance'
 import type { Facing } from '../../game/movement'
@@ -88,6 +89,32 @@ function nextTalk(npc: Npc): string {
   }
   const rest = npc.talks.slice(1)
   return !met || rest.length === 0 ? npc.talks[0] : rest[Math.floor(Math.random() * rest.length)]
+}
+
+/** Какую новость о тумане Тишь уже рассказала (густой → редеет → рассеялся) — чтобы новую сказать сразу. */
+const FOG_HEARD = 'where-grows-fog-heard'
+
+function heardFogBand(): number | null {
+  try {
+    const value = window.localStorage.getItem(FOG_HEARD)
+    return value === null ? null : Number(value)
+  } catch {
+    return null
+  }
+}
+
+function rememberFogBand(band: number) {
+  try {
+    if ((heardFogBand() ?? -1) < band) window.localStorage.setItem(FOG_HEARD, String(band))
+  } catch {
+    // не запомнилось — Тишь просто повторит новость
+  }
+}
+
+/** Текст постройки + строчка про зарубки, если это причал у тумана. */
+function withNotches(read: string, propKey: string, map: GardenMap, fog: GameState['fog']): string {
+  const line = notchesLine(propKey, map, fog)
+  return line ? `${read}\n\n${line}` : read
 }
 
 /** Где игрок сейчас: какая локация, где появиться и куда смотреть. */
@@ -196,6 +223,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     return {
       objects: home ? state.garden.objects : [],
       effects: weeding ? [weeding] : [],
+      fog: fogDensity(state.fog, map.key),
       awakened,
       variants,
       // секретки не мерцают: догадаться надо самому
@@ -292,7 +320,9 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     if (errand && !status?.offered) return setChat({ npc, dialogue: errand.offer, accept: errand })
     if (errand && !status?.done) return setChat({ npc, dialogue: errand.waiting })
     const secret = secretTalk(npc.secrets, state.player.appearance, npc.key)
-    setChat({ npc, dialogue: secret ?? nextTalk(npc) })
+    const fog = fogTalk(npc.key, map, state.fog, heardFogBand(), Math.random())
+    if (fog && state.fog) rememberFogBand(fogBand(state.fog))
+    setChat({ npc, dialogue: secret ?? fog ?? nextTalk(npc) })
   }
 
   const isMentor = (cell: Cell) => home && sameCell(cell, MENTOR_SPOT)
@@ -551,7 +581,9 @@ function CellInfo({ cell, map, state, catalog, now, planting, onPlant, onEnter, 
         </p>
         <div>
           {door && doorOpen(door, state) && <Button onClick={() => onEnter(door)}>{door.label}</Button>}
-          {read && <Button onClick={() => onRead({ title: info.name, text: read })}>Прочитать</Button>}
+          {read && (
+            <Button onClick={() => onRead({ title: info.name, text: withNotches(read, prop.key, map, state.fog) })}>Прочитать</Button>
+          )}
         </div>
       </div>
     )

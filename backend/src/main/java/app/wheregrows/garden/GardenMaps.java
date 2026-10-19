@@ -39,6 +39,7 @@ public class GardenMaps {
             throw new IllegalStateException("Нет карты домашнего сада (" + HOME + ")");
         }
         validateDoors();
+        validateFog();
     }
 
     public GardenMap home() {
@@ -68,6 +69,31 @@ public class GardenMaps {
     }
 
     public record NpcErrand(GardenMap.Npc npc, GardenMap.Errand errand) {
+    }
+
+    /** Карта с туманом (Туманное озеро) или пусто. */
+    public Optional<GardenMap> foggy() {
+        return maps.values().stream().filter(m -> m.fog() != null).findFirst();
+    }
+
+    /** Туман ссылается на настоящие поручение, жителя, его разговоры и постройку. */
+    private void validateFog() {
+        List<GardenMap> foggy = maps.values().stream().filter(m -> m.fog() != null).toList();
+        if (foggy.size() > 1) {
+            throw new IllegalStateException("Туман пока бывает только над одной локацией");
+        }
+        for (GardenMap map : foggy) {
+            GardenMap.Fog fog = map.fog();
+            map.require(fog.days() > 0, "туман рассеивается за " + fog.days() + " дней");
+            map.require(errand(fog.after()).isPresent(), "туман ждёт несуществующее поручение " + fog.after());
+            GardenMap.Npc speaker = map.npcsOrEmpty().stream().filter(n -> n.key().equals(fog.speaker())).findFirst().orElse(null);
+            map.require(speaker != null, "о тумане рассказывает несуществующий житель " + fog.speaker());
+            map.require(fog.talks() != null && fog.talks().size() == 3, "у тумана три разговора: густой, редеет, рассеялся");
+            fog.talks().forEach(t -> map.require(speaker.dialogues() != null && speaker.dialogues().containsKey(t),
+                    "у " + speaker.name() + " нет разговора " + t));
+            map.require(fog.notches() == null || map.props().stream().anyMatch(p -> p.key().equals(fog.notches())),
+                    "зарубки на несуществующей постройке " + fog.notches());
+        }
     }
 
     /** Двери ведут на существующие карты, в свободную клетку; ключи построек не повторяются между картами. */
@@ -103,6 +129,8 @@ public class GardenMaps {
                         "дверь " + prop.key() + " требует несуществующую постройку " + door.requires());
                 map.require(door.requiresErrand() == null || errand(door.requiresErrand()).isPresent(),
                         "дверь " + prop.key() + " требует несуществующее поручение " + door.requiresErrand());
+                map.require(!door.waitsForFog() || map.fog() != null,
+                        "дверь " + prop.key() + " ждёт тумана, а на карте его нет");
             }
         }
     }
