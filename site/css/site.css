@@ -19,6 +19,9 @@
 
 * { box-sizing: border-box; }
 
+/* hidden сильнее display у кнопок: кнопки Telegram ждут ссылку на бота */
+[hidden] { display: none !important; }
+
 html { scroll-behavior: smooth; }
 
 body {

@@ -59,7 +59,6 @@
       })
       .catch(function () {});
   }
-  if (!api) document.getElementById('telegram').querySelector('[data-bot]').hidden = true;
 
   // Сцена: Мята между двумя исполинскими лилиями, светлячки — из атласа игры
   var canvas = document.getElementById('scene');
