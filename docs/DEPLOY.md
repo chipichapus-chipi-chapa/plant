@@ -5,7 +5,7 @@
 
 | Часть | Где живёт | Как обновляется |
 |---|---|---|
-| Фронтенд (сайт) | GitHub Pages — `https://chipichapus-chipi-chapa.github.io/plant/` | `.github/workflows/pages.yml` при пуше в `main` |
+| Фронтенд (сайт) | GitHub Pages — `https://chipichapus-chipi-chapa.github.io/plant/` (страница установки), игра — в `app/` | `.github/workflows/pages.yml` при пуше в `main` |
 | Сервер (Spring Boot) | Render, бесплатный тариф, образ из `backend/Dockerfile` | `render.yaml`, автодеплой при пуше в `main` |
 | База (PostgreSQL) | Neon, бесплатный тариф | Flyway накатывает миграции при старте сервера |
 | Бот | тот же сервер: `TelegramBot` + webhook `/telegram/webhook` | регистрируется сам при старте |

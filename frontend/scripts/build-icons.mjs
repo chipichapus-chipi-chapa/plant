@@ -1,4 +1,4 @@
-// Иконки приложения (PWA): Мята под исполинской лилией — как на заставке.
+// Иконки приложения (PWA и Android): Мята под исполинской лилией — как на заставке.
 // Рисуются из тех же спрайтов, что и атлас, и увеличиваются без сглаживания.
 //
 // Запуск: npm run icons
@@ -26,6 +26,32 @@ function blit(target, sprite, dx, dy) {
   }
 }
 
+/** Рисунок без фона: лилия и Мята. */
+function artwork() {
+  const art = new Sprite(64, 64)
+  blit(art, frames.prop_giant_lily_awakened, 0, -6) // цветок лилии над головой
+  blit(art, frames.npc_myata_0, 16, 18) // Мята у стебля
+  return art
+}
+
+/** Рисунок по центру прозрачного холста size×size, занимающий долю share. */
+function centered(size, share) {
+  const art = artwork()
+  const out = new Sprite(size, size)
+  const box = Math.round(size * share)
+  const offset = Math.floor((size - box) / 2)
+  for (let y = 0; y < box; y++) {
+    for (let x = 0; x < box; x++) {
+      const sx = Math.floor((x * 64) / box)
+      const sy = Math.floor((y * 64) / box)
+      const i = (sy * 64 + sx) * 4
+      if (art.data[i + 3] === 0) continue
+      out.data.set(art.data.subarray(i, i + 4), ((offset + y) * size + offset + x) * 4)
+    }
+  }
+  return out
+}
+
 /**
  * Сцена 64×64. safe — доля, в которую должно уместиться главное: у «маскируемой» иконки
  * Android обрезает края кругом или скруглённым квадратом, поэтому рисунок сжимается к центру.
@@ -45,9 +71,7 @@ function scene(safe) {
       if (d < 1) s.px(x, y, '#f3b7c8', Math.round((1 - d) ** 2 * 70))
     }
   }
-  const art = new Sprite(64, 64)
-  blit(art, frames.prop_giant_lily_awakened, 0, -6) // цветок лилии над головой
-  blit(art, frames.npc_myata_0, 16, 18) // Мята у стебля
+  const art = artwork()
   // уменьшение к центру для маскируемой иконки — по ближайшему пикселю, чтобы не мылить
   const k = 1 / safe
   for (let y = 0; y < 64; y++) {
@@ -84,4 +108,22 @@ writeFileSync(join(OUT_DIR, 'icon-192.png'), upscale(plain, 192))
 writeFileSync(join(OUT_DIR, 'icon-512.png'), upscale(plain, 512))
 writeFileSync(join(OUT_DIR, 'maskable-512.png'), upscale(maskable, 512))
 writeFileSync(join(OUT_DIR, 'apple-touch-icon.png'), upscale(plain, 180))
-console.log(`иконки → ${OUT_DIR}`)
+
+// Android: обычная иконка по плотностям экрана и «адаптивная» — рисунок отдельно от фона
+// (фон — цвет ic_launcher_background), лаунчер сам обрежет её кругом или скруглённым квадратом.
+const RES = join(dirname(fileURLToPath(import.meta.url)), '..', 'android', 'app', 'src', 'main', 'res')
+const DENSITIES = { mdpi: 1, hdpi: 1.5, xhdpi: 2, xxhdpi: 3, xxxhdpi: 4 }
+for (const [density, k] of Object.entries(DENSITIES)) {
+  const dir = join(RES, `mipmap-${density}`)
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(join(dir, 'ic_launcher.png'), upscale(plain, 48 * k))
+  writeFileSync(join(dir, 'ic_launcher_round.png'), upscale(plain, 48 * k))
+  // 108dp, из них видно примерно 72dp в центре — рисунок занимает 60%
+  const fg = centered(108 * k, 0.6)
+  writeFileSync(join(dir, 'ic_launcher_foreground.png'), encodePng(fg.w, fg.h, fg.data))
+}
+// картинка заставки при запуске APK
+const splash = centered(288, 0.9)
+writeFileSync(join(RES, 'drawable', 'splash_art.png'), encodePng(splash.w, splash.h, splash.data))
+
+console.log(`иконки → ${OUT_DIR} и ${RES}`)

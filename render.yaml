@@ -22,7 +22,7 @@ services:
         sync: false
       # куда ведёт кнопка «Играть» у бота
       - key: TELEGRAM_WEB_APP_URL
-        value: https://chipichapus-chipi-chapa.github.io/plant/
+        value: https://chipichapus-chipi-chapa.github.io/plant/app/
       - key: GAME_CORS_ALLOWED_ORIGINS
         value: https://chipichapus-chipi-chapa.github.io
       # у бесплатной базы Neon мало соединений

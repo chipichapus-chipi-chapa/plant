@@ -86,7 +86,7 @@ describe('apiFetch', () => {
         if (String(url).endsWith('/api/auth/device')) {
           return new Response(JSON.stringify({ token: `key-${next++}` }), { status: 201 })
         }
-        const token = (init?.headers as Record<string, string>)['X-Device-Token']
+        const token = (init?.headers as Record<string, string> | undefined)?.['X-Device-Token']
         return new Response('{}', { status: token === 'key-1' ? 401 : 200 })
       }
       // ключ из прошлого теста (key-1) сервер «забыл»

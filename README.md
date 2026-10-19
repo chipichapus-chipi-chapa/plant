@@ -94,11 +94,13 @@ cd frontend && npm run atlas
 
 Игра открывается как **Telegram Mini App**: у бота кнопка «Играть», она открывает сад прямо в Telegram.
 
-Ещё её можно **поставить на экран телефона как приложение** (PWA) — с сайта
-https://chipichapus-chipi-chapa.github.io/plant/ :
+Ещё её можно **поставить на телефон** — всё на сайте https://chipichapus-chipi-chapa.github.io/plant/
+(инструкция для пересылки — [INSTALL.md](INSTALL.md)):
 
-- **Android (Chrome):** настройки игры → «Установить на экран» (или меню браузера → «Установить приложение»);
-- **iPhone (Safari):** «Поделиться» → «На экран „Домой“».
+- **Android:** «Скачать для Android» — APK из [выпуска «android»](https://github.com/chipichapus-chipi-chapa/plant/releases/tag/android) (собирается в GitHub Actions через Capacitor);
+- **iPhone (Safari):** «Играть» → «Поделиться» → «На экран „Домой“» (PWA).
+
+Сама игра лежит в `/plant/app/`, на главной — страница установки (`site/`).
 
 Приложение открывается во весь экран, без адресной строки, графика сохраняется на телефоне.
 Входить никуда не нужно — сад заводится сам. Чтобы играть в один и тот же сад и в приложении, и в боте,
@@ -107,7 +109,8 @@ https://chipichapus-chipi-chapa.github.io/plant/ :
 
 | Часть | Где | Обновление |
 |---|---|---|
-| Сайт (фронтенд) | GitHub Pages — https://chipichapus-chipi-chapa.github.io/plant/ | сам, при пуше в `main` |
+| Сайт установки и игра | GitHub Pages — https://chipichapus-chipi-chapa.github.io/plant/ (игра — в `app/`) | сам, при пуше в `main` |
+| APK для Android | GitHub Releases, выпуск «android» | сам, при пуше в `main` |
 | Сервер (Spring Boot) | Render, бесплатно, по `render.yaml` | сам, при пуше в `main` |
 | База (PostgreSQL) | Neon, бесплатно | миграции Flyway при старте сервера |
 | Бот | живёт в том же сервере (webhook) | сам: при старте сервер регистрирует webhook и кнопку «Играть» |

@@ -33,7 +33,8 @@ import tools.jackson.databind.json.JsonMapper;
  *       подпись верна — запрос выполняется от имени этого игрока (при первом входе создаётся профиль);</li>
  *   <li>из приложения (PWA) — ключ устройства в заголовке {@value #DEVICE_HEADER}, см. {@link DeviceAccounts}.</li>
  * </ul>
- * Иначе 401. Открыт только {@value #REGISTER_PATH}: через него приложение и получает ключ.
+ * Иначе 401. Открыты только {@value #REGISTER_PATH} (через него приложение и получает ключ)
+ * и {@value #BOT_PATH} (ссылка на бота для сайта установки).
  */
 @Component
 @Conditional(TelegramMode.On.class)
@@ -43,6 +44,7 @@ class LoginFilter extends OncePerRequestFilter {
     static final String DEVICE_HEADER = "X-Device-Token";
     static final String TIMEZONE_HEADER = "X-Timezone";
     static final String REGISTER_PATH = "/api/auth/device";
+    static final String BOT_PATH = "/api/auth/bot";
     static final String PLAYER_ATTRIBUTE = LoginFilter.class.getName() + ".player";
 
     private static final int MAX_NAME = 40;
@@ -71,7 +73,8 @@ class LoginFilter extends OncePerRequestFilter {
         // Предварительный CORS-запрос браузера идёт без заголовков — его пропускаем
         return !request.getRequestURI().startsWith("/api/")
                 || "OPTIONS".equals(request.getMethod())
-                || REGISTER_PATH.equals(request.getRequestURI());
+                || REGISTER_PATH.equals(request.getRequestURI())
+                || BOT_PATH.equals(request.getRequestURI());
     }
 
     @Override

@@ -4,6 +4,10 @@
  */
 import { telegramApp } from './telegram'
 
+/** Запущено внутри APK (Capacitor): там игра уже приложение — ни установки, ни сервис-воркера не нужно. */
+export const isNativeApp = () =>
+  !!(window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.()
+
 type InstallPrompt = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> }
 
 let deferred: InstallPrompt | null = null
@@ -12,6 +16,7 @@ const notify = () => listeners.forEach((l) => l())
 
 /** Открыто как установленное приложение (с экрана «Домой»), а не во вкладке браузера. */
 export const isInstalled = () =>
+  isNativeApp() ||
   window.matchMedia?.('(display-mode: fullscreen), (display-mode: standalone)').matches ||
   (navigator as Navigator & { standalone?: boolean }).standalone === true
 
@@ -37,7 +42,7 @@ export function onInstallChange(listener: () => void): () => void {
 
 /** Сервис-воркер и перехват окна установки. Только на собранном сайте и не в Telegram. */
 export function setupPwa(): void {
-  if (!import.meta.env.PROD || telegramApp()) return
+  if (!import.meta.env.PROD || telegramApp() || isNativeApp()) return
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault() // покажем свою кнопку в настройках, а не баннер браузера
     deferred = e as InstallPrompt

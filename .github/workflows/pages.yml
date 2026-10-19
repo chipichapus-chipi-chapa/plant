@@ -1,4 +1,4 @@
-# Фронтенд на GitHub Pages: собирается при каждом пуше в main.
+# Сайт на GitHub Pages: страница установки (site/) в корне и сама игра в app/.
 # Адрес сервера берётся из переменной репозитория API_URL (Settings → Secrets and variables → Actions → Variables).
 name: Pages
 
@@ -19,9 +19,6 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,16 +26,28 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
-      - run: npm run build
+      - name: Сборка игры
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
         env:
-          VITE_BASE: /${{ github.event.repository.name }}/
+          # полный путь нужен сервис-воркеру и манифесту: игра лежит не в корне, а в /<репозиторий>/app/
+          VITE_BASE: /${{ github.event.repository.name }}/app/
           VITE_API_URL: ${{ vars.API_URL }}
           # вне Telegram (приложение, браузер) игрок входит по ключу устройства
           VITE_DEVICE_LOGIN: 'true'
+      - name: Сборка сайта
+        run: |
+          mkdir -p _site
+          cp -r site/. _site/
+          cp -r frontend/dist _site/app
+          # адрес сервера для страницы установки (ссылка на бота)
+          echo "window.GARDEN_API = '${{ vars.API_URL }}';" > _site/config.js
+          touch _site/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: frontend/dist
+          path: _site
 
   deploy:
     needs: build

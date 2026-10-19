@@ -102,6 +102,16 @@ class TelegramLoginApiTests {
     }
 
     @Test
+    void androidAppMayCallTheServer() throws Exception {
+        mvc.perform(options("/api/state")
+                        .header("Origin", "https://localhost")
+                        .header("Access-Control-Request-Method", "GET")
+                        .header("Access-Control-Request-Headers", "x-device-token"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "https://localhost"));
+    }
+
+    @Test
     void healthStaysOpenForTheHosting() throws Exception {
         mvc.perform(get("/actuator/health")).andExpect(status().isOk());
     }

@@ -89,6 +89,13 @@ class DeviceLoginApiTests {
     }
 
     @Test
+    void installSiteGetsTheBotLinkWithoutLogin() throws Exception {
+        mvc.perform(get("/api/auth/bot"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.url").value("https://t.me/garden_test_bot"));
+    }
+
+    @Test
     void unknownOrBrokenDeviceKeyIsRejected() throws Exception {
         mvc.perform(get("/api/state").header(LoginFilter.DEVICE_HEADER, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"))
                 .andExpect(status().isUnauthorized());
