@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Там, где растёт — уютный сад привычек</title>
+  <!-- Игра живёт в app/. Если сюда пришли из Telegram (данные входа в #tgWebAppData)
+       или из приложения, установленного до переезда, — сразу в игру, не теряя данных входа. -->
+  <script>
+    (function () {
+      var fromTelegram = location.hash.indexOf('tgWebAppData') !== -1;
+      var installed = window.matchMedia && window.matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches;
+      if (fromTelegram || installed || navigator.standalone) location.replace('app/' + location.search + location.hash);
+    })();
+  </script>
+  <meta name="description" content="Пиксельная игра, где заброшенный сад оживает вместе с вашими привычками. Без наказаний за пропуски. Android, iPhone, Telegram и браузер.">
+  <meta name="theme-color" content="#120e0d">
+  <meta property="og:title" content="Там, где растёт">
+  <meta property="og:description" content="Уютный пиксельный сад, который оживает вместе с вашими привычками.">
+  <meta property="og:image" content="app/icons/icon-512.png">
+  <link rel="icon" href="app/favicon.svg">
+  <link rel="apple-touch-icon" href="app/icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kurale&display=swap">
+  <link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-text">
+      <div class="kicker">Уютная пиксельная игра про привычки</div>
+      <h1>Там, где растёт</h1>
+      <p class="sub">Заброшенный сад оживает вместе с&nbsp;вашими привычками — <span class="hl">в&nbsp;телефоне, в&nbsp;Telegram и&nbsp;в&nbsp;браузере</span></p>
+      <div class="cta">
+        <a class="btn glow" href="app/">Играть</a>
+        <a class="btn berry" id="apk" href="https://github.com/chipichapus-chipi-chapa/plant/releases/download/android/where-it-grows.apk">Скачать для Android</a>
+        <a class="btn dew" data-bot hidden href="#">Открыть в Telegram</a>
+      </div>
+      <p class="small">APK для Android · на iPhone — через Safari, <a href="#install" data-os-link="iphone">как установить</a></p>
+    </div>
+    <div class="hero-art">
+      <canvas id="scene" width="160" height="96" aria-label="Кошка Мята между двумя исполинскими лилиями"></canvas>
+    </div>
+  </div>
+</header>
+
+<section class="features">
+  <div class="wrap">
+    <div class="feat"><b>Привычки — это семена</b><span>отметили маленькое дело — получили Семена жизни и осколки кристаллов</span></div>
+    <div class="feat"><b>Сад оживает</b><span>лилии размером с дерево, мыши-почтальоны, загадки и тайники</span></div>
+    <div class="feat"><b>Без наказаний</b><span>пропустили день — ничего не завянет, сад просто подождёт</span></div>
+    <div class="feat"><b>Один сад везде</b><span>телефон, Telegram и браузер — прогресс общий</span></div>
+  </div>
+</section>
+
+<section class="install" id="install">
+  <div class="wrap">
+    <h2>Как <span class="hl">поставить</span></h2>
+    <div class="os-tabs" role="tablist" aria-label="Где играть">
+      <button role="tab" data-os="android" aria-selected="true">Android</button>
+      <button role="tab" data-os="iphone" aria-selected="false">iPhone</button>
+      <button role="tab" data-os="telegram" aria-selected="false">Telegram</button>
+    </div>
+    <div class="ways" data-show="android">
+      <article class="way" id="android">
+        <h3>Android</h3>
+        <ol>
+          <li>Нажмите <b>«Скачать для Android»</b> — загрузится файл <code>where-it-grows.apk</code>.</li>
+          <li>Откройте файл из уведомления или из «Загрузок».</li>
+          <li>Если телефон спросит — разрешите установку из браузера (так Android встречает любое приложение не из магазина).</li>
+          <li>Нажмите <b>«Установить»</b>. Иконка сада появится на рабочем столе.</li>
+        </ol>
+        <p class="alt">Не хочется ставить файл? Нажмите «Играть», затем в Chrome меню <b>⋮ → «Установить приложение»</b>.</p>
+        <a class="btn berry block" href="https://github.com/chipichapus-chipi-chapa/plant/releases/download/android/where-it-grows.apk">Скачать APK</a>
+      </article>
+      <article class="way" id="iphone">
+        <h3>iPhone</h3>
+        <ol>
+          <li>Откройте эту страницу в <b>Safari</b> и нажмите <b>«Играть»</b>.</li>
+          <li>Нажмите <b>«Поделиться»</b> — квадрат со стрелкой внизу экрана.</li>
+          <li>Выберите <b>«На экран „Домой“»</b> и нажмите <b>«Добавить»</b>.</li>
+          <li>Откройте сад с иконки и поверните телефон боком — так видно всю поляну.</li>
+        </ol>
+        <p class="alt">В других браузерах на iPhone установка не работает — только Safari.</p>
+        <a class="btn glow block" href="app/">Играть</a>
+      </article>
+      <article class="way" id="telegram">
+        <h3>Telegram</h3>
+        <ol>
+          <li>Откройте бота и нажмите <b>«Старт»</b>.</li>
+          <li>Внизу чата нажмите <b>«Играть»</b> — сад откроется прямо в Telegram.</li>
+          <li>Уже играете в приложении? В его настройках есть <b>«Привязать Telegram»</b> — и сад станет общим.</li>
+        </ol>
+        <p class="alt">Ничего ставить не нужно — работает везде, где есть Telegram.</p>
+        <a class="btn dew block" data-bot href="#">Открыть бота</a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="screens">
+  <div class="wrap">
+    <h2>Как <span class="hl">выглядит</span></h2>
+    <div class="shots">
+      <img src="img/garden.webp" alt="Сад у дома: грядки, Мастер Вереск и сарай" loading="lazy">
+      <img src="img/manor.webp" alt="Поместье с исполинскими лилиями" loading="lazy">
+      <img src="img/shed.webp" alt="Сарай изнутри: письмо и ящик с загадкой" loading="lazy">
+    </div>
+  </div>
+</section>
+
+<section class="faq">
+  <div class="wrap">
+    <h2>Вопросы</h2>
+    <details><summary>Нужно ли регистрироваться?</summary>
+      <p>Нет. Сад заводится сам при первом запуске. Чтобы играть в один и тот же сад с разных устройств, в настройках игры нажмите «Привязать Telegram».</p></details>
+    <details><summary>Где хранится мой сад?</summary>
+      <p>На сервере игры — поэтому он не пропадёт, если сменить браузер. Если сад привязан к Telegram, его можно открыть с любого телефона.</p></details>
+    <details><summary>Обновления придут сами?</summary>
+      <p>В браузере и Telegram — да, сразу. APK обновите, скачав файл ещё раз и установив поверх: сад сохранится.</p></details>
+    <details><summary>Телефон пишет, что приложение небезопасно</summary>
+      <p>Так Android предупреждает о любом файле не из магазина. Игра не просит никаких разрешений, кроме интернета.</p></details>
+    <details><summary>Почему первый запуск иногда долгий?</summary>
+      <p>Сервер сада живёт на бесплатном хостинге и после долгой тишины просыпается — это бывает до минуты.</p></details>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <img src="app/icons/icon-192.png" alt="" width="64" height="64">
+    <p class="hand">Маленькие шаги тоже ведут к большим мечтам</p>
+    <p class="links"><a href="app/">Играть</a><a href="https://github.com/chipichapus-chipi-chapa/plant">Исходный код</a></p>
+  </div>
+</footer>
+
+<div class="sticky-cta" id="sticky" aria-hidden="true">
+  <a class="btn berry" id="sticky-btn" href="https://github.com/chipichapus-chipi-chapa/plant/releases/download/android/where-it-grows.apk" tabindex="-1">Скачать для Android</a>
+</div>
+
+<script src="config.js"></script>
+<script src="js/site.js"></script>
+</body>
+</html>

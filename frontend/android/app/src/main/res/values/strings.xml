@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Там, где растёт</string>
+    <string name="title_activity_main">Там, где растёт</string>
+    <string name="package_name">app.wheregrows.garden</string>
+    <string name="custom_url_scheme">app.wheregrows.garden</string>
+</resources>

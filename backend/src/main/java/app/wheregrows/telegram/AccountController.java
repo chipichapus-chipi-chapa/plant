@@ -43,10 +43,22 @@ class AccountController {
     record LinkStatus(boolean linked) {
     }
 
+    record Bot(String url) {
+    }
+
     /** Первый запуск приложения: новый сад и ключ устройства (единственный раз, когда ключ уходит с сервера). */
     @PostMapping("/device")
     ResponseEntity<DeviceLogin> register(HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(new DeviceLogin(devices.register(LoginFilter.timezone(request))));
+    }
+
+    /** Ссылка на бота для сайта установки (открыто без входа: имя бота не секрет). */
+    @GetMapping("/bot")
+    ResponseEntity<Bot> bot() {
+        String username = bot.username();
+        return username == null
+                ? ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build()
+                : ResponseEntity.ok(new Bot("https://t.me/" + username));
     }
 
     @GetMapping("/account")

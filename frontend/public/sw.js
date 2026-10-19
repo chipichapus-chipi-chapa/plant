@@ -1,6 +1,7 @@
 // Сервис-воркер приложения: игра открывается мгновенно и без сети показывает графику.
 // Запросы к серверу игры (другой домен) не трогаем — прогресс всегда свежий.
-const CACHE = 'where-grows-v1'
+const PREFIX = 'where-grows-'
+const CACHE = PREFIX + 'v2'
 
 self.addEventListener('install', () => self.skipWaiting())
 
@@ -8,7 +9,8 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      // только свои старые кэши: на этом же домене (github.io) живут другие сайты, например «Огонёк»
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith(PREFIX) && k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   )
 })

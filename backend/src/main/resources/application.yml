@@ -27,7 +27,7 @@ server:
 # переменными окружения их можно переопределить. Локально без токена бот не включается.
 telegram:
   public-url: ${RENDER_EXTERNAL_URL:https://where-it-grows.onrender.com}
-  web-app-url: ${TELEGRAM_WEB_APP_URL:https://chipichapus-chipi-chapa.github.io/plant/}
+  web-app-url: ${TELEGRAM_WEB_APP_URL:https://chipichapus-chipi-chapa.github.io/plant/app/}
 
 management:
   endpoints:

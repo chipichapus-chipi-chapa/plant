@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { fetchAccount, fetchLinkStatus, startTelegramLink } from '../../api/account'
 import { ApiError, deviceLoginEnabled } from '../../api/client'
-import { canPromptInstall, isInstalled, isIos, onInstallChange, promptInstall } from '../../app/pwa'
+import { canPromptInstall, isInstalled, isIos, isNativeApp, onInstallChange, promptInstall } from '../../app/pwa'
 import styles from './SettingsPanel.module.css'
 
 const POLL_MS = 2500
@@ -81,8 +81,9 @@ function TelegramRow() {
   }, [state])
 
   const link = async () => {
-    // окно открываем сразу по клику — иначе браузер посчитает его всплывающей рекламой и заблокирует
-    const tab = window.open('', '_blank')
+    // В APK ссылку t.me система сама откроет в Telegram. В браузере окно открываем сразу по клику —
+    // иначе браузер посчитает его всплывающей рекламой и заблокирует.
+    const tab = isNativeApp() ? null : window.open('', '_blank')
     try {
       const { code, url } = await startTelegramLink()
       if (tab) tab.location.href = url

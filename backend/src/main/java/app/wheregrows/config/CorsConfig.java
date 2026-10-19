@@ -1,5 +1,6 @@
 package app.wheregrows.config;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -22,10 +23,17 @@ import org.springframework.web.filter.CorsFilter;
 @Configuration(proxyBeanMethods = false)
 class CorsConfig {
 
+    static final String ANDROID_APP_ORIGIN = "https://localhost";
+
     @Bean
     FilterRegistrationBean<CorsFilter> corsFilter(@Value("${game.cors.allowed-origins:}") List<String> origins) {
         CorsConfiguration cors = new CorsConfiguration();
-        cors.setAllowedOrigins(origins.stream().map(String::trim).filter(o -> !o.isEmpty()).toList());
+        List<String> allowed = new ArrayList<>(origins.stream().map(String::trim).filter(o -> !o.isEmpty()).toList());
+        if (!allowed.isEmpty()) {
+            // Android-приложение (Capacitor) открывает игру со своего адреса https://localhost
+            allowed.add(ANDROID_APP_ORIGIN);
+        }
+        cors.setAllowedOrigins(allowed);
         cors.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE"));
         // Idempotency-Key — у покупки в лавке: без него браузер не отправит ни одной покупки
         cors.setAllowedHeaders(List.of("Content-Type", "Accept", "Idempotency-Key", "X-Telegram-Init-Data", "X-Device-Token", "X-Timezone"));
