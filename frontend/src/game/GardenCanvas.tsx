@@ -72,20 +72,17 @@ function workLift(scene: Scene, time: number): number {
   return effect ? strikeLift(time - effect.at) : 0
 }
 
-const scanlineCache = new Map<number, CanvasPattern | null>()
+/** Пока герой стоит, анимации перерисовываются не чаще ~30 раз в секунду. */
+const IDLE_FRAME_MS = 32
 
-/** Строки «старого монитора» поверх сцены, как в Inscryption: тонкая тёмная линия через каждые 3 экранных пикселя. */
-function scanlines(ctx: CanvasRenderingContext2D, period: number): CanvasPattern | null {
-  if (!scanlineCache.has(period)) {
-    const tile = document.createElement('canvas')
-    tile.width = 1
-    tile.height = period
-    const t = tile.getContext('2d')!
-    t.fillStyle = 'rgba(0, 0, 0, 0.22)'
-    t.fillRect(0, period - 1, 1, 1)
-    scanlineCache.set(period, ctx.createPattern(tile, 'repeat'))
-  }
-  return scanlineCache.get(period) ?? null
+/**
+ * Во сколько раз холст детальнее CSS-пикселей. Пиксель-арт крупный, лишняя чёткость ему не нужна,
+ * а на телефоне (плотность ×3) холст в 9 раз больше — это и тормозило. Телефону хватает ×1, компьютеру — до ×2.
+ */
+function renderScale(): number {
+  const dpr = window.devicePixelRatio || 1
+  const coarse = window.matchMedia?.('(pointer: coarse)').matches ?? false
+  return Math.min(dpr, coarse ? 1 : 2)
 }
 
 /**
@@ -184,6 +181,7 @@ export function GardenCanvas(props: Props) {
   useEffect(() => {
     let frame = 0
     let last = performance.now()
+    let lastDraw = 0
     let lastCell = cellOf(walkerRef.current)
     let lastFacing = facingCell(walkerRef.current)
     latest.current.onPlayerMove(lastCell, lastFacing)
@@ -219,8 +217,11 @@ export function GardenCanvas(props: Props) {
       // мыши иногда шевелят ушами — пока они в локации, кадр перерисовывается постоянно
       const lively = p.scene.characters.some((c) => c.idle)
       const animated = !!p.scene.marker || lighting || working || lively
-      if (moving || animated || dirtyRef.current) {
+      // пока герой стоит, анимации (уши мышей, туман, «!») хватает 30 кадров в секунду — телефону легче
+      const due = moving || dirtyRef.current || now - lastDraw >= IDLE_FRAME_MS
+      if ((moving || animated || dirtyRef.current) && due) {
         dirtyRef.current = moving // после остановки нарисуем ещё один кадр — без подпрыгивания
+        lastDraw = now
         draw(moving ? WALK_CYCLE[Math.floor(now / STEP_MS) % WALK_CYCLE.length] : 0, now)
       }
       frame = requestAnimationFrame(tick)
@@ -232,7 +233,7 @@ export function GardenCanvas(props: Props) {
       const ctx = canvas?.getContext('2d')
       if (!canvas || !ctx) return
       const s = scaleRef.current
-      const dpr = window.devicePixelRatio || 1
+      const dpr = renderScale()
       const cssWidth = Math.floor(sizeRef.current.width)
       const cssHeight = Math.floor(sizeRef.current.height)
       if (cssWidth === 0 || cssHeight === 0) return
@@ -276,11 +277,6 @@ export function GardenCanvas(props: Props) {
       ctx.fillStyle = LETTERBOX
       ctx.fillRect(0, 0, canvas.width, canvas.height)
       ctx.drawImage(buffer, Math.round(-camera.x * k), Math.round(-camera.y * k), Math.round(buffer.width * k), Math.round(buffer.height * k))
-      const lines = look.current.scanlines ? scanlines(ctx, Math.max(2, Math.round(dpr * 3))) : null
-      if (lines) {
-        ctx.fillStyle = lines
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
-      }
     }
 
     frame = requestAnimationFrame(tick)
@@ -335,6 +331,8 @@ export function GardenCanvas(props: Props) {
             if (!lastPointerWasTouch.current) onSelect(cellFromEvent(e))
           }}
         />
+        {/* строки «старого монитора», как в Inscryption: обычный CSS-слой, а не перерисовка каждого кадра */}
+        {settings.scanlines && <div className={styles.scanlines} aria-hidden="true" />}
         {settings.fireflies && <Fireflies />}
         {touch && inputEnabled && (
           <button

@@ -7,13 +7,14 @@ import { GardenView } from '../features/garden/GardenView'
 import { HabitTracker } from '../features/habits/HabitTracker'
 import { InventoryPanel } from '../features/inventory/InventoryPanel'
 import { ToastProvider } from '../features/notifications/Toasts'
-import { QuestMenu } from '../features/mentor/QuestMenu'
+import { QuestList } from '../features/mentor/QuestList'
+import { activeQuests, questCount } from '../game/quests'
 import { SettingsPanel } from '../features/settings/SettingsPanel'
 import { ShopPanel } from '../features/shop/ShopPanel'
 import { currentObjective } from '../game/guidance'
 import { Button } from '../ui/Button'
 import { HudButton } from '../ui/HudButton'
-import { BagIcon, CollectionIcon, SettingsIcon, ShopIcon, TrackerIcon } from '../ui/icons/HudIcons'
+import { BagIcon, CollectionIcon, QuestIcon, SettingsIcon, ShopIcon, TrackerIcon } from '../ui/icons/HudIcons'
 import { LifeSeedIcon } from '../ui/icons/LifeSeedIcon'
 import { SunSparkIcon } from '../ui/icons/SunSparkIcon'
 import { Panel } from '../ui/Panel'
@@ -25,7 +26,7 @@ import { SettingsProvider } from './SettingsProvider'
 import { Splash } from './Splash'
 import { useGame } from './useGame'
 
-type OpenWindow = 'habits' | 'shop' | 'bag' | 'collection' | 'character' | 'settings' | null
+type OpenWindow = 'quests' | 'habits' | 'shop' | 'bag' | 'collection' | 'character' | 'settings' | null
 
 /**
  * Главный экран — игровое поле во весь экран: сад в центре, всё остальное лежит поверх него, как в игре.
@@ -53,10 +54,13 @@ function Game() {
   const [open, setOpen] = useState<OpenWindow>(null)
   const close = useCallback(() => setOpen(null), [])
   const objective = game.status === 'ready' ? currentObjective(game.state, game.catalog) : null
+  const quests = game.status === 'ready' ? activeQuests(objective, game.state, game.catalog) : null
   const isTarget = (key: string) => objective?.target.kind === 'hud' && objective.target.key === key
   const openHud = (key: string) => {
     if (key === 'habits' || key === 'shop' || key === 'bag' || key === 'collection') setOpen(key)
   }
+  // задание, которое ведёт к кнопке панели, подсвечивает и кнопку «Задания», пока окно не открыто
+  const questBadge = quests && questCount(quests) > 0 ? String(questCount(quests)) : undefined
 
   return (
     <ToastProvider>
@@ -72,12 +76,12 @@ function Game() {
             inputEnabled={started && open === null && game.state.player.onboarded}
             objective={objective}
             hud={{
-              top: game.state.player.onboarded ? (
-                <QuestMenu objective={objective} state={game.state} catalog={game.catalog} onOpenHud={openHud} />
-              ) : null,
+              // поверх сада ничего не висит: задания — в отдельном окне по кнопке
+              top: null,
               corner: <PlayerBadge state={game.state} />,
               toolbar: (
                 <nav className={styles.toolbar} aria-label="Действия">
+                  <HudButton compact icon={<QuestIcon />} label="Задания" onClick={() => setOpen('quests')} badge={questBadge} />
                   <HudButton
                     compact
                     icon={<TrackerIcon />}
@@ -105,6 +109,19 @@ function Game() {
           <div className={styles.loading} aria-busy="true">
             <p className={styles.gardenNote}>Отворяем калитку…</p>
           </div>
+        )}
+
+        {game.status === 'ready' && open === 'quests' && quests && (
+          <Window title="Задания" onClose={close}>
+            <QuestList
+              quests={quests}
+              state={game.state}
+              onOpenHud={(key) => {
+                close()
+                openHud(key)
+              }}
+            />
+          </Window>
         )}
 
         {game.status === 'ready' && open === 'habits' && (

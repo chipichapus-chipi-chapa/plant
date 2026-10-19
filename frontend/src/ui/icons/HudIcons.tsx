@@ -99,3 +99,20 @@ export const SettingsIcon = () =>
       <rect x="7" y="7" width="2" height="2" fill="var(--c-ink)" />
     </>,
   )
+
+/** Раскрытая книжечка с закладкой и «!» — задания. */
+export const QuestIcon = () =>
+  svg(
+    <>
+      <rect x="1" y="3" width="14" height="11" fill="var(--c-ink)" />
+      <rect x="2" y="4" width="5" height="9" fill="var(--c-parchment)" />
+      <rect x="9" y="4" width="5" height="9" fill="var(--c-parchment)" />
+      <rect x="7" y="4" width="2" height="9" fill="var(--c-wood)" />
+      {[6, 8, 10].map((y) => (
+        <rect key={y} x="3" y={y} width="3" height="1" fill="var(--c-bark)" />
+      ))}
+      <rect x="11" y="5" width="1" height="4" fill="var(--c-berry)" />
+      <rect x="11" y="10" width="1" height="1" fill="var(--c-berry)" />
+      <rect x="12" y="2" width="2" height="4" fill="var(--c-sun)" />
+    </>,
+  )

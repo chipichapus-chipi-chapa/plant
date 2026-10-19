@@ -65,7 +65,41 @@
   box-shadow: 0 0 0 var(--px) var(--c-ink);
 }
 
-/* Табличка о выбранном объекте — слева внизу, поверх сада, рядом с кнопками */
+/* Реплика героя о выбранном — как окно разговора с жителем: портрет, имя, текст по буквам, действия */
+.talk {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  width: min(620px, 100%);
+  max-height: 46vh;
+  overflow-y: auto;
+  padding: var(--space-2) var(--space-3);
+  background: var(--paper-texture), var(--c-parchment);
+  background-size: var(--paper-size), auto;
+  box-shadow:
+    0 0 0 var(--px) var(--c-wood),
+    0 0 0 calc(var(--px) * 2) var(--c-bark),
+    0 0 0 calc(var(--px) * 3) var(--c-ink),
+    0 0 30px 6px rgb(255 176 96 / 0.2);
+  font-size: var(--text-s);
+  animation: rise 160ms steps(3) both;
+}
+
+.talkBody {
+  display: grid;
+  gap: var(--space-2);
+  align-content: start;
+  min-width: 0;
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+}
+
+/* Табличка-подсказка (управление, «подойдите поближе») — слева внизу, поверх сада, рядом с кнопками */
 .info {
   width: min(460px, 100%);
   max-height: 42vh;
@@ -170,6 +204,13 @@
 
 /* Низкий экран (телефон набок): табличка короче и мельче */
 @media (max-height: 480px) {
+  .talk {
+    width: min(520px, 62vw);
+    max-height: 40vh;
+    padding: var(--space-1) var(--space-2);
+    font-size: 13px;
+  }
+
   .info {
     width: min(360px, 52vw);
     max-height: 36vh;

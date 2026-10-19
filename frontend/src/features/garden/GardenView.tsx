@@ -32,6 +32,7 @@ import { useToast } from '../notifications/Toasts'
 import styles from './GardenView.module.css'
 import { LockOverlay } from './LockOverlay'
 import { RecipeBlock } from './RecipeBlock'
+import { HeroPortrait, Said } from './Said'
 import { SpotBlock } from './SpotBlock'
 
 type AtlasLoad = { status: 'loading' } | { status: 'ready'; atlas: Atlas } | { status: 'error' }
@@ -417,6 +418,10 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     }
   }
 
+  // о выбранном говорит сам герой — окно в стиле разговора (а подсказки управления — обычной табличкой)
+  const talking =
+    !!selected && (sameCell(selected, playerCell) || (isClickable(selected, state, catalog, map) && atlas.status === 'ready'))
+
   return (
     <section className={styles.screen} aria-label={map.name}>
       <div className={styles.field}>
@@ -456,12 +461,17 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
       </div>
 
       <div className={styles.bottom}>
-        <div className={selected || tooFar || showHint ? styles.info : styles.infoHidden} aria-live="polite" ref={infoRef}>
+        <div
+          className={talking ? styles.talk : selected || tooFar || showHint ? styles.info : styles.infoHidden}
+          aria-live="polite"
+          ref={infoRef}
+        >
+          {/* описания — как разговоры жителей: портрет героя, имя предмета табличкой, текст по буквам */}
+          {talking && <HeroPortrait image={playerFrames?.down[0] ?? null} />}
+          <div className={talking ? styles.talkBody : undefined}>
           {selected && sameCell(selected, playerCell) ? (
             <div className={styles.cell}>
-              <p className={styles.text}>
-                <strong>{state.player.displayName}.</strong> Это вы. Сад, кажется, уже привык к вашим шагам.
-              </p>
+              <Said name={state.player.displayName} text="Это я. Сад, кажется, уже привык к моим шагам." />
               <div>
                 <Button onClick={onEditCharacter}>Изменить облик</Button>
               </div>
@@ -490,6 +500,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
                 : 'Стрелки или WASD — идти. Подойдите к предмету — загорится «!»: нажмите на него или E.'}
             </span>
           ) : null}
+          </div>
         </div>
         {hud.toolbar}
       </div>
@@ -559,12 +570,14 @@ function CellInfo({ cell, map, state, catalog, now, planting, onPlant, onEnter, 
     const name = catalog.species.find((s) => s.key === object.speciesKey)?.name ?? object.speciesKey
     const minutes = minutesUntilNextStage(object, now)
     return (
-      <p className={styles.text}>
-        <strong>{name}.</strong>{' '}
-        {object.mature
-          ? 'Выросло и никуда не денется. Сад стал чуточку живее.'
-          : `Растёт: стадия ${object.stage + 1} из ${object.stageCount}. Следующая — примерно через ${minutes} мин.`}
-      </p>
+      <Said
+        name={name}
+        text={
+          object.mature
+            ? 'Выросло и никуда не денется. Сад стал чуточку живее.'
+            : `Растёт: стадия ${object.stage + 1} из ${object.stageCount}. Следующая — примерно через ${minutes} мин.`
+        }
+      />
     )
   }
 
@@ -576,9 +589,7 @@ function CellInfo({ cell, map, state, catalog, now, planting, onPlant, onEnter, 
     const { door, read } = prop
     return (
       <div className={styles.cell}>
-        <p className={styles.text}>
-          <strong>{info.name}.</strong> {info.description}
-        </p>
+        <Said name={info.name} text={info.description} />
         <div>
           {door && doorOpen(door, state) && <Button onClick={() => onEnter(door)}>{door.label}</Button>}
           {read && (
@@ -593,9 +604,7 @@ function CellInfo({ cell, map, state, catalog, now, planting, onPlant, onEnter, 
   if (puzzle) {
     return (
       <div className={styles.cell}>
-        <p className={styles.text}>
-          <strong>{info.name}.</strong> {info.description}
-        </p>
+        <Said name={info.name} text={info.description} />
         {state.solvedPuzzles.includes(puzzle.key) ? (
           <p className={styles.hint}>Замок открыт, ящик пуст — всё нужное уже у вас.</p>
         ) : (
@@ -616,9 +625,7 @@ function CellInfo({ cell, map, state, catalog, now, planting, onPlant, onEnter, 
   if (spot) {
     return (
       <div className={styles.cell}>
-        <p className={styles.text}>
-          <strong>{info.name}.</strong> {info.description}
-        </p>
+        <Said name={info.name} text={info.description} />
         <SpotBlock key={spot.key} spotKey={spot.key} state={state} catalog={catalog} onChanged={onChanged} />
       </div>
     )
@@ -629,9 +636,7 @@ function CellInfo({ cell, map, state, catalog, now, planting, onPlant, onEnter, 
     const awakened = state.worldObjects.some((w) => w.objectKey === recipe.targetObjectKey)
     return (
       <div className={styles.cell}>
-        <p className={styles.text}>
-          <strong>{info.name}.</strong> {awakened ? '' : info.description}
-        </p>
+        <Said name={info.name} text={awakened ? '' : info.description} />
         <RecipeBlock recipe={recipe} state={state} catalog={catalog} onChanged={onChanged} />
       </div>
     )
@@ -644,9 +649,7 @@ function CellInfo({ cell, map, state, catalog, now, planting, onPlant, onEnter, 
 
   return (
     <div className={styles.cell}>
-      <p className={styles.text}>
-        <strong>{info.name}.</strong> {info.description}
-      </p>
+      <Said name={info.name} text={info.description} />
       {info.plantable &&
         (seeds.length > 0 ? (
           <div className={styles.seeds}>
@@ -712,9 +715,7 @@ function WeedInfo({ cell, name, description, state, onWeeding, onChanged }: {
 
   return (
     <div className={styles.cell}>
-      <p className={styles.text}>
-        <strong>{name}.</strong> {description}
-      </p>
+      <Said name={name} text={description} />
       {hasTools ? (
         <div>
           <Button onClick={() => void weed()} disabled={busy}>

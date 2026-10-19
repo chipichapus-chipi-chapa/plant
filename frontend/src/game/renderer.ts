@@ -74,12 +74,8 @@ export function drawGarden(
   const { objects, awakened, sparkles, characters, bubbles, prompt, marker, time = 0 } = scene
   ctx.imageSmoothingEnabled = false
   ctx.clearRect(0, 0, map.width * TILE, map.height * TILE)
-
-  for (let y = 0; y < map.height; y++) {
-    for (let x = 0; x < map.width; x++) {
-      drawFrame(ctx, atlas, tileFrame(map, x, y), x * TILE, y * TILE)
-    }
-  }
+  // земля не меняется от кадра к кадру — один готовый слой вместо сотен отдельных картинок
+  ctx.drawImage(groundLayer(map, atlas), 0, 0)
 
   // Постройки и растения рисуем вместе, по нижнему краю: что ближе к зрителю — поверх
   const sprites = [
@@ -469,4 +465,27 @@ function drawFog(ctx: CanvasRenderingContext2D, map: GardenMap, density: number,
     ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2)
   }
   ctx.restore()
+}
+
+/**
+ * Слой земли карты, нарисованный один раз. Карта — неизменяемый объект: когда грядку пропололи
+ * или клумба ожила, приходит новый объект карты, и слой рисуется заново.
+ */
+const grounds = new WeakMap<GardenMap, { atlas: Atlas; canvas: HTMLCanvasElement }>()
+
+function groundLayer(map: GardenMap, atlas: Atlas): HTMLCanvasElement {
+  const cached = grounds.get(map)
+  if (cached && cached.atlas === atlas) return cached.canvas
+  const canvas = document.createElement('canvas')
+  canvas.width = map.width * TILE
+  canvas.height = map.height * TILE
+  const ctx = canvas.getContext('2d')!
+  ctx.imageSmoothingEnabled = false
+  for (let y = 0; y < map.height; y++) {
+    for (let x = 0; x < map.width; x++) {
+      drawFrame(ctx, atlas, tileFrame(map, x, y), x * TILE, y * TILE)
+    }
+  }
+  grounds.set(map, { atlas, canvas })
+  return canvas
 }
