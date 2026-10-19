@@ -68,3 +68,13 @@
     animation: none;
   }
 }
+
+/* Подсказка, если загрузка затянулась */
+.wait {
+  margin: 0;
+  max-width: 32ch;
+  color: var(--c-parchment-shade);
+  font-size: 13px;
+  text-align: center;
+  opacity: 0.8;
+}

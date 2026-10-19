@@ -1,7 +1,10 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { frameImage, loadAtlas } from '../game/atlas'
 import { Fireflies } from '../game/Fireflies'
 import styles from './Splash.module.css'
+
+/** Через сколько показать подсказку, что сервер просыпается */
+const SLOW_MS = 4000
 
 type Props = {
   /** Готова ли игра (состояние загружено): до этого кнопка ждёт */
@@ -55,6 +58,14 @@ export function Splash({ ready, onStart }: Props) {
     return () => window.removeEventListener('keydown', onKey)
   }, [ready, onStart])
 
+  // Сервер после простоя просыпается долго — через несколько секунд объясняем, что ждём
+  const [slow, setSlow] = useState(false)
+  useEffect(() => {
+    if (ready) return
+    const timer = window.setTimeout(() => setSlow(true), SLOW_MS)
+    return () => window.clearTimeout(timer)
+  }, [ready])
+
   return (
     <div className={styles.splash} onClick={() => ready && onStart()} role="dialog" aria-label="Там, где растёт">
       <Fireflies />
@@ -64,6 +75,7 @@ export function Splash({ ready, onStart }: Props) {
       <button type="button" className={styles.start} disabled={!ready} onClick={onStart}>
         {ready ? 'Нажмите, чтобы начать' : 'Отворяем калитку…'}
       </button>
+      {!ready && slow && <p className={styles.wait}>Сад просыпается после тишины — это бывает до минуты.</p>}
     </div>
   )
 }
