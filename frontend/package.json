@@ -10,6 +10,7 @@
     "test": "vitest run",
     "atlas": "node scripts/build-placeholder-atlas.mjs",
     "icons": "node scripts/build-icons.mjs",
+    "site-art": "node scripts/build-site-art.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
