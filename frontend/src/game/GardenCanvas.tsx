@@ -7,7 +7,7 @@ import { Fireflies } from './Fireflies'
 import { cameraAt, containScale, inBounds, TILE, type Cell } from './layout'
 import { blockedCells, cellOf, facingCell, walk, walkerAt, type Facing, type Walker } from './movement'
 import { isPlaying, strikeLift } from './effects'
-import { drawGarden, LAMP_LIGHT_UP_MS, lampLevel, type Scene } from './renderer'
+import { drawGarden, LAMP_LIGHT_UP_MS, lampLevel, surroundLayer, type Scene } from './renderer'
 import styles from './GardenCanvas.module.css'
 
 /** Поля вокруг локации — как сумерки в саду (--c-night) */
@@ -276,6 +276,13 @@ export function GardenCanvas(props: Props) {
       ctx.imageSmoothingEnabled = false
       ctx.fillStyle = LETTERBOX
       ctx.fillRect(0, 0, canvas.width, canvas.height)
+      // если пропорции экрана и карты разные — по краям не чёрные поля, а мир продолжается (лес, вода)
+      const pad = Math.ceil(Math.max(0, -camera.x, -camera.y) / TILE) + 1
+      if (pad > 1) {
+        const around = surroundLayer(p.map, p.atlas, pad)
+        const shift = ((around.width / TILE - p.map.width) / 2) * TILE
+        ctx.drawImage(around, Math.round((-camera.x - shift) * k), Math.round((-camera.y - shift) * k), Math.round(around.width * k), Math.round(around.height * k))
+      }
       ctx.drawImage(buffer, Math.round(-camera.x * k), Math.round(-camera.y * k), Math.round(buffer.width * k), Math.round(buffer.height * k))
     }
 
