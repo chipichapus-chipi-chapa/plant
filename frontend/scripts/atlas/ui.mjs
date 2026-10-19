@@ -74,9 +74,41 @@ function hoe(down) {
   return s
 }
 
+/**
+ * Пузырь реплики над жителем: светлое облачко с хвостиком вниз и «!» внутри — как в RPG.
+ * Читается в сумерках и не сливается с фонарём или капюшоном.
+ */
+function talkBubble() {
+  const s = new Sprite(13, 15)
+  const PAPER = ['#cbb995', '#e6dcc4', '#f6f1e6']
+  // облачко 13×11 со скруглёнными углами
+  for (let y = 0; y < 11; y++) {
+    for (let x = 0; x < 13; x++) {
+      const corner = (x === 0 || x === 12) && (y === 0 || y === 10)
+      if (corner) continue
+      const edge = x === 0 || x === 12 || y === 0 || y === 10 || ((x === 1 || x === 11) && (y === 1 || y === 9))
+      s.px(x, y, edge ? INK : y > 7 ? PAPER[1] : PAPER[2])
+    }
+  }
+  // хвостик к голове
+  s.px(5, 11, INK)
+  s.px(6, 11, PAPER[1])
+  s.px(7, 11, INK)
+  s.px(6, 12, INK)
+  // «!»: тёплый, как свет лампы
+  for (let y = 2; y < 7; y++) {
+    s.px(6, y, R.berry[3])
+    s.px(5, y, y < 6 ? R.berry[4] : null)
+  }
+  s.px(5, 8, R.berry[3])
+  s.px(6, 8, R.berry[3])
+  return s
+}
+
 export function uiFrames() {
   return {
     fx_bubble: bang(),
+    fx_talk: talkBubble(),
     fx_interact: bang(),
     fx_sparkle: sparkle(),
     fx_hoe_up: hoe(false),

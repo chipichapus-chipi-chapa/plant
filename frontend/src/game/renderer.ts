@@ -118,14 +118,16 @@ export function drawGarden(
       drawFrame(ctx, atlas, 'fx_sparkle', (prop.x + prop.width) * TILE - 10, prop.y * TILE + 1)
     }
   }
-  // «!» — единственный знак в игре: новость у Вереска, предмет рядом и цель задания (она покачивается).
-  // Если цель совпадает с уже горящим «!», второй не рисуем.
-  const bangs = [
-    ...bubbles.map((cell) => ({ x: cell.x * TILE + 15, y: cell.y * TILE - (CHARACTER_HEIGHT - TILE) + 7 })),
-    ...(prompt ? [prompt] : []),
-  ]
-  for (const b of bangs) drawFrame(ctx, atlas, 'fx_interact', Math.round(b.x - 3), Math.round(b.y - 15))
-  if (marker && !bangs.some((b) => Math.abs(b.x - marker.x) < 16 && Math.abs(b.y - marker.y) < 24)) {
+  // Новость у жителя (Вереску есть что сказать) — пузырь реплики над головой, чуть покачивается.
+  // «!» — предмет рядом и цель задания (она покачивается). Если цель совпадает с уже горящим знаком, второй не рисуем.
+  const talkBob = Math.round(Math.sin(time / 320) * 1.5)
+  const talks = bubbles.map((cell) => ({ x: cell.x * TILE + 16, y: cell.y * TILE - (CHARACTER_HEIGHT - TILE) - 2 }))
+  for (const b of talks) drawFrame(ctx, atlas, 'fx_talk', Math.round(b.x - 6), Math.round(b.y - 15 + talkBob))
+  const bangs = [...talks, ...(prompt ? [prompt] : [])]
+  if (prompt && !talks.some((t) => Math.abs(t.x - prompt.x) < 16 && Math.abs(t.y - prompt.y) < 30)) {
+    drawFrame(ctx, atlas, 'fx_interact', Math.round(prompt.x - 3), Math.round(prompt.y - 15))
+  }
+  if (marker && !bangs.some((b) => Math.abs(b.x - marker.x) < 16 && Math.abs(b.y - marker.y) < 30)) {
     const bob = Math.round(Math.sin(time / 220) * 2)
     drawFrame(ctx, atlas, 'fx_interact', Math.round(marker.x - 3), Math.round(marker.y - 13 + bob))
   }

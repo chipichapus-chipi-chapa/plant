@@ -7,7 +7,7 @@ import { composeCharacterFrames } from '../../game/character'
 import { WEED_MS, type WeedEffect } from '../../game/effects'
 import { fogBand, fogDensity, fogTalk, notchesLine } from '../../game/fog'
 import { GardenCanvas } from '../../game/GardenCanvas'
-import { doorOpen, errandReady, isClickable, isNear, markerPoint, npcAt, promptCell, promptPoint, sameThing, WEEDING_TOOLS, type Objective } from '../../game/guidance'
+import { doorOpen, doorReachable, errandReady, isClickable, isNear, markerPoint, npcAt, promptCell, promptPoint, sameThing, WEEDING_TOOLS, type Objective } from '../../game/guidance'
 import type { Facing } from '../../game/movement'
 import { standingAt, type Scene } from '../../game/renderer'
 import {
@@ -267,8 +267,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     setFacing(facing)
     setSelected(null)
     setTooFar(false)
-    const door = propAt(mapRef.current, facing.x, facing.y)?.door
-    if (door) travelRef.current(door)
+    // в двери не затягивает: войти — клавишей действия (E/пробел) или кнопкой в описании
   }, [])
 
   const [dialogue, setDialogue] = useState<string | null>(null)
@@ -372,6 +371,9 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     const facing = facingRef.current
     if (!facing) return
     if (isMentor(facing) || npcAt(map, facing)) return open(facing)
+    // дверь перед собой — сразу внутрь (если она открыта и подошли с правильной стороны)
+    const doorProp = propAt(map, facing.x, facing.y)
+    if (doorProp?.door && doorOpen(doorProp.door, state) && doorReachable(doorProp, playerCell, facing)) return travel(doorProp.door)
     if (!isClickable(facing, state, catalog, map)) return
     if (!selected || !sameThing(selected, facing, map)) {
       open(facing)
@@ -479,6 +481,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
           ) : selected && isClickable(selected, state, catalog, map) && atlas.status === 'ready' ? (
             <CellInfo
               cell={selected}
+              player={playerCell}
               map={map}
               state={state}
               catalog={catalog}
@@ -551,6 +554,8 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
 
 type CellInfoProps = {
   cell: Cell
+  /** Где стоит герой: в постройку входят только спереди */
+  player: Cell
   map: GardenMap
   state: GameState
   catalog: Catalog
@@ -564,7 +569,7 @@ type CellInfoProps = {
   onChanged: () => Promise<void>
 }
 
-function CellInfo({ cell, map, state, catalog, now, planting, onPlant, onEnter, onRead, onLock, onWeeding, onChanged }: CellInfoProps) {
+function CellInfo({ cell, player, map, state, catalog, now, planting, onPlant, onEnter, onRead, onLock, onWeeding, onChanged }: CellInfoProps) {
   const object = map.key === HOME ? objectAt(state.garden.objects, cell) : undefined
   if (object) {
     const name = catalog.species.find((s) => s.key === object.speciesKey)?.name ?? object.speciesKey
@@ -591,7 +596,10 @@ function CellInfo({ cell, map, state, catalog, now, planting, onPlant, onEnter, 
       <div className={styles.cell}>
         <Said name={info.name} text={info.description} />
         <div>
-          {door && doorOpen(door, state) && <Button onClick={() => onEnter(door)}>{door.label}</Button>}
+          {door && doorOpen(door, state) && doorReachable(prop, player, cell) && <Button onClick={() => onEnter(door)}>{door.label}</Button>}
+          {door && doorOpen(door, state) && !doorReachable(prop, player, cell) && (
+            <p className={styles.hint}>Вход — с другой стороны: подойдите к двери.</p>
+          )}
           {read && (
             <Button onClick={() => onRead({ title: info.name, text: withNotches(read, prop.key, map, state.fog) })}>Прочитать</Button>
           )}
