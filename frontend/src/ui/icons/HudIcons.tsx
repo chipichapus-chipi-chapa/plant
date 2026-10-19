@@ -1,118 +1,555 @@
-// Пиксельные иконки 16×16 для кнопок панели: свиток-трекер, лавка, сумка.
-// Цвета — из палитры токенов; при замене на спрайты разметка кнопок не меняется.
+// Пиксельные иконки 16×16 для кнопок панели: контур, тень и блик, как спрайты игры.
+// Рисуются из сетки символов (палитра ниже); прогоны одного цвета в строке сливаются в один прямоугольник.
 
-import type { ReactNode } from 'react'
+type Run = [x: number, y: number, width: number, color: string]
 
-const svg = (children: ReactNode) => (
+const icon = (runs: Run[]) => (
   <svg width="32" height="32" viewBox="0 0 16 16" shapeRendering="crispEdges" aria-hidden="true">
-    {children}
+    {runs.map(([x, y, w, fill]) => (
+      <rect key={`${x}-${y}`} x={x} y={y} width={w} height="1" fill={fill} />
+    ))}
   </svg>
 )
 
-/** Свиток с отметками — трекер привычек. */
-export const TrackerIcon = () =>
-  svg(
-    <>
-      <rect x="2" y="1" width="12" height="14" fill="var(--c-ink)" />
-      <rect x="3" y="2" width="10" height="12" fill="var(--c-parchment)" />
-      <rect x="3" y="2" width="10" height="1" fill="var(--c-wood)" />
-      <rect x="3" y="13" width="10" height="1" fill="var(--c-wood)" />
-      {[4, 7, 10].map((y, i) => (
-        <g key={y}>
-          <rect x="4" y={y} width="2" height="2" fill={i < 2 ? 'var(--week-3)' : 'var(--c-parchment-shade)'} />
-          <rect x="7" y={y + 1} width="5" height="1" fill="var(--c-bark)" />
-        </g>
-      ))}
-    </>,
-  )
+/** Раскрытая книга заданий с закладкой и «!». */
+const QUESTS: Run[] = [
+  [10, 1, 2, 'var(--c-berry)'],
+  [1, 2, 6, 'var(--c-ink)'],
+  [8, 2, 2, 'var(--c-ink)'],
+  [10, 2, 2, 'var(--c-berry)'],
+  [12, 2, 3, 'var(--c-ink)'],
+  [0, 3, 1, 'var(--c-ink)'],
+  [1, 3, 6, 'var(--c-parchment)'],
+  [7, 3, 2, 'var(--c-ink)'],
+  [9, 3, 1, 'var(--c-parchment)'],
+  [10, 3, 2, 'var(--c-berry)'],
+  [12, 3, 1, 'var(--c-parchment)'],
+  [13, 3, 2, 'var(--c-parchment-shade)'],
+  [15, 3, 1, 'var(--c-ink)'],
+  [0, 4, 1, 'var(--c-ink)'],
+  [1, 4, 1, 'var(--c-parchment)'],
+  [2, 4, 4, 'var(--c-bark)'],
+  [6, 4, 1, 'var(--c-parchment)'],
+  [7, 4, 2, 'var(--c-ink)'],
+  [9, 4, 1, 'var(--c-parchment)'],
+  [10, 4, 2, 'var(--c-berry)'],
+  [12, 4, 1, 'var(--c-parchment)'],
+  [13, 4, 2, 'var(--c-parchment-shade)'],
+  [15, 4, 1, 'var(--c-ink)'],
+  [0, 5, 1, 'var(--c-ink)'],
+  [1, 5, 6, 'var(--c-parchment)'],
+  [7, 5, 2, 'var(--c-ink)'],
+  [9, 5, 1, 'var(--c-parchment)'],
+  [10, 5, 2, '#7a2a38'],
+  [12, 5, 1, 'var(--c-parchment)'],
+  [13, 5, 2, 'var(--c-parchment-shade)'],
+  [15, 5, 1, 'var(--c-ink)'],
+  [0, 6, 1, 'var(--c-ink)'],
+  [1, 6, 1, 'var(--c-parchment)'],
+  [2, 6, 3, 'var(--c-bark)'],
+  [5, 6, 2, 'var(--c-parchment)'],
+  [7, 6, 2, 'var(--c-ink)'],
+  [9, 6, 3, 'var(--c-parchment)'],
+  [12, 6, 2, 'var(--c-parchment-shade)'],
+  [14, 6, 1, 'var(--c-ink)'],
+  [0, 7, 1, 'var(--c-ink)'],
+  [1, 7, 6, 'var(--c-parchment)'],
+  [7, 7, 2, 'var(--c-ink)'],
+  [9, 7, 2, 'var(--c-parchment)'],
+  [11, 7, 2, 'var(--c-sun)'],
+  [13, 7, 2, 'var(--c-parchment-shade)'],
+  [15, 7, 1, 'var(--c-ink)'],
+  [0, 8, 1, 'var(--c-ink)'],
+  [1, 8, 1, 'var(--c-parchment)'],
+  [2, 8, 4, 'var(--c-bark)'],
+  [6, 8, 1, 'var(--c-parchment)'],
+  [7, 8, 2, 'var(--c-ink)'],
+  [9, 8, 2, 'var(--c-parchment)'],
+  [11, 8, 2, 'var(--c-sun)'],
+  [13, 8, 2, 'var(--c-parchment-shade)'],
+  [15, 8, 1, 'var(--c-ink)'],
+  [0, 9, 1, 'var(--c-ink)'],
+  [1, 9, 6, 'var(--c-parchment)'],
+  [7, 9, 2, 'var(--c-ink)'],
+  [9, 9, 2, 'var(--c-parchment)'],
+  [11, 9, 2, 'var(--c-sun)'],
+  [13, 9, 2, 'var(--c-parchment-shade)'],
+  [15, 9, 1, 'var(--c-ink)'],
+  [0, 10, 1, 'var(--c-ink)'],
+  [1, 10, 1, 'var(--c-parchment)'],
+  [2, 10, 2, 'var(--c-bark)'],
+  [4, 10, 3, 'var(--c-parchment)'],
+  [7, 10, 2, 'var(--c-ink)'],
+  [9, 10, 4, 'var(--c-parchment)'],
+  [13, 10, 2, 'var(--c-parchment-shade)'],
+  [15, 10, 1, 'var(--c-ink)'],
+  [0, 11, 1, 'var(--c-ink)'],
+  [1, 11, 6, 'var(--c-parchment)'],
+  [7, 11, 2, 'var(--c-ink)'],
+  [9, 11, 2, 'var(--c-parchment)'],
+  [11, 11, 2, 'var(--c-sun)'],
+  [13, 11, 2, 'var(--c-parchment-shade)'],
+  [15, 11, 1, 'var(--c-ink)'],
+  [0, 12, 1, 'var(--c-ink)'],
+  [1, 12, 6, 'var(--c-wood)'],
+  [7, 12, 2, 'var(--c-ink)'],
+  [9, 12, 6, 'var(--c-wood)'],
+  [15, 12, 1, 'var(--c-ink)'],
+  [1, 13, 6, 'var(--c-ink)'],
+  [7, 13, 2, '#9a6535'],
+  [9, 13, 6, 'var(--c-ink)'],
+  [6, 14, 4, 'var(--c-ink)'],
+]
+export const QuestIcon = () => icon(QUESTS)
 
-/** Прилавок с навесом — лавка семян. */
-export const ShopIcon = () =>
-  svg(
-    <>
-      <rect x="1" y="2" width="14" height="5" fill="var(--c-ink)" />
-      {[2, 4, 6, 8, 10, 12].map((x, i) => (
-        <rect key={x} x={x} y="3" width="2" height="3" fill={i % 2 ? 'var(--c-parchment)' : 'var(--c-berry)'} />
-      ))}
-      <rect x="2" y="7" width="1" height="7" fill="var(--c-bark)" />
-      <rect x="13" y="7" width="1" height="7" fill="var(--c-bark)" />
-      <rect x="1" y="10" width="14" height="4" fill="var(--c-ink)" />
-      <rect x="2" y="11" width="12" height="2" fill="var(--c-wood)" />
-      <rect x="5" y="8" width="2" height="2" fill="var(--w-alive-grass)" />
-      <rect x="9" y="8" width="2" height="2" fill="var(--c-sun)" />
-    </>,
-  )
+/** Календарь-трекер с кольцами и отметками — привычки. */
+const HABITS: Run[] = [
+  [2, 0, 2, 'var(--c-ink)'],
+  [10, 0, 2, 'var(--c-ink)'],
+  [1, 1, 1, 'var(--c-ink)'],
+  [2, 1, 2, 'var(--c-bark)'],
+  [4, 1, 1, 'var(--c-ink)'],
+  [9, 1, 1, 'var(--c-ink)'],
+  [10, 1, 2, 'var(--c-bark)'],
+  [12, 1, 1, 'var(--c-ink)'],
+  [0, 2, 2, 'var(--c-ink)'],
+  [2, 2, 1, 'var(--c-wood)'],
+  [3, 2, 1, 'var(--c-bark)'],
+  [4, 2, 6, 'var(--c-ink)'],
+  [10, 2, 1, 'var(--c-wood)'],
+  [11, 2, 1, 'var(--c-bark)'],
+  [12, 2, 3, 'var(--c-ink)'],
+  [0, 3, 1, 'var(--c-ink)'],
+  [1, 3, 14, 'var(--c-wood)'],
+  [15, 3, 1, 'var(--c-ink)'],
+  [0, 4, 1, 'var(--c-ink)'],
+  [1, 4, 14, '#9a6535'],
+  [15, 4, 1, 'var(--c-ink)'],
+  [0, 5, 1, 'var(--c-ink)'],
+  [1, 5, 13, 'var(--c-parchment)'],
+  [14, 5, 1, 'var(--c-parchment-shade)'],
+  [15, 5, 1, 'var(--c-ink)'],
+  [0, 6, 1, 'var(--c-ink)'],
+  [1, 6, 1, 'var(--c-parchment)'],
+  [2, 6, 2, '#86b56e'],
+  [4, 6, 1, 'var(--c-parchment)'],
+  [5, 6, 2, '#86b56e'],
+  [7, 6, 1, 'var(--c-parchment)'],
+  [8, 6, 2, '#86b56e'],
+  [10, 6, 1, 'var(--c-parchment)'],
+  [11, 6, 2, 'var(--c-parchment-shade)'],
+  [13, 6, 1, 'var(--c-parchment)'],
+  [14, 6, 1, 'var(--c-parchment-shade)'],
+  [15, 6, 1, 'var(--c-ink)'],
+  [0, 7, 1, 'var(--c-ink)'],
+  [1, 7, 1, 'var(--c-parchment)'],
+  [2, 7, 1, '#86b56e'],
+  [3, 7, 1, '#4b7a3e'],
+  [4, 7, 1, 'var(--c-parchment)'],
+  [5, 7, 1, '#86b56e'],
+  [6, 7, 1, '#4b7a3e'],
+  [7, 7, 1, 'var(--c-parchment)'],
+  [8, 7, 1, '#86b56e'],
+  [9, 7, 1, '#4b7a3e'],
+  [10, 7, 1, 'var(--c-parchment)'],
+  [11, 7, 2, 'var(--c-parchment-shade)'],
+  [13, 7, 1, 'var(--c-parchment)'],
+  [14, 7, 1, 'var(--c-parchment-shade)'],
+  [15, 7, 1, 'var(--c-ink)'],
+  [0, 8, 1, 'var(--c-ink)'],
+  [1, 8, 13, 'var(--c-parchment)'],
+  [14, 8, 1, 'var(--c-parchment-shade)'],
+  [15, 8, 1, 'var(--c-ink)'],
+  [0, 9, 1, 'var(--c-ink)'],
+  [1, 9, 1, 'var(--c-parchment)'],
+  [2, 9, 2, '#86b56e'],
+  [4, 9, 1, 'var(--c-parchment)'],
+  [5, 9, 2, '#86b56e'],
+  [7, 9, 1, 'var(--c-parchment)'],
+  [8, 9, 2, 'var(--c-parchment-shade)'],
+  [10, 9, 1, 'var(--c-parchment)'],
+  [11, 9, 2, 'var(--c-parchment-shade)'],
+  [13, 9, 1, 'var(--c-parchment)'],
+  [14, 9, 1, 'var(--c-parchment-shade)'],
+  [15, 9, 1, 'var(--c-ink)'],
+  [0, 10, 1, 'var(--c-ink)'],
+  [1, 10, 1, 'var(--c-parchment)'],
+  [2, 10, 1, '#86b56e'],
+  [3, 10, 1, '#4b7a3e'],
+  [4, 10, 1, 'var(--c-parchment)'],
+  [5, 10, 1, '#86b56e'],
+  [6, 10, 1, '#4b7a3e'],
+  [7, 10, 1, 'var(--c-parchment)'],
+  [8, 10, 2, 'var(--c-parchment-shade)'],
+  [10, 10, 1, 'var(--c-parchment)'],
+  [11, 10, 2, 'var(--c-parchment-shade)'],
+  [13, 10, 1, 'var(--c-parchment)'],
+  [14, 10, 1, 'var(--c-parchment-shade)'],
+  [15, 10, 1, 'var(--c-ink)'],
+  [0, 11, 1, 'var(--c-ink)'],
+  [1, 11, 13, 'var(--c-parchment)'],
+  [14, 11, 1, 'var(--c-parchment-shade)'],
+  [15, 11, 1, 'var(--c-ink)'],
+  [0, 12, 1, 'var(--c-ink)'],
+  [1, 12, 1, 'var(--c-parchment)'],
+  [2, 12, 2, 'var(--c-parchment-shade)'],
+  [4, 12, 1, 'var(--c-parchment)'],
+  [5, 12, 2, 'var(--c-parchment-shade)'],
+  [7, 12, 1, 'var(--c-parchment)'],
+  [8, 12, 2, 'var(--c-parchment-shade)'],
+  [10, 12, 1, 'var(--c-parchment)'],
+  [11, 12, 2, 'var(--c-parchment-shade)'],
+  [13, 12, 1, 'var(--c-parchment)'],
+  [14, 12, 1, 'var(--c-parchment-shade)'],
+  [15, 12, 1, 'var(--c-ink)'],
+  [0, 13, 1, 'var(--c-ink)'],
+  [1, 13, 14, 'var(--c-parchment-shade)'],
+  [15, 13, 1, 'var(--c-ink)'],
+  [1, 14, 14, 'var(--c-ink)'],
+]
+export const TrackerIcon = () => icon(HABITS)
 
-/** Холщовая сумка — инвентарь. */
-export const BagIcon = () =>
-  svg(
-    <>
-      <rect x="5" y="1" width="6" height="1" fill="var(--c-ink)" />
-      <rect x="4" y="2" width="1" height="3" fill="var(--c-ink)" />
-      <rect x="11" y="2" width="1" height="3" fill="var(--c-ink)" />
-      <rect x="2" y="5" width="12" height="10" fill="var(--c-ink)" />
-      <rect x="3" y="6" width="10" height="8" fill="var(--c-wood)" />
-      <rect x="3" y="6" width="10" height="1" fill="var(--c-parchment-shade)" />
-      <rect x="11" y="7" width="2" height="7" fill="var(--c-bark)" />
-      <rect x="6" y="9" width="4" height="2" fill="var(--c-bark)" />
-      <rect x="7" y="9" width="2" height="1" fill="var(--c-sun)" />
-    </>,
-  )
+/** Прилавок с полосатым навесом и пакетиками семян — лавка. */
+const SHOP: Run[] = [
+  [1, 1, 14, 'var(--c-ink)'],
+  [0, 2, 1, 'var(--c-ink)'],
+  [1, 2, 2, 'var(--c-berry)'],
+  [3, 2, 2, 'var(--c-parchment)'],
+  [5, 2, 2, 'var(--c-berry)'],
+  [7, 2, 2, 'var(--c-parchment)'],
+  [9, 2, 2, 'var(--c-berry)'],
+  [11, 2, 2, 'var(--c-parchment)'],
+  [13, 2, 2, 'var(--c-berry)'],
+  [15, 2, 1, 'var(--c-ink)'],
+  [0, 3, 1, 'var(--c-ink)'],
+  [1, 3, 2, 'var(--c-berry)'],
+  [3, 3, 2, 'var(--c-parchment)'],
+  [5, 3, 2, 'var(--c-berry)'],
+  [7, 3, 2, 'var(--c-parchment)'],
+  [9, 3, 2, 'var(--c-berry)'],
+  [11, 3, 2, 'var(--c-parchment)'],
+  [13, 3, 2, 'var(--c-berry)'],
+  [15, 3, 1, 'var(--c-ink)'],
+  [0, 4, 1, 'var(--c-ink)'],
+  [1, 4, 2, '#7a2a38'],
+  [3, 4, 2, 'var(--c-parchment-shade)'],
+  [5, 4, 2, '#7a2a38'],
+  [7, 4, 2, 'var(--c-parchment-shade)'],
+  [9, 4, 2, '#7a2a38'],
+  [11, 4, 2, 'var(--c-parchment-shade)'],
+  [13, 4, 2, '#7a2a38'],
+  [15, 4, 1, 'var(--c-ink)'],
+  [1, 5, 1, 'var(--c-ink)'],
+  [2, 5, 1, 'var(--c-bark)'],
+  [3, 5, 1, 'var(--c-ink)'],
+  [4, 5, 9, 'var(--c-parchment-shade)'],
+  [13, 5, 1, 'var(--c-ink)'],
+  [14, 5, 1, 'var(--c-bark)'],
+  [15, 5, 1, 'var(--c-ink)'],
+  [1, 6, 1, 'var(--c-ink)'],
+  [2, 6, 1, 'var(--c-bark)'],
+  [3, 6, 1, 'var(--c-ink)'],
+  [4, 6, 1, 'var(--c-parchment-shade)'],
+  [5, 6, 3, 'var(--c-ink)'],
+  [8, 6, 1, 'var(--c-parchment-shade)'],
+  [9, 6, 3, 'var(--c-ink)'],
+  [12, 6, 1, 'var(--c-parchment-shade)'],
+  [13, 6, 1, 'var(--c-ink)'],
+  [14, 6, 1, 'var(--c-bark)'],
+  [15, 6, 1, 'var(--c-ink)'],
+  [1, 7, 1, 'var(--c-ink)'],
+  [2, 7, 1, 'var(--c-bark)'],
+  [3, 7, 1, 'var(--c-ink)'],
+  [4, 7, 1, 'var(--c-parchment-shade)'],
+  [5, 7, 1, 'var(--c-ink)'],
+  [6, 7, 1, '#86b56e'],
+  [7, 7, 1, 'var(--c-ink)'],
+  [8, 7, 1, 'var(--c-parchment-shade)'],
+  [9, 7, 1, 'var(--c-ink)'],
+  [10, 7, 1, 'var(--c-sun)'],
+  [11, 7, 1, 'var(--c-ink)'],
+  [12, 7, 1, 'var(--c-parchment-shade)'],
+  [13, 7, 1, 'var(--c-ink)'],
+  [14, 7, 1, 'var(--c-bark)'],
+  [15, 7, 1, 'var(--c-ink)'],
+  [1, 8, 1, 'var(--c-ink)'],
+  [2, 8, 1, 'var(--c-bark)'],
+  [3, 8, 1, 'var(--c-ink)'],
+  [4, 8, 1, 'var(--c-parchment-shade)'],
+  [5, 8, 1, 'var(--c-ink)'],
+  [6, 8, 1, '#86b56e'],
+  [7, 8, 1, 'var(--c-ink)'],
+  [8, 8, 1, 'var(--c-parchment-shade)'],
+  [9, 8, 1, 'var(--c-ink)'],
+  [10, 8, 1, 'var(--c-sun)'],
+  [11, 8, 1, 'var(--c-ink)'],
+  [12, 8, 1, 'var(--c-parchment-shade)'],
+  [13, 8, 1, 'var(--c-ink)'],
+  [14, 8, 1, 'var(--c-bark)'],
+  [15, 8, 1, 'var(--c-ink)'],
+  [1, 9, 1, 'var(--c-ink)'],
+  [2, 9, 1, 'var(--c-bark)'],
+  [3, 9, 1, 'var(--c-ink)'],
+  [4, 9, 1, 'var(--c-parchment-shade)'],
+  [5, 9, 3, 'var(--c-ink)'],
+  [8, 9, 1, 'var(--c-parchment-shade)'],
+  [9, 9, 3, 'var(--c-ink)'],
+  [12, 9, 1, 'var(--c-parchment-shade)'],
+  [13, 9, 1, 'var(--c-ink)'],
+  [14, 9, 1, 'var(--c-bark)'],
+  [15, 9, 1, 'var(--c-ink)'],
+  [0, 10, 16, 'var(--c-ink)'],
+  [0, 11, 1, 'var(--c-ink)'],
+  [1, 11, 14, 'var(--c-wood)'],
+  [15, 11, 1, 'var(--c-ink)'],
+  [0, 12, 1, 'var(--c-ink)'],
+  [1, 12, 14, '#9a6535'],
+  [15, 12, 1, 'var(--c-ink)'],
+  [0, 13, 1, 'var(--c-ink)'],
+  [1, 13, 14, 'var(--c-bark)'],
+  [15, 13, 1, 'var(--c-ink)'],
+  [0, 14, 16, 'var(--c-ink)'],
+]
+export const ShopIcon = () => icon(SHOP)
 
-/** Раскрытая книга с камнем — коллекция артефактов. */
-export const CollectionIcon = () =>
-  svg(
-    <>
-      <rect x="1" y="3" width="14" height="11" fill="var(--c-ink)" />
-      <rect x="2" y="4" width="5" height="9" fill="var(--c-parchment)" />
-      <rect x="9" y="4" width="5" height="9" fill="var(--c-parchment)" />
-      <rect x="7" y="4" width="2" height="10" fill="var(--c-bark)" />
-      <rect x="3" y="6" width="3" height="1" fill="var(--c-parchment-shade)" />
-      <rect x="3" y="8" width="3" height="1" fill="var(--c-parchment-shade)" />
-      <rect x="3" y="10" width="2" height="1" fill="var(--c-parchment-shade)" />
-      <rect x="10" y="6" width="3" height="1" fill="var(--c-ink)" />
-      <rect x="10" y="7" width="3" height="2" fill="var(--week-3)" />
-      <rect x="11" y="9" width="1" height="1" fill="var(--week-3)" />
-      <rect x="10" y="7" width="1" height="1" fill="var(--c-parchment)" />
-    </>,
-  )
+/** Холщовая сумка с клапаном и пряжкой — инвентарь. */
+const BAG: Run[] = [
+  [5, 1, 6, 'var(--c-ink)'],
+  [4, 2, 1, 'var(--c-ink)'],
+  [5, 2, 1, 'var(--c-bark)'],
+  [6, 2, 1, 'var(--c-ink)'],
+  [9, 2, 1, 'var(--c-ink)'],
+  [10, 2, 1, 'var(--c-bark)'],
+  [11, 2, 1, 'var(--c-ink)'],
+  [4, 3, 1, 'var(--c-ink)'],
+  [5, 3, 1, 'var(--c-bark)'],
+  [6, 3, 1, 'var(--c-ink)'],
+  [9, 3, 1, 'var(--c-ink)'],
+  [10, 3, 1, 'var(--c-bark)'],
+  [11, 3, 1, 'var(--c-ink)'],
+  [2, 4, 12, 'var(--c-ink)'],
+  [1, 5, 1, 'var(--c-ink)'],
+  [2, 5, 12, 'var(--c-parchment-shade)'],
+  [14, 5, 1, 'var(--c-ink)'],
+  [1, 6, 1, 'var(--c-ink)'],
+  [2, 6, 1, 'var(--c-parchment-shade)'],
+  [3, 6, 9, 'var(--c-parchment)'],
+  [12, 6, 2, 'var(--c-parchment-shade)'],
+  [14, 6, 1, 'var(--c-ink)'],
+  [1, 7, 6, 'var(--c-ink)'],
+  [7, 7, 2, 'var(--c-sun)'],
+  [9, 7, 6, 'var(--c-ink)'],
+  [1, 8, 1, 'var(--c-ink)'],
+  [2, 8, 5, 'var(--c-wood)'],
+  [7, 8, 2, 'var(--c-sun)'],
+  [9, 8, 4, 'var(--c-wood)'],
+  [13, 8, 1, '#9a6535'],
+  [14, 8, 1, 'var(--c-ink)'],
+  [1, 9, 1, 'var(--c-ink)'],
+  [2, 9, 11, 'var(--c-wood)'],
+  [13, 9, 1, '#9a6535'],
+  [14, 9, 1, 'var(--c-ink)'],
+  [1, 10, 1, 'var(--c-ink)'],
+  [2, 10, 11, 'var(--c-wood)'],
+  [13, 10, 1, '#9a6535'],
+  [14, 10, 1, 'var(--c-ink)'],
+  [1, 11, 1, 'var(--c-ink)'],
+  [2, 11, 11, 'var(--c-wood)'],
+  [13, 11, 1, '#9a6535'],
+  [14, 11, 1, 'var(--c-ink)'],
+  [1, 12, 1, 'var(--c-ink)'],
+  [2, 12, 12, '#9a6535'],
+  [14, 12, 1, 'var(--c-ink)'],
+  [2, 13, 12, 'var(--c-ink)'],
+]
+export const BagIcon = () => icon(BAG)
+
+/** Витрина в деревянной раме с кристаллом — коллекция находок. */
+const COLLECTION: Run[] = [
+  [1, 1, 14, 'var(--c-ink)'],
+  [0, 2, 1, 'var(--c-ink)'],
+  [1, 2, 13, 'var(--c-wood)'],
+  [14, 2, 1, '#9a6535'],
+  [15, 2, 1, 'var(--c-ink)'],
+  [0, 3, 1, 'var(--c-ink)'],
+  [1, 3, 1, 'var(--c-wood)'],
+  [2, 3, 12, 'var(--c-ink)'],
+  [14, 3, 1, '#9a6535'],
+  [15, 3, 1, 'var(--c-ink)'],
+  [0, 4, 1, 'var(--c-ink)'],
+  [1, 4, 1, 'var(--c-wood)'],
+  [2, 4, 1, 'var(--c-ink)'],
+  [3, 4, 10, '#5f676b'],
+  [13, 4, 1, 'var(--c-ink)'],
+  [14, 4, 1, '#9a6535'],
+  [15, 4, 1, 'var(--c-ink)'],
+  [0, 5, 1, 'var(--c-ink)'],
+  [1, 5, 1, 'var(--c-wood)'],
+  [2, 5, 1, 'var(--c-ink)'],
+  [3, 5, 4, '#5f676b'],
+  [7, 5, 1, '#fff3c4'],
+  [8, 5, 1, '#b8a9d6'],
+  [9, 5, 4, '#5f676b'],
+  [13, 5, 1, 'var(--c-ink)'],
+  [14, 5, 1, '#9a6535'],
+  [15, 5, 1, 'var(--c-ink)'],
+  [0, 6, 1, 'var(--c-ink)'],
+  [1, 6, 1, 'var(--c-wood)'],
+  [2, 6, 1, 'var(--c-ink)'],
+  [3, 6, 3, '#5f676b'],
+  [6, 6, 1, '#fff3c4'],
+  [7, 6, 2, '#b8a9d6'],
+  [9, 6, 1, '#7b68a6'],
+  [10, 6, 3, '#5f676b'],
+  [13, 6, 1, 'var(--c-ink)'],
+  [14, 6, 1, '#9a6535'],
+  [15, 6, 1, 'var(--c-ink)'],
+  [0, 7, 1, 'var(--c-ink)'],
+  [1, 7, 1, 'var(--c-wood)'],
+  [2, 7, 1, 'var(--c-ink)'],
+  [3, 7, 2, '#5f676b'],
+  [5, 7, 1, '#fff3c4'],
+  [6, 7, 3, '#b8a9d6'],
+  [9, 7, 2, '#7b68a6'],
+  [11, 7, 2, '#5f676b'],
+  [13, 7, 1, 'var(--c-ink)'],
+  [14, 7, 1, '#9a6535'],
+  [15, 7, 1, 'var(--c-ink)'],
+  [0, 8, 1, 'var(--c-ink)'],
+  [1, 8, 1, 'var(--c-wood)'],
+  [2, 8, 1, 'var(--c-ink)'],
+  [3, 8, 2, '#5f676b'],
+  [5, 8, 4, '#b8a9d6'],
+  [9, 8, 2, '#7b68a6'],
+  [11, 8, 2, '#5f676b'],
+  [13, 8, 1, 'var(--c-ink)'],
+  [14, 8, 1, '#9a6535'],
+  [15, 8, 1, 'var(--c-ink)'],
+  [0, 9, 1, 'var(--c-ink)'],
+  [1, 9, 1, 'var(--c-wood)'],
+  [2, 9, 1, 'var(--c-ink)'],
+  [3, 9, 3, '#5f676b'],
+  [6, 9, 2, '#b8a9d6'],
+  [8, 9, 2, '#7b68a6'],
+  [10, 9, 3, '#5f676b'],
+  [13, 9, 1, 'var(--c-ink)'],
+  [14, 9, 1, '#9a6535'],
+  [15, 9, 1, 'var(--c-ink)'],
+  [0, 10, 1, 'var(--c-ink)'],
+  [1, 10, 1, 'var(--c-wood)'],
+  [2, 10, 1, 'var(--c-ink)'],
+  [3, 10, 4, '#5f676b'],
+  [7, 10, 1, '#b8a9d6'],
+  [8, 10, 1, '#7b68a6'],
+  [9, 10, 4, '#5f676b'],
+  [13, 10, 1, 'var(--c-ink)'],
+  [14, 10, 1, '#9a6535'],
+  [15, 10, 1, 'var(--c-ink)'],
+  [0, 11, 1, 'var(--c-ink)'],
+  [1, 11, 1, 'var(--c-wood)'],
+  [2, 11, 1, 'var(--c-ink)'],
+  [3, 11, 10, '#5f676b'],
+  [13, 11, 1, 'var(--c-ink)'],
+  [14, 11, 1, '#9a6535'],
+  [15, 11, 1, 'var(--c-ink)'],
+  [0, 12, 1, 'var(--c-ink)'],
+  [1, 12, 1, 'var(--c-wood)'],
+  [2, 12, 12, 'var(--c-ink)'],
+  [14, 12, 1, '#9a6535'],
+  [15, 12, 1, 'var(--c-ink)'],
+  [0, 13, 1, 'var(--c-ink)'],
+  [1, 13, 14, '#9a6535'],
+  [15, 13, 1, 'var(--c-ink)'],
+  [1, 14, 14, 'var(--c-ink)'],
+]
+export const CollectionIcon = () => icon(COLLECTION)
 
 /** Шестерёнка — настройки. */
-export const SettingsIcon = () =>
-  svg(
-    <>
-      {[
-        [7, 1, 2, 3],
-        [7, 12, 2, 3],
-        [1, 7, 3, 2],
-        [12, 7, 3, 2],
-        [3, 3, 2, 2],
-        [11, 3, 2, 2],
-        [3, 11, 2, 2],
-        [11, 11, 2, 2],
-      ].map(([x, y, w, h]) => (
-        <rect key={`${x}-${y}`} x={x} y={y} width={w} height={h} fill="var(--c-ink)" />
-      ))}
-      <rect x="4" y="4" width="8" height="8" fill="var(--c-ink)" />
-      <rect x="5" y="5" width="6" height="6" fill="var(--c-wood)" />
-      <rect x="5" y="5" width="6" height="1" fill="var(--c-parchment)" />
-      <rect x="7" y="7" width="2" height="2" fill="var(--c-ink)" />
-    </>,
-  )
-
-/** Раскрытая книжечка с закладкой и «!» — задания. */
-export const QuestIcon = () =>
-  svg(
-    <>
-      <rect x="1" y="3" width="14" height="11" fill="var(--c-ink)" />
-      <rect x="2" y="4" width="5" height="9" fill="var(--c-parchment)" />
-      <rect x="9" y="4" width="5" height="9" fill="var(--c-parchment)" />
-      <rect x="7" y="4" width="2" height="9" fill="var(--c-wood)" />
-      {[6, 8, 10].map((y) => (
-        <rect key={y} x="3" y={y} width="3" height="1" fill="var(--c-bark)" />
-      ))}
-      <rect x="11" y="5" width="1" height="4" fill="var(--c-berry)" />
-      <rect x="11" y="10" width="1" height="1" fill="var(--c-berry)" />
-      <rect x="12" y="2" width="2" height="4" fill="var(--c-sun)" />
-    </>,
-  )
+const SETTINGS: Run[] = [
+  [6, 1, 4, 'var(--c-ink)'],
+  [2, 2, 2, 'var(--c-ink)'],
+  [6, 2, 1, 'var(--c-ink)'],
+  [7, 2, 2, 'var(--c-parchment-shade)'],
+  [9, 2, 1, 'var(--c-ink)'],
+  [12, 2, 2, 'var(--c-ink)'],
+  [1, 3, 1, 'var(--c-ink)'],
+  [2, 3, 2, 'var(--c-parchment-shade)'],
+  [4, 3, 1, 'var(--c-ink)'],
+  [6, 3, 1, 'var(--c-ink)'],
+  [7, 3, 2, 'var(--c-parchment-shade)'],
+  [9, 3, 1, 'var(--c-ink)'],
+  [11, 3, 1, 'var(--c-ink)'],
+  [12, 3, 2, 'var(--c-parchment-shade)'],
+  [14, 3, 1, 'var(--c-ink)'],
+  [1, 4, 1, 'var(--c-ink)'],
+  [2, 4, 3, 'var(--c-parchment-shade)'],
+  [5, 4, 2, 'var(--c-ink)'],
+  [7, 4, 2, 'var(--c-parchment)'],
+  [9, 4, 2, 'var(--c-ink)'],
+  [11, 4, 3, 'var(--c-parchment-shade)'],
+  [14, 4, 2, 'var(--c-ink)'],
+  [2, 5, 1, 'var(--c-ink)'],
+  [3, 5, 2, 'var(--c-parchment-shade)'],
+  [5, 5, 6, 'var(--c-parchment)'],
+  [11, 5, 3, 'var(--c-parchment-shade)'],
+  [14, 5, 1, 'var(--c-ink)'],
+  [2, 6, 1, 'var(--c-ink)'],
+  [3, 6, 1, 'var(--c-parchment-shade)'],
+  [4, 6, 3, 'var(--c-parchment)'],
+  [7, 6, 2, 'var(--c-ink)'],
+  [9, 6, 2, 'var(--c-parchment)'],
+  [11, 6, 2, 'var(--c-parchment-shade)'],
+  [13, 6, 1, 'var(--c-ink)'],
+  [0, 7, 3, 'var(--c-ink)'],
+  [3, 7, 2, 'var(--c-parchment)'],
+  [5, 7, 2, 'var(--c-ink)'],
+  [9, 7, 2, 'var(--c-ink)'],
+  [11, 7, 1, 'var(--c-parchment)'],
+  [12, 7, 2, 'var(--c-parchment-shade)'],
+  [14, 7, 2, 'var(--c-ink)'],
+  [0, 8, 1, 'var(--c-ink)'],
+  [1, 8, 2, 'var(--c-parchment-shade)'],
+  [3, 8, 2, 'var(--c-parchment)'],
+  [5, 8, 1, 'var(--c-ink)'],
+  [10, 8, 1, 'var(--c-ink)'],
+  [11, 8, 1, 'var(--c-parchment)'],
+  [12, 8, 2, 'var(--c-parchment-shade)'],
+  [14, 8, 1, 'var(--c-ink)'],
+  [0, 9, 3, 'var(--c-ink)'],
+  [3, 9, 2, 'var(--c-parchment)'],
+  [5, 9, 2, 'var(--c-ink)'],
+  [9, 9, 2, 'var(--c-ink)'],
+  [11, 9, 1, 'var(--c-parchment)'],
+  [12, 9, 2, 'var(--c-parchment-shade)'],
+  [14, 9, 2, 'var(--c-ink)'],
+  [2, 10, 1, 'var(--c-ink)'],
+  [3, 10, 1, 'var(--c-parchment-shade)'],
+  [4, 10, 2, 'var(--c-parchment)'],
+  [6, 10, 4, 'var(--c-ink)'],
+  [10, 10, 1, 'var(--c-parchment)'],
+  [11, 10, 2, 'var(--c-parchment-shade)'],
+  [13, 10, 1, 'var(--c-ink)'],
+  [2, 11, 1, 'var(--c-ink)'],
+  [3, 11, 3, 'var(--c-parchment-shade)'],
+  [6, 11, 4, 'var(--c-parchment)'],
+  [10, 11, 3, 'var(--c-parchment-shade)'],
+  [13, 11, 1, 'var(--c-ink)'],
+  [1, 12, 1, 'var(--c-ink)'],
+  [2, 12, 4, 'var(--c-parchment-shade)'],
+  [6, 12, 4, 'var(--c-ink)'],
+  [10, 12, 4, 'var(--c-parchment-shade)'],
+  [14, 12, 1, 'var(--c-ink)'],
+  [1, 13, 1, 'var(--c-ink)'],
+  [2, 13, 2, 'var(--c-parchment-shade)'],
+  [4, 13, 1, 'var(--c-ink)'],
+  [6, 13, 1, 'var(--c-ink)'],
+  [7, 13, 2, 'var(--c-parchment-shade)'],
+  [9, 13, 1, 'var(--c-ink)'],
+  [11, 13, 1, 'var(--c-ink)'],
+  [12, 13, 2, 'var(--c-parchment-shade)'],
+  [14, 13, 1, 'var(--c-ink)'],
+  [2, 14, 2, 'var(--c-ink)'],
+  [6, 14, 4, 'var(--c-ink)'],
+  [12, 14, 2, 'var(--c-ink)'],
+]
+export const SettingsIcon = () => icon(SETTINGS)
