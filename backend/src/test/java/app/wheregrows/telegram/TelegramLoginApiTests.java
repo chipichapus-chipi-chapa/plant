@@ -89,6 +89,18 @@ class TelegramLoginApiTests {
                 .andExpect(header().string("Access-Control-Allow-Origin", ORIGIN));
     }
 
+    /** Все заголовки, которые шлёт фронтенд, должны быть разрешены — иначе браузер молча блокирует запрос. */
+    @Test
+    void corsAllowsEveryHeaderTheFrontendSends() throws Exception {
+        mvc.perform(options("/api/shop/purchases")
+                        .header("Origin", ORIGIN)
+                        .header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers",
+                                "content-type,idempotency-key,x-telegram-init-data,x-timezone"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", ORIGIN));
+    }
+
     @Test
     void healthStaysOpenForTheHosting() throws Exception {
         mvc.perform(get("/actuator/health")).andExpect(status().isOk());

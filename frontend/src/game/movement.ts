@@ -62,8 +62,11 @@ export function walk(w: Walker, dx: number, dy: number, dt: number, blocked: boo
   const vy = dy * scale * WALK_SPEED * dt
 
   let { x, y } = w
-  if (!collides(blocked, x + vx, y)) x += vx
-  if (!collides(blocked, x, y + vy)) y += vy
+  // Уже стоим в занятой клетке (под ногами посадили растение, рядом встал житель) — выпускаем
+  // в любую сторону, иначе каждое направление «сталкивается» и персонаж застревает навсегда.
+  const stuck = collides(blocked, x, y)
+  if (stuck || !collides(blocked, x + vx, y)) x += vx
+  if (stuck || !collides(blocked, x, y + vy)) y += vy
   const facing: Facing = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up'
   return { x, y, facing }
 }

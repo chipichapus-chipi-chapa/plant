@@ -59,6 +59,16 @@ describe('ходьба', () => {
     expect(cellOf(w).y).toBe(1)
   })
 
+  it('выходит с грядки, если прямо под ногами посадили растение', () => {
+    const sprout = { x: 3, y: 1 } as never // растение в клетке, где стоит персонаж
+    const withPlant = blockedCells(map, [sprout], [])
+    let w = walkerAt({ x: 3, y: 1 })
+    expect(collides(withPlant, w.x, w.y)).toBe(true)
+    for (let i = 0; i < 20; i++) w = walk(w, 0, 1, 0.05, withPlant)
+    expect(cellOf(w)).toEqual({ x: 3, y: 2 })
+    expect(collides(withPlant, w.x, w.y)).toBe(false)
+  })
+
   it('слабый наклон джойстика не двигает персонажа', () => {
     const start = walkerAt({ x: 1, y: 1 })
     expect(walk(start, 0.1, 0, 1, blocked)).toBe(start)
