@@ -196,6 +196,25 @@
       "height": 1,
       "name": "Вечерний прилавок",
       "description": "Пустой прилавок под синим навесом, с крючками для фонариков. Для лунных цветов, лилий и ромашкового чая."
+    },
+    {
+      "key": "town-pier",
+      "kind": "pier",
+      "x": 4,
+      "y": 2,
+      "width": 1,
+      "height": 1,
+      "name": "Мостки",
+      "description": "Маленькие мостки в камышах. Мельник одолжил лодку и сам сядет на вёсла — с мостков виден остров с тёмным маяком.",
+      "door": {
+        "map": "island",
+        "x": 2,
+        "y": 5,
+        "facing": "right",
+        "label": "Сесть в лодку к мельнику и поплыть к острову",
+        "requiresErrand": "fair_open",
+        "companion": "miller-pier"
+      }
     }
   ],
   "npcs": [
@@ -785,7 +804,8 @@
         "leaves": false,
         "day": "FRIDAY",
         "notToday": "miller_fair_friday"
-      }
+      },
+      "leavesAfter": "fair_open"
     },
     {
       "key": "agata-fair",
@@ -908,8 +928,8 @@
       "key": "gardener-fair",
       "name": "Садовник Ефим",
       "kind": "human",
-      "x": 5,
-      "y": 4,
+      "x": 12,
+      "y": 5,
       "description": "Ефим дома, у своего сарая. В шляпе с подсолнухом. Чинит что-то, что, кажется, и не было сломано.",
       "talks": [
         "gardener_fair_hello"
@@ -966,6 +986,56 @@
         }
       },
       "visitsOn": "fair_open"
+    },
+    {
+      "key": "miller-pier",
+      "name": "Мельник Жернов",
+      "kind": "human",
+      "x": 5,
+      "y": 1,
+      "appearance": {
+        "skin": "tan",
+        "hair": "short",
+        "hair_color": "ash",
+        "outfit": "overalls",
+        "outfit_color": "cream",
+        "accessory": "beanie",
+        "bag": "none"
+      },
+      "appearsAfter": "fair_open",
+      "description": "Мельник сидит на мостках, свесив ноги к воде, и проверяет вёсла. Праздничная кепка сдвинута на затылок.",
+      "talks": [
+        "miller_pier_hello",
+        "miller_pier_habit"
+      ],
+      "dialogues": {
+        "miller_pier_hello": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Видишь остров посреди озера? Там маяк. Раньше он горел каждую ночь, а теперь стоит тёмный.",
+              "next": "b"
+            },
+            "b": {
+              "text": "Говорят, смотрительница, черепаха Кора, задремала. Лет на двадцать. Я сам тебя отвезу — одному по озеру скучно. Садись в лодку у мостков!",
+              "next": null
+            }
+          }
+        },
+        "miller_pier_habit": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Грести — как молоть муку: гребок, ещё гребок. Никто не доплывал до острова одним махом.",
+              "next": "b"
+            },
+            "b": {
+              "text": "Главное — не бросать вёсла на середине. Даже если медленно.",
+              "next": null
+            }
+          }
+        }
+      }
     }
   ]
 }

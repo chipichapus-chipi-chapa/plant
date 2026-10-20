@@ -68,7 +68,7 @@ export const finishDialogue = (key: string) =>
   apiFetch<FinishDialogueResult>(`/api/mentor/dialogues/${key}/finish`, { method: 'POST' })
 
 /** Кнопки тестирования (только для тестировщиков): ресурсы, все тропы, туман, новая игра */
-export type TestAction = 'resources' | 'open-paths' | 'fog-day' | 'fog-clear' | 'fair-day' | 'bread-day' | 'night' | 'reset'
+export type TestAction = 'resources' | 'open-paths' | 'fog-day' | 'fog-clear' | 'fair-day' | 'bread-day' | 'beacon-window' | 'night' | 'reset'
 export const runTestAction = (action: TestAction) => apiFetch<void>(`/api/test/${action}`, { method: 'POST' })
 
 /** Испечь субботний каравай у Агаты: Семена жизни по числу дней недели с привычками */

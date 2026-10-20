@@ -102,7 +102,9 @@ INSERT INTO item_def (key, kind, name, description, price, species_key, crystal_
     ('produce_moonflower', 'PRODUCE', 'Лунный цветок',
         'Светится в ладонях голубым. Днём засыпает, но не вянет.', NULL, NULL, NULL, NULL),
     ('fair_ribbon', 'DECOR', 'Голубая лента «Лучший сад»',
-        'Награда осенней ярмарки. Мельник вышивал буквы сам — «С» получилась немного кривой, и от этого лента ещё дороже.', NULL, NULL, NULL, NULL)
+        'Награда осенней ярмарки. Мельник вышивал буквы сам — «С» получилась немного кривой, и от этого лента ещё дороже.', NULL, NULL, NULL, NULL),
+    ('beacon_shell', 'DECOR', 'Ракушка смотрительницы',
+        'Подарок черепахи Коры. Если приложить к уху, шумит не море, а ваши дни — тихо и ровно.', NULL, NULL, NULL, NULL)
 ON CONFLICT (key) DO UPDATE SET
     kind = EXCLUDED.kind,
     name = EXCLUDED.name,

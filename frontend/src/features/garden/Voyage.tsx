@@ -14,6 +14,10 @@ type Props = {
   hero: CanvasImageSource | null
   /** 1 — плывём вправо (в городок), -1 — влево (обратно к озеру) */
   direction: 1 | -1
+  /** Спутник сбоку (кадр стоя): житель сидит на вёслах на корме */
+  companion?: CanvasImageSource | null
+  /** Подпись под сценкой; без неё — про туманное озеро */
+  caption?: string
 }
 
 /**
@@ -21,7 +25,7 @@ type Props = {
  * за кормой расходится след, фонарик на носу светит, а клочья тумана расступаются.
  * Рисуется в маленьком холсте и увеличивается без сглаживания — как сам сад.
  */
-export function Voyage({ atlas, hero, direction }: Props) {
+export function Voyage({ atlas, hero, direction, companion, caption }: Props) {
   const ref = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -60,18 +64,31 @@ export function Voyage({ atlas, hero, direction }: Props) {
         ctx.fillRect(wx, by + 18 + k, 3, 1)
       }
 
-      // герой сидит в лодке: рисуем его, а борт лодки поверх закрывает ноги
-      if (hero) {
+      // герой сидит в лодке (со спутником — ближе к носу, а спутник на корме гребёт): борт лодки поверх закрывает ноги
+      const seat = (image: CanvasImageSource, offset: number, dy = 0) => {
         ctx.save()
         if (direction === -1) {
-          ctx.translate(bx + 32 + 16, 0)
+          ctx.translate(bx + 64 - offset, 0)
           ctx.scale(-1, 1)
-          ctx.drawImage(hero, -16, by - 24)
+          ctx.drawImage(image, 0, by - 24 + dy)
         } else {
-          ctx.drawImage(hero, bx + 16, by - 24)
+          ctx.drawImage(image, bx + offset, by - 24 + dy)
         }
         ctx.restore()
       }
+      if (companion) {
+        const stroke = Math.round(Math.sin(now / 260) * 1.5)
+        seat(companion, 2, stroke)
+        // весло: тёмная палка от рук к воде, качается в такт гребкам
+        ctx.strokeStyle = '#3a2214'
+        ctx.lineWidth = 2
+        const ox = direction === 1 ? bx + 22 : bx + 42
+        ctx.beginPath()
+        ctx.moveTo(ox, by - 2 + stroke)
+        ctx.lineTo(ox - direction * (10 + stroke * 3), by + 22)
+        ctx.stroke()
+      }
+      if (hero) seat(hero, companion ? 28 : 16)
       if (boat) {
         ctx.save()
         if (direction === -1) {
@@ -113,12 +130,12 @@ export function Voyage({ atlas, hero, direction }: Props) {
     }
     frame = requestAnimationFrame(draw)
     return () => cancelAnimationFrame(frame)
-  }, [atlas, hero, direction])
+  }, [atlas, hero, direction, companion])
 
   return (
     <div className={styles.voyage} style={{ animationDuration: `${VOYAGE_MS}ms` }} aria-hidden="true">
       <canvas ref={ref} width={W} height={H} className={styles.scene} />
-      <p className={styles.caption}>{direction === 1 ? 'Лодка скользит по тихой воде…' : 'Обратно, к лилиям и Мяте…'}</p>
+      <p className={styles.caption}>{caption ?? (direction === 1 ? 'Лодка скользит по тихой воде…' : 'Обратно, к лилиям и Мяте…')}</p>
     </div>
   )
 }

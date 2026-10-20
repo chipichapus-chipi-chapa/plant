@@ -23,6 +23,7 @@ import app.wheregrows.mentor.PlayerFlagRepository;
 import app.wheregrows.player.GameCalendar;
 import app.wheregrows.player.PlayerProfile;
 import app.wheregrows.player.PlayerProfileRepository;
+import app.wheregrows.story.BeaconService;
 import app.wheregrows.story.GlowService;
 
 /**
@@ -47,12 +48,14 @@ public class ErrandService {
     private final MagicService magic;
     private final Clock clock;
     private final GlowService glow;
+    private final BeaconService beacon;
     private final GameCalendar calendar;
 
     ErrandService(GardenMaps maps, PlayerFlagRepository flags, PlayerDiscoveryRepository discoveries,
                   ItemDefinitionRepository items, Inventory inventory, PlayerProfileRepository players,
-                  MagicService magic, Clock clock, GlowService glow, GameCalendar calendar) {
+                  MagicService magic, Clock clock, GlowService glow, BeaconService beacon, GameCalendar calendar) {
         this.glow = glow;
+        this.beacon = beacon;
         this.calendar = calendar;
         this.magic = magic;
         this.maps = maps;
@@ -120,6 +123,10 @@ public class ErrandService {
         if (errand.kind() == GardenMap.Errand.Kind.GLOW
                 && !glow.state(playerId).map(GlowService.GlowState::lit).orElse(false)) {
             throw new ConflictException("Грибница ещё не разгорелась.");
+        }
+        if (errand.kind() == GardenMap.Errand.Kind.BEACON
+                && !beacon.state(playerId).map(BeaconService.BeaconState::enough).orElse(false)) {
+            throw new ConflictException("В маяке горит слишком мало окон.");
         }
         if (errand.day() != null && calendar.today(profile).getDayOfWeek() != errand.day()
                 && !flags.existsById(new PlayerFlag.Id(playerId, TEST_DAY))) {

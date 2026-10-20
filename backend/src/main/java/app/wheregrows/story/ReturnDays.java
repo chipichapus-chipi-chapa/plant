@@ -26,6 +26,18 @@ class ReturnDays {
 
     /** Пусто — поручение ещё не выполнено, отсчёт не начат. Флаги тестирования добавляют по дню. */
     Optional<Long> since(long playerId, String errand) {
+        return startDay(playerId, errand).map(from -> db.sql("SELECT count(DISTINCT completed_on) FROM habit_completion WHERE player_id = ? AND completed_on >= ?")
+                .params(playerId, from)
+                .query(Long.class)
+                .single()
+                + db.sql("SELECT count(*) FROM player_flag WHERE player_id = ? AND flag LIKE ?")
+                .params(playerId, FogService.TEST_DAY + "%")
+                .query(Long.class)
+                .single());
+    }
+
+    /** День (по часовому поясу игрока), когда выполнено поручение; пусто — ещё не выполнено. */
+    Optional<LocalDate> startDay(long playerId, String errand) {
         Optional<Timestamp> since = db.sql("SELECT set_at FROM player_flag WHERE player_id = ? AND flag = ?")
                 .params(playerId, ErrandService.DONE + errand)
                 .query(Timestamp.class)
@@ -36,14 +48,6 @@ class ReturnDays {
         // день начала — по часовому поясу игрока: вечер, когда выполнено поручение, тоже считается
         ZoneId zone = ZoneId.of(db.sql("SELECT timezone FROM player_profile WHERE user_id = ?")
                 .param(playerId).query(String.class).single());
-        LocalDate from = since.get().toInstant().atZone(zone).toLocalDate();
-        return Optional.of(db.sql("SELECT count(DISTINCT completed_on) FROM habit_completion WHERE player_id = ? AND completed_on >= ?")
-                .params(playerId, from)
-                .query(Long.class)
-                .single()
-                + db.sql("SELECT count(*) FROM player_flag WHERE player_id = ? AND flag LIKE ?")
-                .params(playerId, FogService.TEST_DAY + "%")
-                .query(Long.class)
-                .single());
+        return Optional.of(since.get().toInstant().atZone(zone).toLocalDate());
     }
 }

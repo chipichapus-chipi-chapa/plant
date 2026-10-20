@@ -44,7 +44,7 @@ class CatalogApiTests {
     @Test
     void catalogListsLocationsConnectedByDoors() throws Exception {
         mvc.perform(get("/api/catalog"))
-                .andExpect(jsonPath("$.locations", hasSize(11)))
+                .andExpect(jsonPath("$.locations", hasSize(12)))
                 .andExpect(jsonPath("$.locations[0].key").value("home"))
                 .andExpect(jsonPath("$.locations[0].props[?(@.key == 'shed')].door.map").value("shed"))
                 // калитка ведёт на тропу, только когда её пробудили

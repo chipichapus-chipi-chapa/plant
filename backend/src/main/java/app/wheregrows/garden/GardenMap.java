@@ -9,12 +9,12 @@ import java.util.Map;
  */
 public record GardenMap(String key, String name, int width, int height, Map<String, TileType> tiles,
                         List<String> rows, List<Prop> props, List<Npc> npcs, Fog fog, Bread bread,
-                        Glow glow) {
+                        Glow glow, Beacon beacon) {
 
     /** Карта без жителей — для коротких описаний в тестах и простых локаций. */
     public GardenMap(String key, String name, int width, int height, Map<String, TileType> tiles,
                      List<String> rows, List<Prop> props) {
-        this(key, name, width, height, tiles, rows, props, List.of(), null, null, null);
+        this(key, name, width, height, tiles, rows, props, List.of(), null, null, null, null);
     }
 
     /**
@@ -46,6 +46,16 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
      * @param talks   его разговоры: [тёмная, разгорается, горит вся]
      */
     public record Glow(String after, int days, String speaker, List<String> talks) {
+    }
+
+    /**
+     * Маяк (Ракушечный остров): постройка prop, в ней по окну на кристалл. После поручения after окно
+     * загорается, когда отмечена привычка этого кристалла; смотрительнице нужно needed разных окон.
+     *
+     * @param speaker житель, который рассказывает о маяке
+     * @param talks   его разговоры: [тёмный, загораются, хватит огней]
+     */
+    public record Beacon(String after, String prop, int needed, String speaker, List<String> talks) {
     }
 
     public List<Npc> npcsOrEmpty() {
@@ -80,10 +90,11 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
     /**
      * Дверь: на какую карту ведёт, в какую клетку и куда персонаж будет смотреть; label — надпись на кнопке.
      * requires — постройка, которую сначала надо пробудить (калитка, заросшая ежевикой), или null;
- * requiresErrand — поручение, которое надо выполнить; requiresFog — туман на этой карте должен рассеяться (лодка).
+ * requiresErrand — поручение, которое надо выполнить; requiresFog — туман на этой карте должен рассеяться (лодка);
+     * companion — житель, который плывёт вместе с героем (мельник везёт к маяку), или null.
      */
     public record Door(String map, int x, int y, String facing, String label, String requires, String requiresErrand,
-                       Boolean requiresFog, Boolean requiresNight) {
+                       Boolean requiresFog, Boolean requiresNight, String companion) {
 
         /** Лодка: плыть можно, когда туман рассеялся. Поле необязательное — у обычных дверей его нет. */
         public boolean waitsForFog() {
@@ -130,9 +141,9 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
 
         /**
          * GIVE — отдать вещи, SHOW — показать находку, REVIVE — пробудить все постройки из props,
-         * GLOW — дождаться, пока разгорится вся грибница.
+         * GLOW — дождаться, пока разгорится вся грибница, BEACON — зажечь нужное число окон маяка.
          */
-        public enum Kind { GIVE, SHOW, REVIVE, GLOW }
+        public enum Kind { GIVE, SHOW, REVIVE, GLOW, BEACON }
 
         public List<String> propsOrEmpty() {
             return props == null ? List.of() : props;

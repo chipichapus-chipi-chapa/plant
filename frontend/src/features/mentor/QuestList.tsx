@@ -63,6 +63,9 @@ export function QuestList({ quests, state, onOpenHud }: Props) {
             <span className={styles.who}>{npc.name}</span>
             <span className={styles.goal}>{errand.goal}</span>
             {revive.length > 0 && <span className={styles.progress}>готово {awake} из {revive.length}</span>}
+            {errand.kind === 'BEACON' && state.beacon && (
+              <span className={styles.progress}>горит окон: {state.beacon.lit.length} из {state.beacon.needed}</span>
+            )}
             {errand.day === 'FRIDAY' && state.errands.find((e) => e.key === errand.key)?.today === false && (
               <span className={styles.progress}>открывается в пятницу</span>
             )}

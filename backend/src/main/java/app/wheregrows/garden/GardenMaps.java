@@ -43,6 +43,7 @@ public class GardenMaps {
         validateDoors();
         validateFog();
         validateGlow();
+        validateBeacon();
         validateStory();
     }
 
@@ -63,6 +64,11 @@ public class GardenMaps {
     /** Постройка с данным ключом на любой карте. Ключи построек уникальны во всём мире. */
     public Optional<GardenMap.Prop> prop(String key) {
         return maps.values().stream().flatMap(m -> m.props().stream()).filter(p -> p.key().equals(key)).findFirst();
+    }
+
+    /** Житель с данным ключом на любой карте. */
+    public Optional<GardenMap.Npc> npc(String key) {
+        return maps.values().stream().flatMap(m -> m.npcsOrEmpty().stream()).filter(n -> n.key().equals(key)).findFirst();
     }
 
     /** Поручение жителя по ключу (на любой карте) — вместе с жителем, который его даёт. */
@@ -141,6 +147,35 @@ public class GardenMaps {
         }
     }
 
+    /** Карта с маяком (Ракушечный остров) или пусто. */
+    public Optional<GardenMap> beaconed() {
+        return maps.values().stream().filter(m -> m.beacon() != null).findFirst();
+    }
+
+    /** Маяк один; его постройка, поручение, рассказчик и разговоры настоящие. */
+    private void validateBeacon() {
+        List<GardenMap> beaconed = maps.values().stream().filter(m -> m.beacon() != null).toList();
+        if (beaconed.size() > 1) {
+            throw new IllegalStateException("Маяк пока бывает только на одной локации");
+        }
+        for (GardenMap map : beaconed) {
+            GardenMap.Beacon beacon = map.beacon();
+            map.require(beacon.needed() > 0 && beacon.needed() <= 6, "маяку нужно " + beacon.needed() + " окон из шести");
+            map.require(map.props().stream().anyMatch(p -> p.key().equals(beacon.prop())), "маяк — несуществующая постройка " + beacon.prop());
+            map.require(errand(beacon.after()).isPresent(), "маяк ждёт несуществующее поручение " + beacon.after());
+            GardenMap.Npc speaker = map.npcsOrEmpty().stream().filter(n -> n.key().equals(beacon.speaker())).findFirst().orElse(null);
+            map.require(speaker != null, "о маяке рассказывает несуществующий житель " + beacon.speaker());
+            map.require(beacon.talks() != null && beacon.talks().size() == 3, "у маяка три разговора: тёмный, загораются, хватит");
+            beacon.talks().forEach(t -> map.require(speaker.dialogues() != null && speaker.dialogues().containsKey(t),
+                    "у " + speaker.name() + " нет разговора " + t));
+        }
+        for (NpcErrand e : errands()) {
+            if (e.errand().kind() == GardenMap.Errand.Kind.BEACON && beaconed.isEmpty()) {
+                throw new IllegalStateException("поручение " + e.errand().key() + " ждёт маяк, а его нигде нет");
+            }
+        }
+    }
+
     /** Карта с туманом (Туманное озеро) или пусто. */
     public Optional<GardenMap> foggy() {
         return maps.values().stream().filter(m -> m.fog() != null).findFirst();
@@ -206,6 +241,8 @@ public class GardenMaps {
                         "дверь " + prop.key() + " требует несуществующую постройку " + door.requires());
                 map.require(door.requiresErrand() == null || errand(door.requiresErrand()).isPresent(),
                         "дверь " + prop.key() + " требует несуществующее поручение " + door.requiresErrand());
+                map.require(door.companion() == null || npc(door.companion()).map(n -> n.appearance() != null).orElse(false),
+                        "дверь " + prop.key() + ": спутник " + door.companion() + " — не житель-человек");
                 map.require(!door.waitsForFog() || map.fog() != null,
                         "дверь " + prop.key() + " ждёт тумана, а на карте его нет");
             }

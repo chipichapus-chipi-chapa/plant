@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ReachabilityTests {
 
     /** Те же клетки, по которым клиент пускает ходить (frontend/src/game/movement.ts, WALKABLE). */
-    static final Set<String> WALKABLE = Set.of("grass", "weeds", "path", "soil", "overgrown", "floor", "bridge", "rug", "dreamgrass", "stardust", "bed", "moss_bed");
+    static final Set<String> WALKABLE = Set.of("grass", "weeds", "path", "soil", "overgrown", "floor", "bridge", "rug", "dreamgrass", "stardust", "bed", "moss_bed", "sand");
 
     @Autowired
     GardenMaps maps;
@@ -52,7 +52,9 @@ class ReachabilityTests {
                     }
                 }
             }
-            map.npcsOrEmpty().forEach(n -> blocked.add(new Cell(n.x(), n.y())));
+            // сторож, который уходит с дороги после поручения (Хмур), загораживает её нарочно — до поры
+            map.npcsOrEmpty().stream().filter(n -> n.errand() == null || !n.errand().leaves())
+                    .forEach(n -> blocked.add(new Cell(n.x(), n.y())));
 
             // входы: клетки, куда ведут двери других локаций (у домашнего сада — ещё и место появления)
             List<Cell> entrances = new ArrayList<>();
@@ -66,28 +68,31 @@ class ReachabilityTests {
             if (entrances.isEmpty()) {
                 continue;
             }
-            Set<Cell> reach = new HashSet<>(entrances);
-            ArrayDeque<Cell> queue = new ArrayDeque<>(entrances);
-            while (!queue.isEmpty()) {
-                Cell c = queue.poll();
-                for (int[] d : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
-                    Cell n = new Cell(c.x() + d[0], c.y() + d[1]);
-                    if (map.contains(n.x(), n.y()) && WALKABLE.contains(map.tileAt(n.x(), n.y()).type())
-                            && !blocked.contains(n) && reach.add(n)) {
-                        queue.add(n);
+            // из каждого входа можно дойти до всего: лодка или дверь не высадит в закуток, откуда не выбраться
+            for (Cell entrance : entrances) {
+                Set<Cell> reach = new HashSet<>(List.of(entrance));
+                ArrayDeque<Cell> queue = new ArrayDeque<>(List.of(entrance));
+                while (!queue.isEmpty()) {
+                    Cell c = queue.poll();
+                    for (int[] d : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+                        Cell n = new Cell(c.x() + d[0], c.y() + d[1]);
+                        if (map.contains(n.x(), n.y()) && WALKABLE.contains(map.tileAt(n.x(), n.y()).type())
+                                && !blocked.contains(n) && reach.add(n)) {
+                            queue.add(n);
+                        }
                     }
                 }
-            }
-
-            for (GardenMap.Prop p : map.props()) {
-                boolean matters = p.door() != null || p.read() != null || used.contains(p.key());
-                if (matters && !besideAny(p.x(), p.y(), p.width(), p.height(), reach)) {
-                    problems.add(map.key() + ": к «" + p.name() + "» (" + p.key() + ") не подойти");
+                String from = " (от входа " + entrance.x() + "," + entrance.y() + ")";
+                for (GardenMap.Prop p : map.props()) {
+                    boolean matters = p.door() != null || p.read() != null || used.contains(p.key());
+                    if (matters && !besideAny(p.x(), p.y(), p.width(), p.height(), reach)) {
+                        problems.add(map.key() + ": к «" + p.name() + "» (" + p.key() + ") не подойти" + from);
+                    }
                 }
-            }
-            for (GardenMap.Npc n : map.npcsOrEmpty()) {
-                if (!besideAny(n.x(), n.y(), 1, 1, reach)) {
-                    problems.add(map.key() + ": к жителю «" + n.name() + "» не подойти");
+                for (GardenMap.Npc n : map.npcsOrEmpty()) {
+                    if (!besideAny(n.x(), n.y(), 1, 1, reach)) {
+                        problems.add(map.key() + ": к жителю «" + n.name() + "» не подойти" + from);
+                    }
                 }
             }
         }
