@@ -77,11 +77,37 @@ function owl(frame) {
   return s
 }
 
+/**
+ * Просвет в лесу 1×1: тропка уходит вниз, в темноту между двумя еловыми стволами,
+ * по краям — пара лунных колокольчиков, чтобы выход было видно ночью.
+ */
+function trailExit() {
+  const s = new Sprite(T, T)
+  // тропка: светлее у поляны (сверху), темнее к лесу (снизу)
+  for (let y = 0; y < T; y++) {
+    const half = 6 - Math.floor(y / 8)
+    for (let x = 16 - half; x < 16 + half; x++) s.px(x, y, y < 12 ? R.dirt[3] : y < 22 ? R.dirt[2] : R.dirt[1])
+  }
+  for (let y = 18; y < T; y++) for (let x = 0; x < T; x++) if (Math.abs(x - 16) > 6 - Math.floor(y / 8)) s.px(x, y, P.dark, Math.min(255, (y - 18) * 18))
+  // еловые стволы по бокам
+  for (const x of [3, 27]) {
+    s.rect(x, 4, 3, 28, R.wood[1])
+    s.rect(x, 4, 1, 28, R.wood[2])
+  }
+  for (const [x, y] of [[8, 6], [24, 8]]) {
+    s.line(x, y + 1, x, y + 4, R.leaf[2])
+    s.rect(x - 1, y - 1, 3, 2, MOON[3])
+    s.px(x, y - 1, MOON[4])
+  }
+  return s
+}
+
 export function gladeFrames() {
   return {
     moonflowers_0: moonflowers(0),
     moonflowers_1: moonflowers(1),
     moonflowers_2: moonflowers(2),
+    prop_trail_exit: trailExit(),
     prop_glade_lamp: gladeLamp(false),
     prop_glade_lamp_awakened: gladeLamp(true),
     npc_owl_0: owl(0),
