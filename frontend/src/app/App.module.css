@@ -44,6 +44,18 @@
   text-shadow: 1px 1px 0 var(--c-ink);
 }
 
+.season {
+  font: inherit;
+  font-size: 0.85em;
+  color: inherit;
+  background: none;
+  border: 1px dashed currentColor;
+  border-radius: 4px;
+  padding: 0 6px;
+  cursor: pointer;
+  text-shadow: 1px 1px 0 var(--c-ink);
+}
+
 .coins {
   display: inline-flex;
   align-items: center;

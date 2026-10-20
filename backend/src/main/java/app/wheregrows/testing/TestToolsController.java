@@ -45,18 +45,6 @@ class TestToolsController {
         tools.fogClear(player.id());
     }
 
-    @PostMapping("/fair-day")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    void fairDay() {
-        tools.errandDay(player.id());
-    }
-
-    @PostMapping("/bread-day")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    void breadDay() {
-        tools.breadDay(player.id());
-    }
-
     @PostMapping("/beacon-window")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void beaconWindow() {

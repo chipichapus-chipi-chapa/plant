@@ -132,10 +132,18 @@ class BreadApiTests {
     }
 
     @Test
-    void testerCanCallItSaturday() throws Exception {
+    void valleyClockReachesSaturdayButTheLoafIsOncePerRealWeek() throws Exception {
         hearthLit();
-        mvc.perform(post("/api/test/bread-day")).andExpect(status().isNoContent());
-
+        wind(5); // понедельник + 5 — в долине суббота
         mvc.perform(post("/api/story/bread")).andExpect(status().isOk());
+
+        wind(7); // ещё неделя по часам долины — но настоящая неделя та же
+        mvc.perform(post("/api/story/bread")).andExpect(status().isConflict());
+        wind(0);
+    }
+
+    private void wind(int days) throws Exception {
+        mvc.perform(post("/api/valley/clock").contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                .content("{\"days\":" + days + "}")).andExpect(status().isOk());
     }
 }

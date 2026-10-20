@@ -30,6 +30,13 @@ export const plantSeed = (gardenKey: string, x: number, y: number, seedItemKey: 
 export const harvestPlant = (gardenKey: string, x: number, y: number) =>
   apiFetch<{ itemKey: string; quantity: number }>('/api/garden/harvests', { method: 'POST', body: JSON.stringify({ gardenKey, x, y }) })
 
+/** Покрутить часы долины на days дней (минус — назад); 0 — вернуть настоящее время */
+export const windValleyClock = (days: number) =>
+  apiFetch<{ offset: number }>('/api/valley/clock', { method: 'POST', body: JSON.stringify({ days }) })
+
+/** Построить теплицу над грядками у дома на эту зиму */
+export const buildGreenhouse = () => apiFetch<unknown>('/api/garden/greenhouse', { method: 'POST' })
+
 /** Прополоть заросшую грядку (нужны лопата и грабли в сумке) */
 export const weedBed = (x: number, y: number) =>
   apiFetch<WeedResult>('/api/garden/weedings', { method: 'POST', body: JSON.stringify({ x, y }) })
@@ -68,7 +75,7 @@ export const finishDialogue = (key: string) =>
   apiFetch<FinishDialogueResult>(`/api/mentor/dialogues/${key}/finish`, { method: 'POST' })
 
 /** Кнопки тестирования (только для тестировщиков): ресурсы, все тропы, туман, новая игра */
-export type TestAction = 'resources' | 'open-paths' | 'fog-day' | 'fog-clear' | 'fair-day' | 'bread-day' | 'beacon-window' | 'night' | 'reset'
+export type TestAction = 'resources' | 'open-paths' | 'fog-day' | 'fog-clear' | 'beacon-window' | 'night' | 'reset'
 export const runTestAction = (action: TestAction) => apiFetch<void>(`/api/test/${action}`, { method: 'POST' })
 
 /** Испечь субботний каравай у Агаты: Семена жизни по числу дней недели с привычками */

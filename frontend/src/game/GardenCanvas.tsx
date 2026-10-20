@@ -276,10 +276,10 @@ export function GardenCanvas(props: Props) {
       ctx.imageSmoothingEnabled = false
       ctx.fillStyle = LETTERBOX
       ctx.fillRect(0, 0, canvas.width, canvas.height)
-      // если пропорции экрана и карты разные — в стартовом саду по краям продолжается мир (трава, заросли);
-      // в остальных локациях (у реки, поместье, озеро, комнаты) края уходят в темноту
+      // если пропорции экрана и карты разные — в стартовом саду по краям продолжается мир (трава, заросли),
+      // вокруг острова — озеро (beyond: sea); остальные края уходят в темноту
       const pad = Math.ceil(Math.max(0, -camera.x, -camera.y) / TILE) + 1
-      if (pad > 1 && p.map.key === HOME) {
+      if (pad > 1 && (p.map.key === HOME || p.map.beyond)) {
         const around = surroundLayer(p.map, p.atlas, pad)
         const shift = ((around.width / TILE - p.map.width) / 2) * TILE
         ctx.drawImage(around, Math.round((-camera.x - shift) * k), Math.round((-camera.y - shift) * k), Math.round(around.width * k), Math.round(around.height * k))

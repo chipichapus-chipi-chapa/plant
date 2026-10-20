@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ApiError } from '../../api/client'
-import { acceptErrand, bakeBread, completeErrand, harvestPlant, plantSeed, weedBed } from '../../api/game'
+import { acceptErrand, bakeBread, buildGreenhouse, completeErrand, harvestPlant, plantSeed, weedBed } from '../../api/game'
 import type { Catalog, Door, Errand, GameState, GardenMap, Npc, Puzzle } from '../../api/types'
 import { frameImage, loadAtlas, type Atlas } from '../../game/atlas'
 import { composeCharacter, composeCharacterFrames } from '../../game/character'
 import { WEED_MS, type WeedEffect } from '../../game/effects'
 import { fogBand, fogDensity, fogTalk, notchesLine } from '../../game/fog'
 import { beaconBand, beaconEnough, beaconTalk, beaconWindows } from '../../game/beacon'
+import { canPlantNow, greenhouseRect, indoors } from '../../game/season'
 import { glowBand, glowTalk, withGlow } from '../../game/glow'
 import { GardenCanvas } from '../../game/GardenCanvas'
 import { doorOpen, doorReachable, errandReady, errandWaitsForDay, isClickable, isNear, markerPoint, npcAt, plantsOn, promptCell, promptPoint, sameThing, WEEDING_TOOLS, type Objective } from '../../game/guidance'
@@ -210,7 +211,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     // сторож уходит с дороги, семья Агаты уплывает из городка и появляется в поместье;
     // пока с жителем идёт разговор, он не исчезает посреди фразы
     // гость (ярмарки) здесь только в тот день, когда выполнено поручение, — потом уходит домой
-    const visiting = (key: string) => state.errands.find((e) => e.key === key)?.doneOn === state.today
+    const visiting = (key: string) => state.errands.find((e) => e.key === key)?.doneOn === (state.valleyToday ?? state.today)
     const gone = (n: Npc) =>
       chat?.npc.key !== n.key &&
       ((!!n.errand?.leaves && done(n.errand.key)) ||
@@ -218,7 +219,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
         (!!n.appearsAfter && !done(n.appearsAfter)) ||
         (!!n.visitsOn && !visiting(n.visitsOn)))
     return map.npcs?.some(gone) ? { ...map, npcs: map.npcs.filter((n) => !gone(n)) } : map
-  }, [catalog, location.key, state.garden.weeded, state.worldObjects, state.errands, state.glow, state.today, chat])
+  }, [catalog, location.key, state.garden.weeded, state.worldObjects, state.errands, state.glow, state.today, state.valleyToday, chat])
   // читаем письмо — текст в окне поверх сада
   const [reading, setReading] = useState<{ title: string; text: string } | null>(null)
   // замок крупным планом поверх сада
@@ -285,6 +286,8 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
       effects: weeding ? [weeding] : [],
       fog: fogDensity(state.fog, map.key),
       windows: beaconWindows(map, state.beacon, catalog),
+      season: indoors(map) ? null : (state.season?.season ?? null),
+      greenhouse: greenhouseRect(map, state),
       awakened,
       variants,
       // секретки не мерцают: догадаться надо самому
@@ -833,7 +836,8 @@ function CellInfo({ cell, player, map, state, catalog, now, planting, onPlant, o
   return (
     <div className={styles.cell}>
       <Said name={info.name} text={info.description} />
-      {info.plantable &&
+      {info.plantable && !canPlantNow(state, map) && <FrozenBed map={map} onChanged={onChanged} />}
+      {info.plantable && canPlantNow(state, map) &&
         (seeds.length > 0 ? (
           <div className={styles.seeds}>
             <span className={styles.label}>Посадить:</span>
@@ -851,6 +855,33 @@ function CellInfo({ cell, player, map, state, catalog, now, planting, onPlant, o
         ) : (
           <p className={styles.hint}>В сумке нет семян. Пакетики продаются в лавке — за Семена жизни.</p>
         ))}
+    </div>
+  )
+}
+
+/** Зимой грядка промёрзла: дома можно построить теплицу, в других местах — ждать весны. */
+function FrozenBed({ map, onChanged }: { map: GardenMap; onChanged: () => Promise<void> }) {
+  const [busy, setBusy] = useState(false)
+  const toast = useToast()
+  if (map.key !== 'home') return <p className={styles.hint}>Земля промёрзла до весны. Зимой сажают в теплице у дома.</p>
+  const build = async () => {
+    setBusy(true)
+    try {
+      await buildGreenhouse()
+      toast({ message: 'Теплица построена! Под стеклом тепло — можно сажать хоть в снегопад.' })
+      await onChanged()
+    } catch (e) {
+      toast({ message: e instanceof ApiError ? (e.detail ?? e.title) : 'Не получилось построить. Попробуйте ещё раз.' })
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <div>
+      <p className={styles.hint}>Земля промёрзла. Над грядками можно поставить теплицу — на всю зиму, весной её разберут.</p>
+      <Button disabled={busy} onClick={() => void build()}>
+        Построить теплицу: 20 Семян жизни и осколок янтаря
+      </Button>
     </div>
   )
 }
