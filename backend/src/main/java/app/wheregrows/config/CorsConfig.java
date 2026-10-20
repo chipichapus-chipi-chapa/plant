@@ -42,6 +42,9 @@ class CorsConfig {
         source.registerCorsConfiguration("/api/**", cors);
         FilterRegistrationBean<CorsFilter> registration = new FilterRegistrationBean<>(new CorsFilter(source));
         registration.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        // Локально (адреса не заданы) фильтр выключен: фронтенд ходит через прокси Vite, а браузер
+        // прикладывает Origin к каждому POST — пустой список разрешений отклонял бы любое действие с 403.
+        registration.setEnabled(!allowed.isEmpty());
         return registration;
     }
 }
