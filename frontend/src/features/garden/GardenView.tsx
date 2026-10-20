@@ -33,6 +33,7 @@ import styles from './GardenView.module.css'
 import { LockOverlay } from './LockOverlay'
 import { RecipeBlock } from './RecipeBlock'
 import { HeroPortrait, Said } from './Said'
+import { Voyage, VOYAGE_MS } from './Voyage'
 import { SpotBlock } from './SpotBlock'
 
 type AtlasLoad = { status: 'loading' } | { status: 'ready'; atlas: Atlas } | { status: 'error' }
@@ -300,10 +301,27 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
   const [fade, setFade] = useState<'none' | 'out' | 'in'>('none')
   const fadeTimers = useRef<number[]>([])
   useEffect(() => () => fadeTimers.current.forEach((t) => window.clearTimeout(t)), [])
+  // плавание через озеро: дверь на причале — между затемнением и новой локацией плывёт лодка
+  const [voyage, setVoyage] = useState<1 | -1 | null>(null)
   const travel = (door: Door) => {
     if (fade !== 'none' || !doorOpen(door, state)) return
     if (reducedMotion()) return enter(door)
     setFade('out')
+    const from = map.props.find((p) => p.door === door)
+    if (from?.kind === 'dock') {
+      // в городок — направо (он на том берегу), обратно — налево
+      const direction = door.requiresFog ? 1 : -1
+      fadeTimers.current = [
+        window.setTimeout(() => setVoyage(direction), FADE_MS),
+        window.setTimeout(() => {
+          setVoyage(null)
+          enter(door)
+          setFade('in')
+        }, FADE_MS + VOYAGE_MS),
+        window.setTimeout(() => setFade('none'), FADE_MS * 2 + VOYAGE_MS),
+      ]
+      return
+    }
     fadeTimers.current = [
       window.setTimeout(() => {
         enter(door)
@@ -458,6 +476,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
             </div>
           )}
           {fade !== 'none' && <div className={`${styles.fade} ${fade === 'out' ? styles.fadeOut : styles.fadeIn}`} aria-hidden="true" />}
+          {voyage && atlas.status === 'ready' && <Voyage atlas={atlas.atlas} hero={playerFrames?.side[0] ?? null} direction={voyage} />}
           {lock && atlas.status === 'ready' && (
             <LockOverlay puzzle={lock} catalog={catalog} atlas={atlas.atlas} onClose={() => setLock(null)} onChanged={onChanged} />
           )}
