@@ -230,6 +230,8 @@ export type GameState = {
    * days — сколько дней-возвращений набралось (не больше needed).
    */
   fog: { map: string; started: boolean; days: number; needed: number } | null
+  /** Доступны кнопки тестирования (локально — всегда, на сервере — из списка GAME_TESTERS) */
+  tester: boolean
   /** Пробуждённые объекты мира; нет в списке — объект спит */
   worldObjects: { objectKey: string; state: 'AWAKENED' }[]
   /** Обысканные места находок */

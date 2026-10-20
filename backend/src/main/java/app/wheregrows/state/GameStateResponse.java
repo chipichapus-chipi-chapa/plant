@@ -22,7 +22,7 @@ record GameStateResponse(Player player, LocalDate today, List<InventoryEntry> in
                          DailyRewards dailyRewards, Garden garden, List<WorldObject> worldObjects,
                          List<String> searchedSpots, List<CollectedArtifact> artifacts, MentorProgress mentor,
                          List<String> solvedPuzzles, List<ErrandService.ErrandState> errands,
-                         FogService.FogState fog) {
+                         FogService.FogState fog, boolean tester) {
 
     /** Артефакт в коллекции: когда и где найден. Описание — в каталоге. */
     record CollectedArtifact(String key, Instant foundAt, String foundWhere) {

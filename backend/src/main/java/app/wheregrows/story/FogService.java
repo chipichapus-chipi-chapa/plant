@@ -23,6 +23,9 @@ import app.wheregrows.garden.GardenMaps;
 @Service
 public class FogService {
 
+    /** Флаги кнопки тестирования «Туман +1 день» (test_fog_day:1, :2…): каждый — ещё один день. */
+    public static final String TEST_DAY = "test_fog_day:";
+
     private final GardenMaps maps;
     private final JdbcClient db;
 
@@ -57,6 +60,10 @@ public class FogService {
         LocalDate from = since.get().toInstant().atZone(zone).toLocalDate();
         long days = db.sql("SELECT count(DISTINCT completed_on) FROM habit_completion WHERE player_id = ? AND completed_on >= ?")
                 .params(playerId, from)
+                .query(Long.class)
+                .single()
+                + db.sql("SELECT count(*) FROM player_flag WHERE player_id = ? AND flag LIKE ?")
+                .params(playerId, TEST_DAY + "%")
                 .query(Long.class)
                 .single();
         return new FogState(map.key(), true, (int) Math.min(days, fog.days()), fog.days());

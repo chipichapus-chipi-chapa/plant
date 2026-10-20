@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { enterFullscreen, exitFullscreen, useSettings, type Settings } from '../../app/settings'
 import { isFullscreen, onFullscreenChange } from '../../app/telegram'
+import type { GameState } from '../../api/types'
 import { AppSection } from './AppSection'
+import { TestSection } from './TestSection'
 import styles from './SettingsPanel.module.css'
 
 type Choice<K extends keyof Settings> = { key: K; label: string; options: { value: Settings[K]; label: string }[] }
@@ -21,8 +23,13 @@ const CHOICES = [
   { key: 'fireflies', label: 'Светлячки', options: [{ value: true, label: 'Да' }, { value: false, label: 'Нет' }] },
 ] as Choice<keyof Settings>[]
 
+type Props = {
+  /** Есть, когда игра загружена: тогда в настройках — разделы про сад и кнопки тестирования */
+  game?: { state: GameState; onChanged: () => Promise<void> }
+}
+
 /** Настройки: вид и удобство. Сохраняются в этом браузере. */
-export function SettingsPanel() {
+export function SettingsPanel({ game }: Props) {
   const { settings, change } = useSettings()
   const [fullscreen, setFullscreen] = useState(isFullscreen)
 
@@ -64,6 +71,7 @@ export function SettingsPanel() {
         </div>
       ))}
       <AppSection />
+      {game && <TestSection state={game.state} onChanged={game.onChanged} />}
       <p className={styles.note}>Настройки хранятся на этом устройстве. Прогресс игры — на сервере, его они не трогают.</p>
     </div>
   )

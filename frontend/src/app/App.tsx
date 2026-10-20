@@ -125,7 +125,7 @@ function Game() {
 
         {open === 'settings' && (
           <Window title="Настройки" onClose={close}>
-            <SettingsPanel />
+            <SettingsPanel game={game.status === 'ready' ? { state: game.state, onChanged: refresh } : undefined} />
           </Window>
         )}
 

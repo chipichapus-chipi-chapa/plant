@@ -20,6 +20,9 @@ services:
         sync: false
       - key: SPRING_DATASOURCE_PASSWORD
         sync: false
+      # Telegram id тестировщиков через запятую (id назовёт бот по команде /id) — у них в настройках кнопки тестирования
+      - key: GAME_TESTERS
+        sync: false
       # куда ведёт кнопка «Играть» у бота
       - key: TELEGRAM_WEB_APP_URL
         value: https://chipichapus-chipi-chapa.github.io/plant/app/

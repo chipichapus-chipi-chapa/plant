@@ -62,3 +62,7 @@ export const saveProfile = (displayName: string, appearance: Record<string, stri
 /** Разговор дочитан: сервер ставит флаг и (один раз) выдаёт подарок */
 export const finishDialogue = (key: string) =>
   apiFetch<FinishDialogueResult>(`/api/mentor/dialogues/${key}/finish`, { method: 'POST' })
+
+/** Кнопки тестирования (только для тестировщиков): ресурсы, все тропы, туман, новая игра */
+export type TestAction = 'resources' | 'open-paths' | 'fog-day' | 'fog-clear' | 'reset'
+export const runTestAction = (action: TestAction) => apiFetch<void>(`/api/test/${action}`, { method: 'POST' })
