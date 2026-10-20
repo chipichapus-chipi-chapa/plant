@@ -168,6 +168,8 @@ const TILE_LIGHTS: Record<string, Omit<Light, 'x' | 'y'>> = {
   moonflowers: { radius: 30, strength: 0.55, color: MOON_GLOW },
   glowshrooms: { radius: 30, strength: 0.6, color: TEAL_GLOW },
   starwater: { radius: 26, strength: 0.35, color: MOON_GLOW },
+  mycelium: { radius: 12, strength: 0.25, color: TEAL_GLOW },
+  mycelium_lit: { radius: 44, strength: 0.85, color: [255, 214, 140] },
 }
 
 /** Существа, которые светятся сами (кошки Светлолесья): свет от их клетки. */
@@ -175,6 +177,7 @@ export const CREATURE_GLOW: Record<string, Light> = {
   greatcat: { x: 0, y: -14, radius: 80, strength: 0.9, color: [220, 205, 255] },
   nightcat: { x: 0, y: -14, radius: 70, strength: 0.75, color: MOON_GLOW },
   kitten: { x: 0, y: -10, radius: 44, strength: 0.7, color: [240, 230, 255] },
+  mosscat: { x: 0, y: -14, radius: 60, strength: 0.55, color: TEAL_GLOW },
 }
 
 /** Растения, которые светятся, когда выросли. */

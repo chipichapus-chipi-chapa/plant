@@ -110,6 +110,10 @@ export function tileFrame(map: GardenMap, x: number, y: number): string {
       return `stardust_${variant(x, y, 2)}`
     case 'glowshrooms':
       return `glowshrooms_${variant(x, y, 3)}`
+    case 'mycelium':
+      return `mycelium_${variant(x, y, 2)}`
+    case 'mycelium_lit':
+      return `mycelium_lit_${variant(x, y, 2)}`
     case 'starwater':
       return `starwater_${variant(x, y, 3)}`
     case 'dry_bed':

@@ -94,7 +94,7 @@ export type Npc = {
 export type Errand = {
   key: string
   /** REVIVE — пробудить все постройки из props */
-  kind: 'GIVE' | 'SHOW' | 'REVIVE'
+  kind: 'GIVE' | 'SHOW' | 'REVIVE' | 'GLOW'
   props?: string[] | null
   goal: string
   give: ItemGrant[] | null
@@ -119,6 +119,8 @@ export type GardenMap = {
   npcs?: Npc[] | null
   /** Туман (Туманное озеро) */
   fog?: Fog | null
+  /** Грибница (Грибная лощина): после поручения after по пятну за день с привычками; talks — [тёмная, разгорается, горит] */
+  glow?: { after: string; days: number; speaker: string; talks: [string, string, string] } | null
   /** Субботний хлеб: кто печёт и его разговоры — ready (испечён сейчас), baked (уже был), waiting (ждём субботы) */
   bread?: { npc: string; after: string; day: string; base: number; talks: { ready: string; baked: string; waiting: string } } | null
 }
@@ -250,6 +252,8 @@ export type GameState = {
    * days — сколько дней-возвращений набралось (не больше needed).
    */
   fog: { map: string; started: boolean; days: number; needed: number } | null
+  /** Грибница: сколько пятен горит (дней с привычками после пробуждения хрустальных деревьев) */
+  glow?: { map: string; started: boolean; days: number; needed: number } | null
   /**
    * Субботний хлеб; null — в игре его нет. home — Агата дома и печь горит; today — сегодня суббота;
    * baked — на этой неделе уже испечён; days — дни недели с привычками; loaf — сколько Семян жизни в каравае.

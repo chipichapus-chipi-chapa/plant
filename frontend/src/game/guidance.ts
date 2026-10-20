@@ -4,9 +4,10 @@
 
 import type { Catalog, Door, GameState, GardenMap, GardenProp, Npc } from '../api/types'
 import { fogCleared } from './fog'
+import { glowLit } from './glow'
 
 /** Существа крупнее героя: «!» над ними выше обычного. */
-const BIG_CREATURES = new Set(['greatcat', 'nightcat'])
+const BIG_CREATURES = new Set(['greatcat', 'nightcat', 'mosscat'])
 import { HOME, MENTOR_SPOT, objectAt, propAt, TILE, tileAt, type Cell } from './layout'
 import { CHARACTER_HEIGHT } from './renderer'
 
@@ -194,6 +195,7 @@ export function errandReady(npc: Npc, state: GameState): boolean {
   if (!errand || !status?.offered || status.done) return false
   const have = (key: string) => state.inventory.find((e) => e.itemKey === key)?.quantity ?? 0
   if (errand.kind === 'SHOW') return state.searchedSpots.includes(errand.spot ?? '')
+  if (errand.kind === 'GLOW') return glowLit(state.glow)
   if (errand.kind === 'REVIVE') return (errand.props ?? []).every((key) => state.worldObjects.some((w) => w.objectKey === key))
   return (errand.give ?? []).every((g) => have(g.itemKey) >= g.quantity)
 }

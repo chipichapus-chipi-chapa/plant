@@ -8,12 +8,13 @@ import java.util.Map;
  * постройки (props) лежат поверх тайлов. Хранится как контент в resources/content/gardens.
  */
 public record GardenMap(String key, String name, int width, int height, Map<String, TileType> tiles,
-                        List<String> rows, List<Prop> props, List<Npc> npcs, Fog fog, Bread bread) {
+                        List<String> rows, List<Prop> props, List<Npc> npcs, Fog fog, Bread bread,
+                        Glow glow) {
 
     /** Карта без жителей — для коротких описаний в тестах и простых локаций. */
     public GardenMap(String key, String name, int width, int height, Map<String, TileType> tiles,
                      List<String> rows, List<Prop> props) {
-        this(key, name, width, height, tiles, rows, props, List.of(), null, null);
+        this(key, name, width, height, tiles, rows, props, List.of(), null, null, null);
     }
 
     /**
@@ -35,6 +36,16 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
      * @param notches постройка, на которой появляются зарубки — по одной за день (причал)
      */
     public record Fog(String after, int days, String speaker, List<String> talks, String notches) {
+    }
+
+    /**
+     * Грибница (Грибная лощина): после поручения after с каждым днём, когда отмечена хоть одна привычка,
+     * загорается ещё одна клетка грибницы (тип mycelium, по порядку чтения строк); всего их days.
+     *
+     * @param speaker житель, который рассказывает о грибнице
+     * @param talks   его разговоры: [тёмная, разгорается, горит вся]
+     */
+    public record Glow(String after, int days, String speaker, List<String> talks) {
     }
 
     public List<Npc> npcsOrEmpty() {
@@ -111,8 +122,11 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
                          List<app.wheregrows.economy.ItemGrant> reward, String offer, String waiting, String thanks,
                          boolean leaves, List<String> props) {
 
-        /** GIVE — отдать вещи, SHOW — показать находку, REVIVE — пробудить все постройки из props. */
-        public enum Kind { GIVE, SHOW, REVIVE }
+        /**
+         * GIVE — отдать вещи, SHOW — показать находку, REVIVE — пробудить все постройки из props,
+         * GLOW — дождаться, пока разгорится вся грибница.
+         */
+        public enum Kind { GIVE, SHOW, REVIVE, GLOW }
 
         public List<String> propsOrEmpty() {
             return props == null ? List.of() : props;

@@ -1,15 +1,10 @@
 package app.wheregrows.story;
 
-import java.sql.Timestamp;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.Optional;
 
-import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import app.wheregrows.errand.ErrandService;
 import app.wheregrows.garden.GardenMap;
 import app.wheregrows.garden.GardenMaps;
 
@@ -23,15 +18,15 @@ import app.wheregrows.garden.GardenMaps;
 @Service
 public class FogService {
 
-    /** Флаги кнопки тестирования «Туман +1 день» (test_fog_day:1, :2…): каждый — ещё один день. */
+    /** Флаги кнопки тестирования «+1 день с привычками» (test_fog_day:1, :2…): каждый — ещё один день для тумана и грибницы. */
     public static final String TEST_DAY = "test_fog_day:";
 
     private final GardenMaps maps;
-    private final JdbcClient db;
+    private final ReturnDays days;
 
-    FogService(GardenMaps maps, JdbcClient db) {
+    FogService(GardenMaps maps, ReturnDays days) {
         this.maps = maps;
-        this.db = db;
+        this.days = days;
     }
 
     /**
@@ -47,26 +42,9 @@ public class FogService {
 
     private FogState state(long playerId, GardenMap map) {
         GardenMap.Fog fog = map.fog();
-        Optional<Timestamp> since = db.sql("SELECT set_at FROM player_flag WHERE player_id = ? AND flag = ?")
-                .params(playerId, ErrandService.DONE + fog.after())
-                .query(Timestamp.class)
-                .optional();
-        if (since.isEmpty()) {
-            return new FogState(map.key(), false, 0, fog.days());
-        }
-        // день начала — по часовому поясу игрока: вечер пробуждения сада тоже считается
-        ZoneId zone = ZoneId.of(db.sql("SELECT timezone FROM player_profile WHERE user_id = ?")
-                .param(playerId).query(String.class).single());
-        LocalDate from = since.get().toInstant().atZone(zone).toLocalDate();
-        long days = db.sql("SELECT count(DISTINCT completed_on) FROM habit_completion WHERE player_id = ? AND completed_on >= ?")
-                .params(playerId, from)
-                .query(Long.class)
-                .single()
-                + db.sql("SELECT count(*) FROM player_flag WHERE player_id = ? AND flag LIKE ?")
-                .params(playerId, TEST_DAY + "%")
-                .query(Long.class)
-                .single();
-        return new FogState(map.key(), true, (int) Math.min(days, fog.days()), fog.days());
+        return days.since(playerId, fog.after())
+                .map(d -> new FogState(map.key(), true, (int) Math.min(d, fog.days()), fog.days()))
+                .orElse(new FogState(map.key(), false, 0, fog.days()));
     }
 
     /** map — над какой локацией туман; рассеялся, когда days == needed. */

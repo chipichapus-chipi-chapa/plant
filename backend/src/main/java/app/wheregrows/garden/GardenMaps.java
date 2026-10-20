@@ -21,6 +21,8 @@ import tools.jackson.databind.json.JsonMapper;
 public class GardenMaps {
 
     public static final String HOME = "home";
+    /** Тип клетки грибницы: такие клетки загораются по одной за день-возвращение. */
+    public static final String MYCELIUM = "mycelium";
 
     private final Map<String, GardenMap> maps = new LinkedHashMap<>();
 
@@ -40,6 +42,7 @@ public class GardenMaps {
         }
         validateDoors();
         validateFog();
+        validateGlow();
         validateStory();
     }
 
@@ -103,6 +106,35 @@ public class GardenMaps {
                 String talk = bread.talks() == null ? null : bread.talks().get(key);
                 map.require(talk != null && baker.dialogues() != null && baker.dialogues().containsKey(talk),
                         "у " + baker.name() + " нет разговора о хлебе «" + key + "»");
+            }
+        }
+    }
+
+    /** Карта с грибницей (Грибная лощина) или пусто. */
+    public Optional<GardenMap> glowing() {
+        return maps.values().stream().filter(m -> m.glow() != null).findFirst();
+    }
+
+    /** Грибница одна; клеток mycelium ровно столько, сколько дней; рассказчик и его разговоры настоящие. */
+    private void validateGlow() {
+        List<GardenMap> glowing = maps.values().stream().filter(m -> m.glow() != null).toList();
+        if (glowing.size() > 1) {
+            throw new IllegalStateException("Грибница пока бывает только на одной локации");
+        }
+        for (GardenMap map : glowing) {
+            GardenMap.Glow glow = map.glow();
+            map.require(glow.days() > 0 && map.cellsOfType(MYCELIUM).size() == glow.days(),
+                    "у грибницы " + glow.days() + " дней, а клеток грибницы " + map.cellsOfType(MYCELIUM).size());
+            map.require(errand(glow.after()).isPresent(), "грибница ждёт несуществующее поручение " + glow.after());
+            GardenMap.Npc speaker = map.npcsOrEmpty().stream().filter(n -> n.key().equals(glow.speaker())).findFirst().orElse(null);
+            map.require(speaker != null, "о грибнице рассказывает несуществующий житель " + glow.speaker());
+            map.require(glow.talks() != null && glow.talks().size() == 3, "у грибницы три разговора: тёмная, разгорается, горит");
+            glow.talks().forEach(t -> map.require(speaker.dialogues() != null && speaker.dialogues().containsKey(t),
+                    "у " + speaker.name() + " нет разговора " + t));
+        }
+        for (NpcErrand e : errands()) {
+            if (e.errand().kind() == GardenMap.Errand.Kind.GLOW && glowing.isEmpty()) {
+                throw new IllegalStateException("поручение " + e.errand().key() + " ждёт грибницу, а её нигде нет");
             }
         }
     }
