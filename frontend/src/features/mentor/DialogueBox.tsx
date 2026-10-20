@@ -7,6 +7,7 @@ import { describeReward } from '../../lib/rewards'
 import { textDelay, useSettings } from '../../app/settings'
 import { useToast } from '../notifications/Toasts'
 import styles from './DialogueBox.module.css'
+import { useTypewriter } from './useTypewriter'
 
 /** Кто говорит: имя и кадр атласа, из которого вырезается портрет (32×32 с точки crop). */
 export type Speaker = { name: string; frame: string; crop: [number, number] }
@@ -70,17 +71,13 @@ const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce
  */
 export function DialogueBox({ speaker, dialogue, atlas, onEnd, onClose }: Props) {
   const [nodeId, setNodeId] = useState(dialogue.start)
-  // сколько букв текущей реплики уже напечатано; при смене реплики счёт начинается заново
-  const [typed, setTyped] = useState({ node: dialogue.start, count: 0 })
   const [finishing, setFinishing] = useState(false)
   const portraitRef = useRef<HTMLCanvasElement>(null)
   const boxRef = useRef<HTMLDivElement>(null)
   const node = dialogue.nodes[nodeId]
   const { settings } = useSettings()
   const delay = textDelay(settings.textSpeed)
-  const instant = reducedMotion() || delay === 0
-  const shown = instant ? node.text.length : typed.node === nodeId ? typed.count : 0
-  const complete = shown >= node.text.length
+  const { shownRef, ghostRef, complete, finish: showAll } = useTypewriter(node.text, delay, reducedMotion())
 
   useEffect(() => {
     const ctx = portraitRef.current?.getContext('2d')
@@ -89,15 +86,6 @@ export function DialogueBox({ speaker, dialogue, atlas, onEnd, onClose }: Props)
     ctx.clearRect(0, 0, 32, 32)
     ctx.drawImage(image, speaker.crop[0], speaker.crop[1], 32, 32, 0, 0, 32, 32)
   }, [atlas, speaker.frame, speaker.crop])
-
-  // Текст печатается по буквам (скорость — в настройках); при «уменьшить движение» появляется сразу
-  useEffect(() => {
-    if (instant || complete) return
-    const timer = window.setInterval(() => {
-      setTyped((t) => (t.node === nodeId ? { node: nodeId, count: t.count + 1 } : { node: nodeId, count: 1 }))
-    }, delay)
-    return () => window.clearInterval(timer)
-  }, [nodeId, instant, complete, delay])
 
   useEffect(() => boxRef.current?.focus(), [])
 
@@ -113,7 +101,7 @@ export function DialogueBox({ speaker, dialogue, atlas, onEnd, onClose }: Props)
   const advance = () => {
     if (finishing) return
     if (!complete) {
-      setTyped({ node: nodeId, count: node.text.length })
+      showAll()
       return
     }
     if (node.choices) return // ждём выбора ответа
@@ -144,10 +132,8 @@ export function DialogueBox({ speaker, dialogue, atlas, onEnd, onClose }: Props)
         <div className={styles.speech}>
           <span className={styles.name}>{speaker.name}</span>
           <p className={styles.text} aria-live="polite">
-            {node.text.slice(0, shown)}
-            <span className={styles.ghost} aria-hidden="true">
-              {node.text.slice(shown)}
-            </span>
+            <span ref={shownRef} />
+            <span ref={ghostRef} className={styles.ghost} aria-hidden="true" />
           </p>
           {complete && node.choices ? (
             <div className={styles.choices}>

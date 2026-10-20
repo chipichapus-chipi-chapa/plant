@@ -1,7 +1,7 @@
 import type { GardenMap, GardenObject } from '../api/types'
 import type { Atlas } from './atlas'
 import { hoeFrame, weedParticles, type WeedEffect } from './effects'
-import { TILE, tileAt, tileFrame, type Cell } from './layout'
+import { TILE, tileAt, tileFrame, variant, type Cell } from './layout'
 
 /** Кадр персонажа: 32×48, низ — по низу клетки. */
 export const CHARACTER_WIDTH = 32
@@ -74,12 +74,8 @@ export function drawGarden(
   const { objects, awakened, sparkles, characters, bubbles, prompt, marker, time = 0 } = scene
   ctx.imageSmoothingEnabled = false
   ctx.clearRect(0, 0, map.width * TILE, map.height * TILE)
-
-  for (let y = 0; y < map.height; y++) {
-    for (let x = 0; x < map.width; x++) {
-      drawFrame(ctx, atlas, tileFrame(map, x, y), x * TILE, y * TILE)
-    }
-  }
+  // земля не меняется от кадра к кадру — один готовый слой вместо сотен отдельных картинок
+  ctx.drawImage(groundLayer(map, atlas), 0, 0)
 
   // Постройки и растения рисуем вместе, по нижнему краю: что ближе к зрителю — поверх
   const sprites = [
@@ -469,4 +465,78 @@ function drawFog(ctx: CanvasRenderingContext2D, map: GardenMap, density: number,
     ctx.fillRect(x - radius, y - radius, radius * 2, radius * 2)
   }
   ctx.restore()
+}
+
+/**
+ * Слой земли карты, нарисованный один раз. Карта — неизменяемый объект: когда грядку пропололи
+ * или клумба ожила, приходит новый объект карты, и слой рисуется заново.
+ */
+const grounds = new WeakMap<GardenMap, { atlas: Atlas; canvas: HTMLCanvasElement }>()
+
+function groundLayer(map: GardenMap, atlas: Atlas): HTMLCanvasElement {
+  const cached = grounds.get(map)
+  if (cached && cached.atlas === atlas) return cached.canvas
+  const canvas = document.createElement('canvas')
+  canvas.width = map.width * TILE
+  canvas.height = map.height * TILE
+  const ctx = canvas.getContext('2d')!
+  ctx.imageSmoothingEnabled = false
+  for (let y = 0; y < map.height; y++) {
+    for (let x = 0; x < map.width; x++) {
+      drawFrame(ctx, atlas, tileFrame(map, x, y), x * TILE, y * TILE)
+    }
+  }
+  grounds.set(map, { atlas, canvas })
+  return canvas
+}
+
+/** Насколько притушить мир за краем карты: там сумерки гуще, внимание — на саду. */
+const OUTSIDE_DIM = 'rgba(18, 14, 13, 0.55)'
+
+const surrounds = new WeakMap<GardenMap, { atlas: Atlas; pad: number; canvas: HTMLCanvasElement }>()
+
+/**
+ * Мир за краем карты — чтобы экран любой формы был заполнен целиком, а не чёрными полями.
+ * Каждая клетка снаружи продолжает ближайшую клетку края: вода — водой, комната — темнотой,
+ * всё остальное (забор, трава, тропа) — лесом. Слой с отступом pad клеток со всех сторон
+ * рисуется один раз и притушен; сама карта ложится поверх в его середину.
+ */
+export function surroundLayer(map: GardenMap, atlas: Atlas, pad: number): HTMLCanvasElement {
+  const cached = surrounds.get(map)
+  if (cached && cached.atlas === atlas && cached.pad >= pad) return cached.canvas
+  const size = { w: map.width + pad * 2, h: map.height + pad * 2 }
+  const canvas = document.createElement('canvas')
+  canvas.width = size.w * TILE
+  canvas.height = size.h * TILE
+  const ctx = canvas.getContext('2d')!
+  ctx.imageSmoothingEnabled = false
+  for (let y = 0; y < size.h; y++) {
+    for (let x = 0; x < size.w; x++) {
+      const mx = x - pad
+      const my = y - pad
+      if (mx >= 0 && my >= 0 && mx < map.width && my < map.height) continue
+      const edge = tileAt(map, Math.min(map.width - 1, Math.max(0, mx)), Math.min(map.height - 1, Math.max(0, my)))?.type
+      const frame = edge === 'water' ? 'water_15' : edge === 'floor' || edge === 'wall' || edge === 'rug' ? 'wall_0' : `grass_${variant(x, y, 4)}`
+      drawFrame(ctx, atlas, frame, x * TILE, y * TILE)
+    }
+  }
+  // на траве за краем — заросли и деревья: сад стоит поляной посреди леса
+  for (let y = 0; y < size.h; y += 2) {
+    for (let x = 0; x < size.w; x += 2) {
+      const mx = x - pad
+      const my = y - pad
+      const outside = mx < -1 || my < -2 || mx > map.width || my > map.height
+      if (!outside) continue
+      const edge = tileAt(map, Math.min(map.width - 1, Math.max(0, mx)), Math.min(map.height - 1, Math.max(0, my)))?.type
+      if (edge === 'water' || edge === 'floor' || edge === 'wall' || edge === 'rug') continue
+      const roll = variant(x * 7 + 3, y * 13 + 1, 10)
+      if (roll < 5) drawFrame(ctx, atlas, 'prop_thicket', x * TILE, y * TILE)
+      if (roll < 2) drawFrame(ctx, atlas, 'prop_thicket', x * TILE + TILE, y * TILE + TILE)
+      else if (roll === 9) drawFrame(ctx, atlas, 'prop_rock', x * TILE + TILE, y * TILE)
+    }
+  }
+  ctx.fillStyle = OUTSIDE_DIM
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  surrounds.set(map, { atlas, pad, canvas })
+  return canvas
 }

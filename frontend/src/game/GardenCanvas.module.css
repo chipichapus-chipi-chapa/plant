@@ -55,3 +55,11 @@
 .action:active {
   box-shadow: 0 0 0 2px var(--c-ink), inset 0 2px 0 0 var(--c-wood);
 }
+
+/* Строки «старого монитора»: тонкая тёмная линия через каждые 3 пикселя, клики проходят насквозь */
+.scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(to bottom, transparent 0 2px, rgb(0 0 0 / 0.22) 2px 3px);
+}
