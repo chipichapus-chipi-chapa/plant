@@ -54,7 +54,11 @@ class TestToolsApiTests {
                 .andExpect(jsonPath("$.worldObjects[?(@.objectKey == 'lily-west')]").exists())
                 .andExpect(jsonPath("$.worldObjects[?(@.objectKey == 'east-gate')]").exists())
                 .andExpect(jsonPath("$.fog.started").value(true))
-                .andExpect(jsonPath("$.fog.days").value(0));
+                .andExpect(jsonPath("$.fog.days").value(0))
+                // к плотине — очаг Агаты; а сама глава (хатка, возвращение садовника) — не проходится за игрока
+                .andExpect(jsonPath("$.errands[?(@.key == 'agata_hearth')].done").value(true))
+                .andExpect(jsonPath("$.errands[?(@.key == 'beaver_lodge')].done").value(false))
+                .andExpect(jsonPath("$.errands[?(@.key == 'gardener_return')].done").value(false));
     }
 
     @Test
