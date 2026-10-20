@@ -90,10 +90,11 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
     /**
      * Дверь: на какую карту ведёт, в какую клетку и куда персонаж будет смотреть; label — надпись на кнопке.
      * requires — постройка, которую сначала надо пробудить (калитка, заросшая ежевикой), или null;
- * requiresErrand — поручение, которое надо выполнить; requiresFog — туман на этой карте должен рассеяться (лодка).
+ * requiresErrand — поручение, которое надо выполнить; requiresFog — туман на этой карте должен рассеяться (лодка);
+     * companion — житель, который плывёт вместе с героем (мельник везёт к маяку), или null.
      */
     public record Door(String map, int x, int y, String facing, String label, String requires, String requiresErrand,
-                       Boolean requiresFog, Boolean requiresNight) {
+                       Boolean requiresFog, Boolean requiresNight, String companion) {
 
         /** Лодка: плыть можно, когда туман рассеялся. Поле необязательное — у обычных дверей его нет. */
         public boolean waitsForFog() {

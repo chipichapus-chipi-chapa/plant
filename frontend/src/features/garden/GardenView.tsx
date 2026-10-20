@@ -360,6 +360,8 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
   useEffect(() => () => fadeTimers.current.forEach((t) => window.clearTimeout(t)), [])
   // плавание через озеро: дверь на причале — между затемнением и новой локацией плывёт лодка
   const [voyage, setVoyage] = useState<1 | -1 | null>(null)
+  // кто плывёт вместе с героем (мельник к маяку) и подпись под сценкой
+  const [crew, setCrew] = useState<{ companion: Npc | null; caption?: string }>({ companion: null })
   const travel = (door: Door) => {
     if (fade !== 'none' || !doorOpen(door, state)) return
     if (reducedMotion()) return enter(door)
@@ -368,6 +370,11 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     if (from?.kind === 'dock' || from?.kind === 'pier') {
       // в городок — направо (он на том берегу), обратно — налево; к острову — налево, с острова — направо
       const direction = from.kind === 'pier' ? (door.map === 'island' ? -1 : 1) : door.requiresFog ? 1 : -1
+      const companion = door.companion ? (catalog.locations.flatMap((l) => l.npcs ?? []).find((n) => n.key === door.companion) ?? null) : null
+      setCrew({
+        companion,
+        caption: companion ? (door.map === 'island' ? `${companion.name} гребёт, остров всё ближе…` : `${companion.name} везёт вас обратно в городок…`) : undefined,
+      })
       fadeTimers.current = [
         window.setTimeout(() => setVoyage(direction), FADE_MS),
         window.setTimeout(() => {
@@ -599,7 +606,15 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
             </div>
           )}
           {fade !== 'none' && <div className={`${styles.fade} ${fade === 'out' ? styles.fadeOut : styles.fadeIn}`} aria-hidden="true" />}
-          {voyage && atlas.status === 'ready' && <Voyage atlas={atlas.atlas} hero={playerFrames?.side[0] ?? null} direction={voyage} />}
+          {voyage && atlas.status === 'ready' && (
+            <Voyage
+              atlas={atlas.atlas}
+              hero={playerFrames?.side[0] ?? null}
+              direction={voyage}
+              companion={crew.companion?.appearance ? composeCharacter(atlas.atlas, crew.companion.appearance, catalog.appearance, { direction: 'side', step: 0 }) : null}
+              caption={crew.caption}
+            />
+          )}
           {lock && atlas.status === 'ready' && (
             <LockOverlay puzzle={lock} catalog={catalog} atlas={atlas.atlas} onClose={() => setLock(null)} onChanged={onChanged} />
           )}

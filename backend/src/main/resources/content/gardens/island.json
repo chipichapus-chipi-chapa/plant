@@ -68,7 +68,8 @@
         "x": 5,
         "y": 2,
         "facing": "right",
-        "label": "Сесть в лодку и вернуться в городок"
+        "label": "Сесть в лодку к мельнику и вернуться в городок",
+        "companion": "miller-island"
       }
     },
     {
@@ -251,6 +252,52 @@
           "produce_iris"
         ],
         "talk": "kora_gift"
+      }
+    },
+    {
+      "key": "miller-island",
+      "name": "Мельник Жернов",
+      "kind": "human",
+      "x": 3,
+      "y": 4,
+      "appearance": {
+        "skin": "tan",
+        "hair": "short",
+        "hair_color": "ash",
+        "outfit": "overalls",
+        "outfit_color": "cream",
+        "accessory": "beanie",
+        "bag": "none"
+      },
+      "appearsAfter": "fair_open",
+      "description": "Мельник привязал лодку и разглядывает маяк, задрав голову. Кепку пришлось придержать — тут ветрено.",
+      "talks": [
+        "miller_island_hello",
+        "miller_island_wait"
+      ],
+      "dialogues": {
+        "miller_island_hello": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Вот он, маяк. Вблизи ещё выше, правда? Иди к Коре, она под самой башней.",
+              "next": "b"
+            },
+            "b": {
+              "text": "А я подожду у лодки. Захочешь обратно — садись, отвезу.",
+              "next": null
+            }
+          }
+        },
+        "miller_island_wait": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Не торопись. Мельница без меня денёк покрутится — вода своё дело знает.",
+              "next": null
+            }
+          }
+        }
       }
     }
   ],

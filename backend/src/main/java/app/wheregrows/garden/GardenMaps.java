@@ -237,6 +237,8 @@ public class GardenMaps {
                         "дверь " + prop.key() + " требует несуществующую постройку " + door.requires());
                 map.require(door.requiresErrand() == null || errand(door.requiresErrand()).isPresent(),
                         "дверь " + prop.key() + " требует несуществующее поручение " + door.requiresErrand());
+                map.require(door.companion() == null || npc(door.companion()).map(n -> n.appearance() != null).orElse(false),
+                        "дверь " + prop.key() + ": спутник " + door.companion() + " — не житель-человек");
                 map.require(!door.waitsForFog() || map.fog() != null,
                         "дверь " + prop.key() + " ждёт тумана, а на карте его нет");
             }

@@ -55,6 +55,8 @@ export type Door = {
   requiresFog?: boolean | null
   /** Тропка видна только ночью — с 20:00 до 6:00 по часам игрока (на Лунную поляну) */
   requiresNight?: boolean | null
+  /** Житель, который плывёт вместе с героем (мельник везёт к маяку) */
+  companion?: string | null
 }
 
 /**
