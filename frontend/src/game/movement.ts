@@ -21,20 +21,45 @@ const WALKABLE = new Set(['grass', 'weeds', 'path', 'soil', 'overgrown', 'floor'
  * Карта проходимости: забор и постройки непроходимы, как и растения и стоящие персонажи.
  * Пустые грядки проходимы — по ним можно подойти к соседней.
  */
-export function blockedCells(
-  map: GardenMap,
-  objects: GardenObject[],
-  standing: Cell[],
-  greenhouses: { x: number; y: number; w: number; h: number }[] = [],
-): boolean[][] {
+export function blockedCells(map: GardenMap, objects: GardenObject[], standing: Cell[]): boolean[][] {
   const blocked = Array.from({ length: map.height }, (_, y) =>
     Array.from({ length: map.width }, (_, x) => !WALKABLE.has(tileAt(map, x, y)?.type ?? '') || !!propAt(map, x, y)),
   )
   for (const o of objects) blocked[o.y][o.x] = true
   for (const c of standing) blocked[c.y][c.x] = true
-  // теплица — стеклянный домик: сквозь стены не пройти, к грядкам подходят снаружи
-  for (const g of greenhouses) for (let y = g.y; y < g.y + g.h; y++) for (let x = g.x; x < g.x + g.w; x++) if (blocked[y]) blocked[y][x] = true
   return blocked
+}
+
+/** Тонкая стена в логических пикселях (стенка теплицы). */
+export type Wall = { x: number; y: number; w: number; h: number }
+
+/** Клетка, где у теплицы дверца: середина нижнего ряда участка. */
+export const greenhouseDoor = (g: { x: number; y: number; w: number; h: number }): Cell => ({ x: g.x + Math.floor(g.w / 2), y: g.y + g.h - 1 })
+
+/**
+ * Стены теплицы-домика: по краю участка, кроме проёма под дверцей в нижней стенке. Внутри ходить можно,
+ * зайти — только через дверцу.
+ */
+export function greenhouseWalls(greenhouses: { x: number; y: number; w: number; h: number }[]): Wall[] {
+  const T = 3
+  return greenhouses.flatMap((g) => {
+    const x0 = g.x * TILE
+    const y0 = g.y * TILE
+    const x1 = (g.x + g.w) * TILE
+    const y1 = (g.y + g.h) * TILE
+    const door = greenhouseDoor(g).x * TILE
+    return [
+      { x: x0, y: y0, w: x1 - x0, h: T },
+      { x: x0, y: y0, w: T, h: y1 - y0 },
+      { x: x1 - T, y: y0, w: T, h: y1 - y0 },
+      { x: x0, y: y1 - T, w: door - x0, h: T },
+      { x: door + TILE, y: y1 - T, w: x1 - door - TILE, h: T },
+    ].filter((w) => w.w > 0)
+  })
+}
+
+function hitsWall(walls: Wall[], left: number, top: number, right: number, bottom: number): boolean {
+  return walls.some((w) => left < w.x + w.w && right > w.x && top < w.y + w.h && bottom > w.y)
 }
 
 function isBlocked(blocked: boolean[][], x: number, y: number): boolean {
@@ -44,12 +69,13 @@ function isBlocked(blocked: boolean[][], x: number, y: number): boolean {
 }
 
 /** Задевают ли ступни в точке (x, y) что-нибудь непроходимое. */
-export function collides(blocked: boolean[][], x: number, y: number): boolean {
+export function collides(blocked: boolean[][], x: number, y: number, walls: Wall[] = []): boolean {
   const left = x - FEET.halfWidth
   const right = x + FEET.halfWidth - 0.01
   const top = y - FEET.height
   const bottom = y - 0.01
   return (
+    hitsWall(walls, left, top, right, bottom) ||
     isBlocked(blocked, left, top) ||
     isBlocked(blocked, right, top) ||
     isBlocked(blocked, left, bottom) ||
@@ -61,7 +87,7 @@ export function collides(blocked: boolean[][], x: number, y: number): boolean {
  * Шаг ходьбы на dt секунд в направлении (dx, dy) — вектор длиной до 1 (джойстик даёт и промежуточные).
  * Оси проверяются по отдельности: упёршись в забор по диагонали, персонаж скользит вдоль него.
  */
-export function walk(w: Walker, dx: number, dy: number, dt: number, blocked: boolean[][]): Walker {
+export function walk(w: Walker, dx: number, dy: number, dt: number, blocked: boolean[][], walls: Wall[] = []): Walker {
   const length = Math.hypot(dx, dy)
   if (length < 0.15) return w
   const scale = Math.min(1, length) / length
@@ -71,9 +97,9 @@ export function walk(w: Walker, dx: number, dy: number, dt: number, blocked: boo
   let { x, y } = w
   // Уже стоим в занятой клетке (под ногами посадили растение, рядом встал житель) — выпускаем
   // в любую сторону, иначе каждое направление «сталкивается» и персонаж застревает навсегда.
-  const stuck = collides(blocked, x, y)
-  if (stuck || !collides(blocked, x + vx, y)) x += vx
-  if (stuck || !collides(blocked, x, y + vy)) y += vy
+  const stuck = collides(blocked, x, y, walls)
+  if (stuck || !collides(blocked, x + vx, y, walls)) x += vx
+  if (stuck || !collides(blocked, x, y + vy, walls)) y += vy
   const facing: Facing = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up'
   return { x, y, facing }
 }

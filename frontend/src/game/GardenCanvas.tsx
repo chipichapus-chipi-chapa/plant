@@ -5,7 +5,7 @@ import { directionFor, type CharacterFrames } from './character'
 import { useSettings } from '../app/settings'
 import { Fireflies } from './Fireflies'
 import { cameraAt, containScale, HOME, inBounds, TILE, type Cell } from './layout'
-import { blockedCells, cellOf, facingCell, walk, walkerAt, type Facing, type Walker } from './movement'
+import { blockedCells, cellOf, facingCell, greenhouseWalls, walk, walkerAt, type Facing, type Walker } from './movement'
 import { isPlaying, strikeLift } from './effects'
 import { drawGarden, LAMP_LIGHT_UP_MS, lampLevel, surroundLayer, type Scene } from './renderer'
 import styles from './GardenCanvas.module.css'
@@ -113,8 +113,10 @@ export function GardenCanvas(props: Props) {
   const dirtyRef = useRef(true)
   const scaleRef = useRef(scale)
 
-  const blocked = useMemo(() => blockedCells(map, scene.objects, standing, scene.greenhouses), [map, scene.objects, standing, scene.greenhouses])
+  const blocked = useMemo(() => blockedCells(map, scene.objects, standing), [map, scene.objects, standing])
   const blockedRef = useRef(blocked)
+  const walls = useMemo(() => greenhouseWalls(scene.greenhouses ?? []), [scene.greenhouses])
+  const wallsRef = useRef(walls)
 
   // Свежие значения для игрового цикла — после каждого рендера
   useLayoutEffect(() => {
@@ -123,6 +125,7 @@ export function GardenCanvas(props: Props) {
     scaleRef.current = scale
     sizeRef.current = size
     blockedRef.current = blocked
+    wallsRef.current = walls
   })
 
   // Любое изменение входных данных — повод перерисовать кадр
@@ -201,7 +204,7 @@ export function GardenCanvas(props: Props) {
       }
       const moving = p.inputEnabled && Math.hypot(dx, dy) >= 0.15
       if (moving) {
-        walkerRef.current = walk(walkerRef.current, dx, dy, dt, blockedRef.current)
+        walkerRef.current = walk(walkerRef.current, dx, dy, dt, blockedRef.current, wallsRef.current)
         const cell = cellOf(walkerRef.current)
         const facing = facingCell(walkerRef.current)
         if (cell.x !== lastCell.x || cell.y !== lastCell.y || facing.x !== lastFacing.x || facing.y !== lastFacing.y) {

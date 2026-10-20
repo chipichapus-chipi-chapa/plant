@@ -220,9 +220,9 @@ function drawGreenhouse(ctx: CanvasRenderingContext2D, bed: { x: number; y: numb
     ctx.fillRect(px, peak + r0, 1, roof - r0)
   }
   ctx.fillRect(Math.round(mid) - 1, peak, 2, roof)
-  // дверца посередине
+  // дверца — посередине нижней стенки, над проёмом (клетка greenhouseDoor)
   const dw = 12
-  const dx = Math.round(mid - dw / 2)
+  const dx = (bed.x + Math.floor(bed.w / 2)) * TILE + TILE / 2 - dw / 2
   const dh = Math.min(24, bottom - wallTop - 4)
   ctx.fillStyle = WOOD
   ctx.fillRect(dx, bottom - 3 - dh, dw, dh)

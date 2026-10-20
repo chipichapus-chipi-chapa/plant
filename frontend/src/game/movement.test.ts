@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { GardenMap } from '../api/types'
-import { blockedCells, cellOf, collides, facingCell, walk, walkerAt } from './movement'
+import { blockedCells, cellOf, collides, facingCell, greenhouseWalls, walk, walkerAt } from './movement'
 
 const t = (type: string) => ({ type, name: type, description: '', plantable: type === 'soil' })
 
@@ -25,10 +25,16 @@ describe('проходимость', () => {
     expect(blocked[1][3]).toBe(false) // грядка
   })
 
-  it('сквозь стены теплицы не пройти', () => {
-    const blocked = blockedCells(map, [], [], [{ x: 1, y: 1, w: 2, h: 1 }])
-    expect(blocked[1][1]).toBe(true)
-    expect(blocked[1][2]).toBe(true)
+  it('в теплицу заходят только через дверцу', () => {
+    const walls = greenhouseWalls([{ x: 1, y: 0, w: 3, h: 2 }]) // дверца — клетка (2, 1)
+    const open = blockedCells({ ...map, rows: map.rows.map((r) => r.replace(/./g, '.')), props: [] }, [], [])
+    // снизу под дверцей — проходим внутрь
+    expect(collides(open, 2 * 32 + 16, 2 * 32 + 30, walls)).toBe(false)
+    expect(collides(open, 2 * 32 + 16, 2 * 32 + 2, walls)).toBe(false)
+    // под стенкой рядом с дверцей — упираемся
+    expect(collides(open, 1 * 32 + 16, 2 * 32 + 2, walls)).toBe(true)
+    // сбоку — стена
+    expect(collides(open, 1 * 32 + 2, 1 * 32 + 20, walls)).toBe(true)
   })
 
   it('растения и стоящие персонажи загораживают клетку', () => {
