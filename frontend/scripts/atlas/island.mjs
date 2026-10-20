@@ -5,7 +5,7 @@ import { noise, rng, Sprite } from './canvas.mjs'
 import { T } from './tiles.mjs'
 import { INK, R } from './palette.mjs'
 
-const SAND = ['#4a4236', '#6b604c', '#8a7d62', '#a69878', '#c2b48f']
+const SAND = ['#3a3026', '#574833', '#76623f', '#8f784c', '#a68e5c']
 const STONE = ['#3e4046', '#5e6068', '#80828a', '#a8a6a0', '#c4c2ba']
 const SHELL = ['#c88a7a', '#e2b2a2', '#f4dccf']
 const TURTLE = ['#2a3a24', '#3f5a32', '#5a7a44', '#7e9a5c']
@@ -101,12 +101,60 @@ function turtle(frame) {
   return s
 }
 
+/** Костерок 1×1: кольцо камней, поленья, огонь и чайник на треноге. */
+function campfire() {
+  const s = new Sprite(T, T)
+  const b = new Sprite(T, T)
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2
+    b.shadedEllipse(16 + Math.cos(a) * 9, 24 + Math.sin(a) * 4, 2.5, 2, [STONE[0], STONE[1], STONE[2]])
+  }
+  b.line(9, 25, 22, 22, R.wood[2])
+  b.line(10, 22, 23, 25, R.wood[3])
+  b.shadedEllipse(16, 20, 4, 5, [R.lamp[1], R.lamp[2], R.lamp[3], R.lamp[4]])
+  b.shadedEllipse(16, 21, 2, 3, [R.lamp[3], R.lamp[4], R.lamp[5]])
+  b.line(8, 22, 16, 4, R.wood[1]) // тренога
+  b.line(24, 22, 16, 4, R.wood[1])
+  b.shadedEllipse(16, 10, 4, 3.5, [STONE[1], STONE[2], STONE[3]]) // чайник
+  b.rect(19, 9, 3, 1, STONE[2])
+  b.outline(INK)
+  s.stamp(b)
+  return s
+}
+
+/** Домик Коры 2×2: брёвна, крыша из ракушек, круглое окошко с тёплым светом. */
+function hut() {
+  const W = 2 * T
+  const H = 2 * T
+  const s = new Sprite(W, H)
+  const b = new Sprite(W, H)
+  b.rect(8, 28, 48, 32, R.wood[3])
+  for (let y = 30; y < 60; y += 5) b.rect(8, y, 48, 1, R.wood[2])
+  for (let y = 6; y < 30; y++) {
+    const half = Math.min(30, 4 + (y - 6) * 1.2)
+    for (let x = 32 - half; x < 32 + half; x++) b.px(x, y, (x + y) % 5 ? SHELL[0] : SHELL[1])
+  }
+  const r = rng(91)
+  for (let i = 0; i < 10; i++) b.px(10 + Math.floor(r() * 44), 14 + Math.floor(r() * 14), SHELL[2])
+  b.shadedEllipse(20, 42, 6, 6, [R.lamp[2], R.lamp[3], R.lamp[4], R.lamp[5]]) // окошко
+  b.rect(19, 36, 2, 12, R.wood[1])
+  b.rect(14, 41, 12, 2, R.wood[1])
+  b.rect(36, 38, 12, 22, R.wood[1]) // дверь
+  b.px(45, 49, R.lamp[4])
+  b.outline(INK)
+  s.shadow(W / 2, H - 3, 26, 2.5)
+  s.stamp(b)
+  return s
+}
+
 export function islandFrames() {
   return {
     sand_0: sand(0),
     sand_1: sand(1),
     sand_2: sand(2),
     prop_pier: pier(),
+    prop_campfire: campfire(),
+    prop_island_hut: hut(),
     prop_lighthouse: lighthouse(false),
     prop_lighthouse_awakened: lighthouse(true),
     npc_turtle_0: turtle(0),
