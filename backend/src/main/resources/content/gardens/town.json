@@ -322,19 +322,6 @@
               "next": null
             }
           }
-        },
-        "agata_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Роза… с моего старого куста? Ты её вырастил(а)?",
-              "next": "b"
-            },
-            "b": {
-              "text": "Ох, дай-ка я присяду. Это лучший подарок за много лет.",
-              "next": null
-            }
-          }
         }
       },
       "appearance": {
@@ -371,13 +358,7 @@
         "thanks": "agata_thanks",
         "leaves": false
       },
-      "leavesAfter": "agata_roses",
-      "gifts": {
-        "loves": [
-          "produce_rose"
-        ],
-        "talk": "agata_gift"
-      }
+      "leavesAfter": "agata_roses"
     },
     {
       "key": "liza",
@@ -465,15 +446,6 @@
               "next": null
             }
           }
-        },
-        "liza_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Ирисы! Мои любимые! Я их засушу между страницами — и зимой будет лето.",
-              "next": null
-            }
-          }
         }
       },
       "appearance": {
@@ -506,14 +478,7 @@
         "thanks": "liza_thanks",
         "leaves": false
       },
-      "leavesAfter": "liza_irises",
-      "gifts": {
-        "loves": [
-          "produce_iris",
-          "produce_daisy"
-        ],
-        "talk": "liza_gift"
-      }
+      "leavesAfter": "liza_irises"
     },
     {
       "key": "nika",
@@ -601,15 +566,6 @@
               "next": null
             }
           }
-        },
-        "nika_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Венок! Я надену его и буду качаться высоко-высоко, чтобы все видели!",
-              "next": null
-            }
-          }
         }
       },
       "appearance": {
@@ -642,13 +598,7 @@
         "thanks": "nika_thanks",
         "leaves": false
       },
-      "leavesAfter": "nika_daisies",
-      "gifts": {
-        "loves": [
-          "produce_daisy"
-        ],
-        "talk": "nika_gift"
-      }
+      "leavesAfter": "nika_daisies"
     },
     {
       "key": "timosha",
@@ -707,15 +657,6 @@
               "next": null
             }
           }
-        },
-        "timosha_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Семечки! Я буду кормить ими птиц. И себя. Птиц больше. Ну, поровну!",
-              "next": null
-            }
-          }
         }
       },
       "appearance": {
@@ -727,13 +668,7 @@
         "accessory": "beanie",
         "bag": "backpack"
       },
-      "leavesAfter": "agata_roses",
-      "gifts": {
-        "loves": [
-          "produce_sunflower"
-        ],
-        "talk": "timosha_gift"
-      }
+      "leavesAfter": "agata_roses"
     },
     {
       "key": "miller-fair",
@@ -761,7 +696,7 @@
           "start": "a",
           "nodes": {
             "a": {
-              "text": "Вода снова крутит колесо, Ефим вернулся домой, а в городке опять живут! Знаешь, что это значит?",
+              "text": "Вода снова крутит колесо, Ефим вернулся домой — а я перебрался сюда, в городок, к своей ветряной мельнице. Знаешь, что это значит?",
               "next": "b"
             },
             "b": {
@@ -795,7 +730,7 @@
               "next": "c"
             },
             "c": {
-              "text": "Вырасти и разложи урожай. Не спеши: посадил, подождал, собрал. Как заполнишь все три — откроем ярмарку!",
+              "text": "Вырасти и разложи урожай. Не спеши: посадил, подождал, собрал. Как заполнишь все три — в ближайшую пятницу откроем ярмарку!",
               "next": null
             }
           }
@@ -817,11 +752,24 @@
               "next": "b"
             },
             "b": {
-              "text": "Смотри, все пришли: и мыши с восточной тропы, и бобры с плотины, и Мята из поместья. Это ведь всё ты — по одной грядке, по одному дню.",
+              "text": "Смотри, все пришли: и мыши с восточной тропы, и бобры с плотины, и Мята из поместья. Сегодня гуляем, а завтра все разойдутся по домам — с полными корзинками.",
               "next": "c"
             },
             "c": {
               "text": "По старой традиции лучший сад получает голубую ленту. Держи. Её заслужил твой сад — и ты.",
+              "next": null
+            }
+          }
+        },
+        "miller_fair_friday": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Все три прилавка полны — красота! Но ярмарка, как в старые времена, бывает в пятницу.",
+              "next": "b"
+            },
+            "b": {
+              "text": "Приходи в пятницу вечером: соберутся все — и мыши, и бобры, и Мята из поместья. А урожай на прилавках не завянет, я присмотрю.",
               "next": null
             }
           }
@@ -853,7 +801,9 @@
         "offer": "miller_fair_ask",
         "waiting": "miller_fair_wait",
         "thanks": "miller_fair_thanks",
-        "leaves": false
+        "leaves": false,
+        "day": "FRIDAY",
+        "notToday": "miller_fair_friday"
       },
       "leavesAfter": "fair_open"
     },
@@ -863,7 +813,6 @@
       "kind": "human",
       "x": 8,
       "y": 4,
-      "appearsAfter": "fair_open",
       "description": "Седая, в шали и круглых очках. Смотрит через озеро так, будто видит поместье и без бинокля.",
       "talks": [
         "agata_fair_hello"
@@ -881,19 +830,6 @@
               "next": null
             }
           }
-        },
-        "agata_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Роза… с моего старого куста? Ты её вырастил(а)?",
-              "next": "b"
-            },
-            "b": {
-              "text": "Ох, дай-ка я присяду. Это лучший подарок за много лет.",
-              "next": null
-            }
-          }
         }
       },
       "appearance": {
@@ -905,12 +841,7 @@
         "accessory": "glasses",
         "bag": "none"
       },
-      "gifts": {
-        "loves": [
-          "produce_rose"
-        ],
-        "talk": "agata_gift"
-      }
+      "visitsOn": "fair_open"
     },
     {
       "key": "krupka-fair",
@@ -918,7 +849,6 @@
       "kind": "krupka",
       "x": 14,
       "y": 5,
-      "appearsAfter": "fair_open",
       "description": "Деловитая мышь в фартуке. Пересчитывает что-то на лапках и шевелит губами.",
       "talks": [
         "krupka_fair_hello"
@@ -936,28 +866,9 @@
               "next": null
             }
           }
-        },
-        "krupka_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Семечки?! Целая корзинка?",
-              "next": "b"
-            },
-            "b": {
-              "text": "Это же на всю зиму! Ну, на ползимы. Ладно, до вторника. Спасибо!",
-              "next": null
-            }
-          }
         }
       },
-      "gifts": {
-        "loves": [
-          "produce_sunflower",
-          "produce_radish"
-        ],
-        "talk": "krupka_gift"
-      }
+      "visitsOn": "fair_open"
     },
     {
       "key": "tina-fair",
@@ -965,7 +876,6 @@
       "kind": "beaver",
       "x": 11,
       "y": 8,
-      "appearsAfter": "fair_open",
       "description": "Солидная бобриха с плоским хвостом-лопатой. Смотрит строго, но глаза добрые и очень уставшие.",
       "talks": [
         "tina_fair_hello"
@@ -983,23 +893,9 @@
               "next": null
             }
           }
-        },
-        "tina_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Лилия! Я положу её у входа в хатку. Пусть все видят, что у нас хорошие соседи.",
-              "next": null
-            }
-          }
         }
       },
-      "gifts": {
-        "loves": [
-          "produce_lily"
-        ],
-        "talk": "tina_gift"
-      }
+      "visitsOn": "fair_open"
     },
     {
       "key": "shlep-fair",
@@ -1007,7 +903,6 @@
       "kind": "beaverkid",
       "x": 16,
       "y": 3,
-      "appearsAfter": "fair_open",
       "description": "Маленький бобр, мокрый насквозь и очень довольный собой. Грызёт палочку — кажется, просто для красоты.",
       "talks": [
         "shlep_fair_hello"
@@ -1025,23 +920,9 @@
               "next": null
             }
           }
-        },
-        "shlep_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Ура-а-а! Семечки! Мама, смотри! Я поделюсь. Одной. Ладно, двумя!",
-              "next": null
-            }
-          }
         }
       },
-      "gifts": {
-        "loves": [
-          "produce_sunflower"
-        ],
-        "talk": "shlep_gift"
-      }
+      "visitsOn": "fair_open"
     },
     {
       "key": "gardener-fair",
@@ -1049,7 +930,6 @@
       "kind": "human",
       "x": 12,
       "y": 5,
-      "appearsAfter": "fair_open",
       "description": "Ефим дома, у своего сарая. В шляпе с подсолнухом. Чинит что-то, что, кажется, и не было сломано.",
       "talks": [
         "gardener_fair_hello"
@@ -1067,19 +947,6 @@
               "next": null
             }
           }
-        },
-        "gardener_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Это же… из моего сада? Я думал, он совсем зарос.",
-              "next": "b"
-            },
-            "b": {
-              "text": "Спасибо, что вернул(а) ему жизнь. И мне немного тоже.",
-              "next": null
-            }
-          }
         }
       },
       "appearance": {
@@ -1091,13 +958,7 @@
         "accessory": "gardener_hat",
         "bag": "tote"
       },
-      "gifts": {
-        "loves": [
-          "produce_lily",
-          "produce_sunflower"
-        ],
-        "talk": "gardener_gift"
-      }
+      "visitsOn": "fair_open"
     },
     {
       "key": "myata-fair",
@@ -1105,7 +966,6 @@
       "kind": "myata",
       "x": 14,
       "y": 7,
-      "appearsAfter": "fair_open",
       "description": "Рыжая кошка свернулась на лежанке у печи. Один глаз открыт — тот, что смотрит на вас.",
       "talks": [
         "myata_fair_hello"
@@ -1123,24 +983,9 @@
               "next": null
             }
           }
-        },
-        "myata_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Мррр, как пахнет! Поставлю в кувшин на подоконник — пусть весь дом знает, что у нас гости бывают.",
-              "next": null
-            }
-          }
         }
       },
-      "gifts": {
-        "loves": [
-          "produce_chamomile",
-          "produce_lily"
-        ],
-        "talk": "myata_gift"
-      }
+      "visitsOn": "fair_open"
     },
     {
       "key": "miller-pier",

@@ -97,13 +97,10 @@ public class GardenMaps {
             for (GardenMap.Npc npc : map.npcsOrEmpty()) {
                 map.require(npc.appearsAfter() == null || errand(npc.appearsAfter()).isPresent(),
                         npc.name() + " появляется после несуществующего поручения " + npc.appearsAfter());
+                map.require(npc.visitsOn() == null || errand(npc.visitsOn()).isPresent(),
+                        npc.name() + " приходит в гости в день несуществующего поручения " + npc.visitsOn());
                 map.require(npc.leavesAfter() == null || errand(npc.leavesAfter()).isPresent(),
                         npc.name() + " уходит после несуществующего поручения " + npc.leavesAfter());
-            }
-            for (GardenMap.Npc npc : map.npcsOrEmpty()) {
-                map.require(npc.gifts() == null || (npc.gifts().talk() != null && npc.dialogues() != null
-                                && npc.dialogues().containsKey(npc.gifts().talk())),
-                        "у " + npc.name() + " нет разговора о любимом подарке");
             }
             GardenMap.Bread bread = map.bread();
             if (bread == null) {
@@ -206,6 +203,13 @@ public class GardenMaps {
 
     /** Двери ведут на существующие карты, в свободную клетку; ключи построек не повторяются между картами. */
     private void validateDoors() {
+        for (NpcErrand e : errands()) {
+            GardenMap.Errand errand = e.errand();
+            if (errand.day() != null && (errand.notToday() == null || e.npc().dialogues() == null
+                    || !e.npc().dialogues().containsKey(errand.notToday()))) {
+                throw new IllegalStateException("у поручения " + errand.key() + " нет разговора «не сегодня»");
+            }
+        }
         long errandKeys = errands().stream().map(e -> e.errand().key()).distinct().count();
         if (errandKeys != errands().size()) {
             throw new IllegalStateException("Ключи поручений жителей повторяются");

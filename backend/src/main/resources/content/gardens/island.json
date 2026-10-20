@@ -213,15 +213,6 @@
               "next": null
             }
           }
-        },
-        "kora_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Ирис… Цвета озера в ясный день. Я положу его у окна — пусть маяк тоже порадуется.",
-              "next": null
-            }
-          }
         }
       },
       "errand": {
@@ -246,12 +237,6 @@
         "waiting": "kora_wait",
         "thanks": "kora_thanks",
         "leaves": false
-      },
-      "gifts": {
-        "loves": [
-          "produce_iris"
-        ],
-        "talk": "kora_gift"
       }
     },
     {

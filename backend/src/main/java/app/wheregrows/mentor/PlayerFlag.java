@@ -34,4 +34,8 @@ public class PlayerFlag {
     public String getFlag() {
         return id.flag();
     }
+
+    public Instant getSetAt() {
+        return setAt;
+    }
 }

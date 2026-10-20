@@ -224,15 +224,6 @@
               "next": null
             }
           }
-        },
-        "miller_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Подсолнух — это же масло, это же блины! Ну, теперь мельница точно запоёт.",
-              "next": null
-            }
-          }
         }
       },
       "appearance": {
@@ -265,12 +256,7 @@
         "thanks": "miller_thanks",
         "leaves": false
       },
-      "gifts": {
-        "loves": [
-          "produce_sunflower"
-        ],
-        "talk": "miller_gift"
-      }
+      "leavesAfter": "gardener_return"
     },
     {
       "key": "gardener",
@@ -333,19 +319,6 @@
               "next": null
             }
           }
-        },
-        "gardener_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Это же… из моего сада? Я думал, он совсем зарос.",
-              "next": "b"
-            },
-            "b": {
-              "text": "Спасибо, что вернул(а) ему жизнь. И мне немного тоже.",
-              "next": null
-            }
-          }
         }
       },
       "appearance": {
@@ -357,14 +330,7 @@
         "accessory": "none",
         "bag": "tote"
       },
-      "leavesAfter": "beaver_lodge",
-      "gifts": {
-        "loves": [
-          "produce_lily",
-          "produce_sunflower"
-        ],
-        "talk": "gardener_gift"
-      }
+      "leavesAfter": "beaver_lodge"
     },
     {
       "key": "gardener-ready",
@@ -424,19 +390,6 @@
               "next": null
             }
           }
-        },
-        "gardener_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Это же… из моего сада? Я думал, он совсем зарос.",
-              "next": "b"
-            },
-            "b": {
-              "text": "Спасибо, что вернул(а) ему жизнь. И мне немного тоже.",
-              "next": null
-            }
-          }
         }
       },
       "appearance": {
@@ -473,14 +426,7 @@
         "thanks": "gardener_ready_thanks",
         "leaves": true
       },
-      "appearsAfter": "beaver_lodge",
-      "gifts": {
-        "loves": [
-          "produce_lily",
-          "produce_sunflower"
-        ],
-        "talk": "gardener_gift"
-      }
+      "appearsAfter": "beaver_lodge"
     },
     {
       "key": "tina",
@@ -564,15 +510,6 @@
               "next": null
             }
           }
-        },
-        "tina_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Лилия! Я положу её у входа в хатку. Пусть все видят, что у нас хорошие соседи.",
-              "next": null
-            }
-          }
         }
       },
       "errand": {
@@ -592,12 +529,6 @@
         "waiting": "tina_wait",
         "thanks": "tina_thanks",
         "leaves": false
-      },
-      "gifts": {
-        "loves": [
-          "produce_lily"
-        ],
-        "talk": "tina_gift"
       }
     },
     {
@@ -643,22 +574,7 @@
               "next": null
             }
           }
-        },
-        "shlep_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Ура-а-а! Семечки! Мама, смотри! Я поделюсь. Одной. Ладно, двумя!",
-              "next": null
-            }
-          }
         }
-      },
-      "gifts": {
-        "loves": [
-          "produce_sunflower"
-        ],
-        "talk": "shlep_gift"
       }
     }
   ]

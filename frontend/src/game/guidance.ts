@@ -121,6 +121,12 @@ export function plantsOn(state: GameState, map: GardenMap): GameState['garden'][
   return state.garden.objects.filter((o) => o.gardenKey === map.key)
 }
 
+/** Всё для поручения готово, но день не тот (ярмарка — в пятницу): житель скажет «не сегодня». */
+export function errandWaitsForDay(npc: Npc, state: GameState): boolean {
+  const status = npc.errand && state.errands.find((e) => e.key === npc.errand!.key)
+  return !!status && status.today === false && errandReady(npc, { ...state, errands: state.errands.map((e) => (e === status ? { ...e, today: true } : e)) })
+}
+
 /** Есть ли в клетке то, с чем можно что-то сделать прямо сейчас. */
 export function isInteractive(cell: Cell, state: GameState, catalog: Catalog, map: GardenMap): boolean {
   if (isMentor(cell, map) || npcAt(map, cell)) return true
@@ -196,7 +202,7 @@ export function promptPoint(cell: Cell, map: GardenMap): { x: number; y: number 
 export function errandReady(npc: Npc, state: GameState): boolean {
   const errand = npc.errand
   const status = errand && state.errands.find((e) => e.key === errand.key)
-  if (!errand || !status?.offered || status.done) return false
+  if (!errand || !status?.offered || status.done || status.today === false) return false
   const have = (key: string) => state.inventory.find((e) => e.itemKey === key)?.quantity ?? 0
   if (errand.kind === 'SHOW') return state.searchedSpots.includes(errand.spot ?? '')
   if (errand.kind === 'GLOW') return glowLit(state.glow)
