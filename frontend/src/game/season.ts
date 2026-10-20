@@ -11,33 +11,13 @@ export const SEASON_NAMES: Record<Season, string> = { WINTER: 'Зима', SPRING
 /** В помещении погоды нет: там, где есть стены. */
 export const indoors = (map: GardenMap) => Object.values(map.tiles).some((t) => t.type === 'wall')
 
-/** Сажать сейчас можно: тепло, или холодно, но это дом и теплица стоит. */
-export function canPlantNow(state: GameState, map: GardenMap): boolean {
-  const s = state.season
-  return !s?.cold || (map.key === 'home' && s.greenhouse)
+/** Грядки под теплицами на этой карте (зимой). */
+export function greenhousesOn(state: GameState, map: GardenMap): { x: number; y: number }[] {
+  if (!state.season?.cold) return []
+  return state.season.greenhouses.filter((g) => g.gardenKey === map.key)
 }
 
-/**
- * Теплица над грядками домашнего сада — прямоугольник в логических пикселях вокруг всех грядок
- * (и заросших тоже), или null.
- */
-export function greenhouseRect(map: GardenMap, state: GameState): { x: number; y: number; w: number; h: number } | null {
-  if (map.key !== 'home' || !state.season?.cold || !state.season.greenhouse) return null
-  let x0 = Infinity
-  let y0 = Infinity
-  let x1 = -1
-  let y1 = -1
-  map.rows.forEach((row, y) =>
-    [...row].forEach((c, x) => {
-      const t = map.tiles[c]
-      if (t && (t.plantable || t.type === 'overgrown')) {
-        x0 = Math.min(x0, x)
-        y0 = Math.min(y0, y)
-        x1 = Math.max(x1, x)
-        y1 = Math.max(y1, y)
-      }
-    }),
-  )
-  if (x1 < 0) return null
-  return { x: x0 * 32 - 4, y: y0 * 32 - 14, w: (x1 - x0 + 1) * 32 + 8, h: (y1 - y0 + 1) * 32 + 18 }
+/** Сажать в эту грядку сейчас можно: тепло, или зима, но над грядкой стоит теплица. */
+export function canPlantNow(state: GameState, map: GardenMap, cell: { x: number; y: number }): boolean {
+  return !state.season?.cold || greenhousesOn(state, map).some((g) => g.x === cell.x && g.y === cell.y)
 }

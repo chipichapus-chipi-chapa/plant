@@ -105,7 +105,7 @@ class GameStateService {
                 bread.state(playerId).orElse(null),
                 night.isNight(playerId),
                 testers.isTester(playerId),
-                seasons.state(profile),
+                seasons.state(playerId),
                 valley.today(profile));
     }
 }

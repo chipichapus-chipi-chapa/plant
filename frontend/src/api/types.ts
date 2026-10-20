@@ -273,8 +273,18 @@ export type GameState = {
   /** Маяк: кристаллы, чьи окна горят (отмечены привычки этих кристаллов после ярмарки) */
   beacon?: { map: string; prop: string; started: boolean; lit: string[]; needed: number } | null
   /** Время года в долине (каждое — неделю); cold — земля промёрзла; greenhouse — теплица у дома стоит */
-  season?: { season: 'WINTER' | 'SPRING' | 'SUMMER' | 'AUTUMN'; cold: boolean; greenhouse: boolean } | null
-  /** Дата в долине: сегодня, если часы долины не крутили (время года, ярмарка, гости — по ней) */
+  /**
+   * Время года в долине (каждое — полчаса); cold — зима, земля промёрзла; greenhouses — грядки под теплицами этой зимой;
+   * endsAt — когда время года сменится само; wound — часы долины переведены
+   */
+  season?: {
+    season: 'WINTER' | 'SPRING' | 'SUMMER' | 'AUTUMN'
+    cold: boolean
+    greenhouses: { gardenKey: string; x: number; y: number }[]
+    endsAt: string
+    wound: boolean
+  } | null
+  /** День в долине: сегодня, если часы долины не крутили по дням (ярмарка, хлеб, гости — по нему) */
   valleyToday?: string
   /**
    * Субботний хлеб; null — в игре его нет. home — Агата дома и печь горит; today — сегодня суббота;

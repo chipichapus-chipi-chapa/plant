@@ -39,7 +39,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class GardenApiTests {
 
-    static final Instant START = Instant.parse("2026-10-15T10:00:00Z");
+    /** Весенний отрезок долины (времена года меняются каждые полчаса): сажать можно. */
+    static final Instant START = Instant.parse("2026-10-15T12:00:00Z");
 
     @TestConfiguration(proxyBeanMethods = false)
     static class Clocks {

@@ -59,8 +59,8 @@ export type Scene = {
   windows?: { x: number; y: number; color: string }[]
   /** Время года на улице: снег и снежинки, листопад, лепестки (в помещении — null) */
   season?: 'WINTER' | 'SPRING' | 'SUMMER' | 'AUTUMN' | null
-  /** Теплица над грядками (логические пиксели) — стоит зимой, если её построили */
-  greenhouse?: { x: number; y: number; w: number; h: number } | null
+  /** Грядки под теплицами (зимой): над каждой — свой стеклянный домик */
+  greenhouses?: { x: number; y: number }[]
   /** Густота тумана над локацией (0 — нет, 1 — сплошной): Туманное озеро редеет день за днём */
   fog?: number
 }
@@ -99,6 +99,8 @@ export function drawGarden(
     })),
     // кадр растения 32×48: низ совпадает с низом клетки, верх выступает над ней
     ...objects.map((o) => ({ bottom: o.y + 1, frame: `plant_${o.speciesKey}_${o.stage}`, x: o.x * TILE, y: o.y * TILE - 16 })),
+    // теплица-домик над грядкой — поверх растения (сортировка устойчивая: она идёт после него)
+    ...(scene.greenhouses ?? []).map((g) => ({ bottom: g.y + 1, frame: 'prop_greenhouse', x: g.x * TILE, y: g.y * TILE - 16 })),
   ].sort((a, b) => a.bottom - b.bottom)
   // Персонажи и постройки — по глубине: кто ниже на экране, тот ближе и рисуется позже
   const people = [...characters].sort((a, b) => a.py - b.py)
@@ -109,8 +111,6 @@ export function drawGarden(
     drawFrame(ctx, atlas, sprite.frame, sprite.x, sprite.y)
   }
   while (next < people.length) drawPerson(people[next++])
-
-  if (scene.greenhouse) drawGreenhouse(ctx, scene.greenhouse)
 
   for (const w of scene.windows ?? []) {
     ctx.fillStyle = w.color
@@ -158,22 +158,6 @@ export function drawGarden(
     const bob = Math.round(Math.sin(time / 220) * 2)
     drawFrame(ctx, atlas, 'fx_interact', Math.round(marker.x - 3), Math.round(marker.y - 13 + bob))
   }
-}
-
-/** Теплица: стеклянные стены с рамами и двускатная крыша; сквозь стекло видны грядки. */
-function drawGreenhouse(ctx: CanvasRenderingContext2D, r: { x: number; y: number; w: number; h: number }) {
-  ctx.fillStyle = 'rgba(190, 225, 235, 0.16)'
-  ctx.fillRect(r.x, r.y, r.w, r.h)
-  ctx.fillStyle = 'rgba(235, 245, 250, 0.28)' // блики на стекле
-  for (let x = r.x + 6; x < r.x + r.w - 8; x += 32) ctx.fillRect(x, r.y + 4, 2, r.h - 8)
-  ctx.fillStyle = '#5a4630'
-  ctx.fillRect(r.x, r.y, r.w, 2)
-  ctx.fillRect(r.x, r.y + r.h - 2, r.w, 2)
-  ctx.fillRect(r.x, r.y, 2, r.h)
-  ctx.fillRect(r.x + r.w - 2, r.y, 2, r.h)
-  for (let x = r.x + 32; x < r.x + r.w - 4; x += 32) ctx.fillRect(x, r.y, 1, r.h)
-  ctx.fillStyle = '#7a6040' // конёк крыши
-  ctx.fillRect(r.x - 2, r.y - 4, r.w + 4, 3)
 }
 
 /** Погода по сезону: снежинки зимой, листья осенью, лепестки весной. Движение зависит только от времени. */

@@ -147,12 +147,60 @@ function hut() {
   return s
 }
 
+/**
+ * Теплица-домик над одной грядкой, 32×48 (низ — у низа клетки): деревянная рама, стеклянные стены и
+ * двускатная стеклянная крыша, дверца с ручкой, снег на коньке. Стекло полупрозрачное — сквозь него видно растение.
+ */
+function greenhouse() {
+  const s = new Sprite(32, 48)
+  const GLASS = '#bfe3ec'
+  const FRAME = [R.wood[1], R.wood[3], R.wood[4]]
+  // стены и дверца
+  s.rect(3, 24, 26, 19, GLASS, 80)
+  s.rect(4, 25, 8, 8, '#e6f6fa', 60) // светлое стекло с бликом слева
+  for (let k = 0; k < 6; k++) s.px(5 + k, 31 - k, '#ffffff', 150)
+  for (let k = 0; k < 4; k++) s.px(22 + k, 30 - k, '#ffffff', 120)
+  // двускатная крыша: стекло между стропилами
+  for (let y = 8; y < 24; y++) {
+    const half = Math.round((y - 8) * 0.95) + 1
+    for (let x = 16 - half; x < 16 + half; x++) s.px(x, y, GLASS, 110)
+  }
+  for (let y = 8; y < 24; y++) {
+    const half = Math.round((y - 8) * 0.95) + 1
+    s.px(16 - half, y, FRAME[1])
+    s.px(16 + half - 1, y, FRAME[1])
+    s.px(16 - half - 1, y, INK)
+    s.px(16 + half, y, INK)
+  }
+  s.rect(15, 8, 2, 16, FRAME[1]) // конёк и стропило
+  s.rect(1, 23, 30, 2, FRAME[2]) // карниз
+  s.rect(1, 25, 30, 1, INK)
+  // рама стен
+  for (const x of [3, 28]) s.rect(x, 24, 1, 19, FRAME[1])
+  s.rect(3, 33, 26, 1, FRAME[1])
+  // дверца
+  s.rect(12, 30, 8, 13, FRAME[0])
+  s.rect(13, 31, 6, 11, GLASS, 90)
+  s.rect(13, 36, 6, 1, FRAME[0])
+  s.px(18, 37, R.lamp[4])
+  // нижний брус и тень
+  s.rect(2, 42, 28, 3, FRAME[2])
+  s.rect(2, 45, 28, 1, INK)
+  s.rect(2, 42, 1, 3, INK)
+  s.rect(29, 42, 1, 3, INK)
+  // снег на коньке и карнизе
+  for (let x = 13; x < 19; x++) s.px(x, 7 + (x % 2), '#f2f6fb')
+  for (let x = 2; x < 30; x += 2) s.px(x, 22, '#f2f6fb')
+  return s
+}
+
 export function islandFrames() {
   return {
     sand_0: sand(0),
     sand_1: sand(1),
     sand_2: sand(2),
     prop_pier: pier(),
+    prop_greenhouse: greenhouse(),
     prop_campfire: campfire(),
     prop_island_hut: hut(),
     prop_lighthouse: lighthouse(false),

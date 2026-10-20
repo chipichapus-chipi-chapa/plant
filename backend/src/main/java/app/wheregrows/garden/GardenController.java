@@ -50,6 +50,14 @@ class GardenController {
                 request.gardenKey() == null ? GardenMaps.HOME : request.gardenKey(), request.x(), request.y());
     }
 
+    /** Поставить зимой теплицу над грядкой (x, y) локации gardenKey (без неё — домашний сад). 201 — поставлена. */
+    @PostMapping("/api/garden/greenhouses")
+    @ResponseStatus(HttpStatus.CREATED)
+    app.wheregrows.story.SeasonService.SeasonState greenhouse(@Valid @RequestBody HarvestRequest request) {
+        return service.buildGreenhouse(currentPlayer.id(),
+                request.gardenKey() == null ? GardenMaps.HOME : request.gardenKey(), request.x(), request.y());
+    }
+
     /** Прополоть заросшую грядку (x, y). 201 — прополота; в ответе — сколько заросших клеток осталось. */
     @PostMapping("/api/garden/weedings")
     @ResponseStatus(HttpStatus.CREATED)

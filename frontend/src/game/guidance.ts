@@ -146,7 +146,7 @@ export function isInteractive(cell: Cell, state: GameState, catalog: Catalog, ma
   if (plant) return plant.mature && !!catalog.species.find((s) => s.key === plant.speciesKey)?.produceKey
   const tile = tileAt(map, cell.x, cell.y)
   if (tile?.type === 'overgrown') return has(state, WEEDING_TOOLS)
-  return !!tile?.plantable && !objectAt(plantsOn(state, map), cell) && (hasSeeds(state, catalog) || !canPlantNow(state, map))
+  return !!tile?.plantable && !objectAt(plantsOn(state, map), cell) && (hasSeeds(state, catalog) || !canPlantNow(state, map, cell))
 }
 
 /**

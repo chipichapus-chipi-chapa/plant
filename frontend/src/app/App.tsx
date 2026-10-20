@@ -240,9 +240,9 @@ function PlayerBadge({ state, onClock }: { state: GameState; onClock: () => void
     <div className={styles.badge} title="Локальный режим: без входа, данные хранятся на этом компьютере">
       <span className={styles.name}>{state.player.displayName}</span>
       {state.season && (
-        <button type="button" className={styles.season} title="Часы долины: время года меняется каждую неделю" onClick={onClock}>
+        <button type="button" className={styles.season} title="Часы долины: время года меняется каждые полчаса" onClick={onClock}>
           {SEASON_NAMES[state.season.season]}
-          {state.valleyToday && state.valleyToday !== state.today ? ' ⟳' : ''}
+          {state.season.wound || (state.valleyToday && state.valleyToday !== state.today) ? ' ⟳' : ''}
         </button>
       )}
       <span className={styles.coins} title="Семена жизни">

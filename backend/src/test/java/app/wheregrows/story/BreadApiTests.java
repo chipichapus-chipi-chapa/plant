@@ -134,16 +134,16 @@ class BreadApiTests {
     @Test
     void valleyClockReachesSaturdayButTheLoafIsOncePerRealWeek() throws Exception {
         hearthLit();
-        wind(5); // понедельник + 5 — в долине суббота
+        wind("{\"days\":5}"); // понедельник + 5 — в долине суббота
         mvc.perform(post("/api/story/bread")).andExpect(status().isOk());
 
-        wind(7); // ещё неделя по часам долины — но настоящая неделя та же
+        wind("{\"days\":7}"); // ещё неделя по часам долины — но настоящая неделя та же
         mvc.perform(post("/api/story/bread")).andExpect(status().isConflict());
-        wind(0);
+        wind("{\"reset\":true}");
     }
 
-    private void wind(int days) throws Exception {
-        mvc.perform(post("/api/valley/clock").contentType(org.springframework.http.MediaType.APPLICATION_JSON)
-                .content("{\"days\":" + days + "}")).andExpect(status().isOk());
+    private void wind(String body) throws Exception {
+        mvc.perform(post("/api/valley/clock").contentType(org.springframework.http.MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk());
     }
 }

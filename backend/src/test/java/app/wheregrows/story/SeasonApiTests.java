@@ -25,23 +25,23 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Времена года (по неделе каждое): зимой земля промерзает и сажать можно только в теплице у дома; весной теплица пропадает. */
+/** Времена года (каждое — полчаса): зимой земля промерзает и сажать можно только под теплицей над грядкой; весной теплицы пропадают. */
 @Import({TestcontainersConfiguration.class, SeasonApiTests.Clocks.class})
 @SpringBootTest(properties = {"game.local.username=season-test", "game.local.timezone=Europe/Moscow"})
 @AutoConfigureMockMvc
 class SeasonApiTests {
 
-    /** Неделя с 26 октября 2026 — зимняя. */
-    static final Instant WINTER_WEEK = Instant.parse("2026-10-28T10:00:00Z");
-    /** Следующая неделя — весна. */
-    static final Instant SPRING_WEEK = Instant.parse("2026-11-04T10:00:00Z");
+    /** Зимний отрезок: времена года меняются каждые полчаса. */
+    static final Instant WINTER_TIME = Instant.parse("2026-10-28T11:30:00Z");
+    /** Через полчаса — весна. */
+    static final Instant SPRING_TIME = Instant.parse("2026-10-28T12:00:00Z");
 
     @TestConfiguration(proxyBeanMethods = false)
     static class Clocks {
         @Bean
         @Primary
         MutableClock mutableClock() {
-            return new MutableClock(WINTER_WEEK);
+            return new MutableClock(WINTER_TIME);
         }
     }
 
@@ -61,7 +61,7 @@ class SeasonApiTests {
 
     @BeforeEach
     void cleanSlate() {
-        clock.set(WINTER_WEEK);
+        clock.set(WINTER_TIME);
         playerId = player.id();
         jdbc.update("DELETE FROM garden_object WHERE player_id = ?", playerId);
         jdbc.update("DELETE FROM inventory_item WHERE player_id = ?", playerId);
@@ -70,52 +70,71 @@ class SeasonApiTests {
     }
 
     @Test
-    void inWinterOnlyTheGreenhouseBedsTakeSeedsAndInSpringItIsGone() throws Exception {
+    void inWinterEachBedNeedsItsOwnGreenhouseAndInSpringTheyAreGone() throws Exception {
         mvc.perform(get("/api/state"))
                 .andExpect(jsonPath("$.season.season").value("WINTER"))
                 .andExpect(jsonPath("$.season.cold").value(true))
-                .andExpect(jsonPath("$.season.greenhouse").value(false));
+                .andExpect(jsonPath("$.season.greenhouses").isEmpty());
         plant("home", 3, 5).andExpect(status().isConflict());
 
-        mvc.perform(post("/api/garden/greenhouse")).andExpect(status().isConflict()); // не хватает
-        give("life_seed", 20);
-        give("shard_amber", 1);
-        mvc.perform(post("/api/garden/greenhouse"))
+        greenhouse("home", 3, 5).andExpect(status().isConflict()); // не хватает Семян
+        give("life_seed", 10);
+        greenhouse("home", 3, 5)
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.greenhouse").value(true));
-        mvc.perform(post("/api/garden/greenhouse")).andExpect(status().isConflict()); // уже стоит
+                .andExpect(jsonPath("$.greenhouses[0].gardenKey").value("home"))
+                .andExpect(jsonPath("$.greenhouses[0].x").value(3));
+        greenhouse("home", 3, 5).andExpect(status().isConflict()); // уже стоит
+        greenhouse("home", 1, 1).andExpect(status().isBadRequest()); // не грядка
 
         plant("home", 3, 5).andExpect(status().isCreated());
-        plant("town", 8, 9).andExpect(status().isConflict()); // в городке промёрзло
+        plant("home", 4, 5).andExpect(status().isConflict()); // соседняя грядка — без теплицы
+        greenhouse("town", 8, 9).andExpect(status().isCreated()); // теплицу можно поставить на любой грядке
+        plant("town", 8, 9).andExpect(status().isCreated());
 
-        clock.set(SPRING_WEEK);
+        clock.set(SPRING_TIME);
         mvc.perform(get("/api/state"))
                 .andExpect(jsonPath("$.season.season").value("SPRING"))
                 .andExpect(jsonPath("$.season.cold").value(false))
-                .andExpect(jsonPath("$.season.greenhouse").value(false))
-                .andExpect(jsonPath("$.garden.objects[0].speciesKey").value("radish")); // посаженное не пропало
-        plant("town", 8, 9).andExpect(status().isCreated());
-        mvc.perform(post("/api/garden/greenhouse")).andExpect(status().isConflict()); // тепло
+                .andExpect(jsonPath("$.season.greenhouses").isEmpty())
+                .andExpect(jsonPath("$.garden.objects.length()").value(2)); // посаженное не пропало
+        plant("home", 4, 5).andExpect(status().isCreated());
+        greenhouse("home", 5, 5).andExpect(status().isConflict()); // тепло
     }
 
     @Test
-    void theClockWindsTheValleyForwardButNotTheHabits() throws Exception {
-        clock.set(Instant.parse("2026-10-21T10:00:00Z")); // осенняя неделя
-        mvc.perform(get("/api/state")).andExpect(jsonPath("$.season.season").value("AUTUMN"));
-
-        mvc.perform(post("/api/valley/clock").contentType(MediaType.APPLICATION_JSON).content("{\"days\":7}"))
-                .andExpect(jsonPath("$.offset").value(7));
+    void theValleyClockShiftsSeasonsAndDaysButNotTheHabits() throws Exception {
+        clock.set(Instant.parse("2026-10-28T11:10:00Z")); // осенний отрезок
         mvc.perform(get("/api/state"))
-                .andExpect(jsonPath("$.season.season").value("WINTER"))
-                .andExpect(jsonPath("$.valleyToday").value("2026-10-28"))
-                .andExpect(jsonPath("$.today").value("2026-10-21")); // привычки — по настоящему календарю
+                .andExpect(jsonPath("$.season.season").value("AUTUMN"))
+                .andExpect(jsonPath("$.season.endsAt").value("2026-10-28T11:30:00Z"));
 
-        mvc.perform(post("/api/valley/clock").contentType(MediaType.APPLICATION_JSON).content("{\"days\":-14}"))
-                .andExpect(jsonPath("$.offset").value(-7));
-        mvc.perform(get("/api/state")).andExpect(jsonPath("$.season.season").value("SUMMER"));
-        mvc.perform(post("/api/valley/clock").contentType(MediaType.APPLICATION_JSON).content("{\"days\":0}"))
-                .andExpect(jsonPath("$.offset").value(0));
-        mvc.perform(get("/api/state")).andExpect(jsonPath("$.season.season").value("AUTUMN"));
+        wind(1).andExpect(jsonPath("$.season").value("WINTER")).andExpect(jsonPath("$.wound").value(true));
+        mvc.perform(get("/api/state")).andExpect(jsonPath("$.today").value("2026-10-28")); // день — настоящий
+        wind(-2).andExpect(jsonPath("$.season").value("SUMMER"));
+        windDays(3);
+        mvc.perform(get("/api/state"))
+                .andExpect(jsonPath("$.valleyToday").value("2026-10-31"))
+                .andExpect(jsonPath("$.today").value("2026-10-28"));
+        reset().andExpect(jsonPath("$.season").value("AUTUMN")).andExpect(jsonPath("$.wound").value(false));
+        mvc.perform(get("/api/state")).andExpect(jsonPath("$.valleyToday").value("2026-10-28"));
+    }
+
+    private ResultActions wind(int seasons) throws Exception {
+        return mvc.perform(post("/api/valley/clock").contentType(MediaType.APPLICATION_JSON).content("{\"seasons\":" + seasons + "}"));
+    }
+
+    private void windDays(int days) throws Exception {
+        mvc.perform(post("/api/valley/clock").contentType(MediaType.APPLICATION_JSON).content("{\"days\":" + days + "}"))
+                .andExpect(status().isOk());
+    }
+
+    private ResultActions reset() throws Exception {
+        return mvc.perform(post("/api/valley/clock").contentType(MediaType.APPLICATION_JSON).content("{\"reset\":true}"));
+    }
+
+    private ResultActions greenhouse(String garden, int x, int y) throws Exception {
+        return mvc.perform(post("/api/garden/greenhouses").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"gardenKey\":\"" + garden + "\",\"x\":" + x + ",\"y\":" + y + "}"));
     }
 
     private ResultActions plant(String garden, int x, int y) throws Exception {
