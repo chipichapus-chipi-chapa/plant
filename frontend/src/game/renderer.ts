@@ -59,8 +59,8 @@ export type Scene = {
   windows?: { x: number; y: number; color: string }[]
   /** Время года на улице: снег и снежинки, листопад, лепестки (в помещении — null) */
   season?: 'WINTER' | 'SPRING' | 'SUMMER' | 'AUTUMN' | null
-  /** Грядки под теплицами (зимой): над каждой — свой стеклянный домик */
-  greenhouses?: { x: number; y: number }[]
+  /** Теплицы (зимой): над каждой грядкой-участком — стеклянный домик; прямоугольник участка в клетках */
+  greenhouses?: { x: number; y: number; w: number; h: number }[]
   /** Густота тумана над локацией (0 — нет, 1 — сплошной): Туманное озеро редеет день за днём */
   fog?: number
 }
@@ -99,8 +99,6 @@ export function drawGarden(
     })),
     // кадр растения 32×48: низ совпадает с низом клетки, верх выступает над ней
     ...objects.map((o) => ({ bottom: o.y + 1, frame: `plant_${o.speciesKey}_${o.stage}`, x: o.x * TILE, y: o.y * TILE - 16 })),
-    // теплица-домик над грядкой — поверх растения (сортировка устойчивая: она идёт после него)
-    ...(scene.greenhouses ?? []).map((g) => ({ bottom: g.y + 1, frame: 'prop_greenhouse', x: g.x * TILE, y: g.y * TILE - 16 })),
   ].sort((a, b) => a.bottom - b.bottom)
   // Персонажи и постройки — по глубине: кто ниже на экране, тот ближе и рисуется позже
   const people = [...characters].sort((a, b) => a.py - b.py)
@@ -116,6 +114,8 @@ export function drawGarden(
     ctx.fillStyle = w.color
     ctx.fillRect(w.x - 2, w.y - 3, 4, 6)
   }
+
+  for (const g of scene.greenhouses ?? []) drawGreenhouse(ctx, g)
 
   for (const effect of scene.effects ?? []) drawWeeding(ctx, atlas, effect, time - effect.at, scene.aura)
 
@@ -158,6 +158,82 @@ export function drawGarden(
     const bob = Math.round(Math.sin(time / 220) * 2)
     drawFrame(ctx, atlas, 'fx_interact', Math.round(marker.x - 3), Math.round(marker.y - 13 + bob))
   }
+}
+
+/**
+ * Теплица-домик над всей грядкой: деревянная рама, стеклянные стены с переплётом, двускатная стеклянная крыша
+ * с коньком, дверца посередине и снег на крыше. Стекло полупрозрачное — сквозь него видны растения.
+ */
+function drawGreenhouse(ctx: CanvasRenderingContext2D, bed: { x: number; y: number; w: number; h: number }) {
+  const x = bed.x * TILE - 3
+  const w = bed.w * TILE + 6
+  const bottom = (bed.y + bed.h) * TILE + 1
+  const wallTop = bed.y * TILE - 2
+  const roof = Math.min(30, Math.round(w / 4.5))
+  const peak = wallTop - roof
+  const mid = x + w / 2
+  const WOOD = '#6b4a2a'
+  const WOOD_LIGHT = '#9a6a3a'
+  const INK = '#120d0a'
+  // стекло стен и крыши (крыша плотнее — так домик читается издалека)
+  ctx.fillStyle = 'rgba(190, 228, 238, 0.22)'
+  ctx.fillRect(x, wallTop, w, bottom - wallTop)
+  ctx.fillStyle = 'rgba(200, 232, 242, 0.42)'
+  for (let r = 0; r < roof; r++) {
+    const half = Math.round((r / roof) * (w / 2))
+    ctx.fillRect(Math.round(mid - half), peak + r, half * 2, 1)
+  }
+  // поперечные рейки на крыше
+  ctx.fillStyle = 'rgba(107, 74, 42, 0.8)'
+  for (let r = 6; r < roof; r += 7) {
+    const half = Math.round((r / roof) * (w / 2))
+    ctx.fillRect(Math.round(mid - half), peak + r, half * 2, 1)
+  }
+  // блики
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.35)'
+  for (let px = x + 8; px < x + w - 10; px += 40) for (let k = 0; k < 10; k++) ctx.fillRect(px + k, wallTop + 16 - k, 1, 1)
+  // переплёт стен
+  ctx.fillStyle = WOOD
+  for (let px = x; px <= x + w - 2; px += 16) ctx.fillRect(px, wallTop, 2, bottom - wallTop)
+  ctx.fillRect(x + w - 2, wallTop, 2, bottom - wallTop)
+  ctx.fillRect(x, Math.round((wallTop + bottom) / 2), w, 1)
+  // карниз и нижний брус
+  ctx.fillStyle = WOOD_LIGHT
+  ctx.fillRect(x - 2, wallTop - 2, w + 4, 3)
+  ctx.fillRect(x - 1, bottom - 3, w + 2, 3)
+  ctx.fillStyle = INK
+  ctx.fillRect(x - 2, wallTop + 1, w + 4, 1)
+  ctx.fillRect(x - 1, bottom, w + 2, 1)
+  // скаты крыши с тёмным контуром и стропила
+  for (let r = 0; r < roof; r++) {
+    const half = Math.round((r / roof) * (w / 2))
+    ctx.fillStyle = INK
+    ctx.fillRect(Math.round(mid - half) - 2, peak + r, 1, 1)
+    ctx.fillRect(Math.round(mid + half) + 1, peak + r, 1, 1)
+    ctx.fillStyle = WOOD_LIGHT
+    ctx.fillRect(Math.round(mid - half) - 1, peak + r, 2, 1)
+    ctx.fillRect(Math.round(mid + half) - 1, peak + r, 2, 1)
+  }
+  ctx.fillStyle = WOOD
+  for (let px = x + 16; px < x + w - 4; px += 16) {
+    const r0 = Math.round((Math.abs(px - mid) / (w / 2)) * roof)
+    ctx.fillRect(px, peak + r0, 1, roof - r0)
+  }
+  ctx.fillRect(Math.round(mid) - 1, peak, 2, roof)
+  // дверца посередине
+  const dw = 12
+  const dx = Math.round(mid - dw / 2)
+  const dh = Math.min(24, bottom - wallTop - 4)
+  ctx.fillStyle = WOOD
+  ctx.fillRect(dx, bottom - 3 - dh, dw, dh)
+  ctx.fillStyle = 'rgba(190, 228, 238, 0.45)'
+  ctx.fillRect(dx + 2, bottom - 1 - dh, dw - 4, dh - 4)
+  ctx.fillStyle = '#ffd06a'
+  ctx.fillRect(dx + dw - 4, bottom - 3 - dh / 2, 1, 1)
+  // снег на коньке и карнизе
+  ctx.fillStyle = '#f2f6fb'
+  for (let k = -4; k <= 4; k++) ctx.fillRect(Math.round(mid) + k, peak - 1 + (k % 2 ? 1 : 0), 1, 1)
+  for (let px = x; px < x + w; px += 3) ctx.fillRect(px, wallTop - 3, 2, 1)
 }
 
 /** Погода по сезону: снежинки зимой, листья осенью, лепестки весной. Движение зависит только от времени. */

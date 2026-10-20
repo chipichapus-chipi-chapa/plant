@@ -868,7 +868,7 @@ function CellInfo({ cell, player, map, state, catalog, now, planting, onPlant, o
   )
 }
 
-/** Зимой грядка промёрзла: над ней можно поставить теплицу-домик — на всю зиму, весной её разберут. */
+/** Зимой грядка промёрзла: над всем её участком можно поставить теплицу-домик — на всю зиму, весной её разберут. */
 function FrozenBed({ map, cell, onChanged }: { map: GardenMap; cell: Cell; onChanged: () => Promise<void> }) {
   const [busy, setBusy] = useState(false)
   const toast = useToast()
@@ -886,9 +886,9 @@ function FrozenBed({ map, cell, onChanged }: { map: GardenMap; cell: Cell; onCha
   }
   return (
     <div>
-      <p className={styles.hint}>Земля промёрзла. Над грядкой можно поставить теплицу — на всю зиму, весной её разберут.</p>
+      <p className={styles.hint}>Земля промёрзла. Над всей грядкой можно поставить теплицу-домик — на всю зиму, весной её разберут.</p>
       <Button disabled={busy} onClick={() => void build()}>
-        Поставить теплицу — 5 Семян жизни
+        Поставить теплицу над грядкой — 10 Семян жизни
       </Button>
     </div>
   )

@@ -70,25 +70,28 @@ class SeasonApiTests {
     }
 
     @Test
-    void inWinterEachBedNeedsItsOwnGreenhouseAndInSpringTheyAreGone() throws Exception {
+    void inWinterAGreenhouseCoversAWholeBedAndInSpringItIsGone() throws Exception {
         mvc.perform(get("/api/state"))
                 .andExpect(jsonPath("$.season.season").value("WINTER"))
                 .andExpect(jsonPath("$.season.cold").value(true))
                 .andExpect(jsonPath("$.season.greenhouses").isEmpty());
         plant("home", 3, 5).andExpect(status().isConflict());
 
-        greenhouse("home", 3, 5).andExpect(status().isConflict()); // не хватает Семян
-        give("life_seed", 10);
-        greenhouse("home", 3, 5)
+        greenhouse("home", 4, 6).andExpect(status().isConflict()); // не хватает Семян
+        give("life_seed", 20);
+        // нижняя грядка дома — клетки x 2..7, y 5..6; теплица встаёт над всей, якорь — верхняя левая клетка
+        greenhouse("home", 4, 6)
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.greenhouses[0].gardenKey").value("home"))
-                .andExpect(jsonPath("$.greenhouses[0].x").value(3));
-        greenhouse("home", 3, 5).andExpect(status().isConflict()); // уже стоит
+                .andExpect(jsonPath("$.greenhouses[0].x").value(2))
+                .andExpect(jsonPath("$.greenhouses[0].y").value(5));
+        greenhouse("home", 7, 5).andExpect(status().isConflict()); // та же грядка — уже стоит
         greenhouse("home", 1, 1).andExpect(status().isBadRequest()); // не грядка
 
         plant("home", 3, 5).andExpect(status().isCreated());
-        plant("home", 4, 5).andExpect(status().isConflict()); // соседняя грядка — без теплицы
-        greenhouse("town", 8, 9).andExpect(status().isCreated()); // теплицу можно поставить на любой грядке
+        plant("home", 7, 6).andExpect(status().isCreated()); // вся грядка под стеклом
+        plant("town", 8, 9).andExpect(status().isConflict()); // в городке своя грядка — без теплицы
+        greenhouse("town", 8, 9).andExpect(status().isCreated());
         plant("town", 8, 9).andExpect(status().isCreated());
 
         clock.set(SPRING_TIME);
@@ -96,7 +99,7 @@ class SeasonApiTests {
                 .andExpect(jsonPath("$.season.season").value("SPRING"))
                 .andExpect(jsonPath("$.season.cold").value(false))
                 .andExpect(jsonPath("$.season.greenhouses").isEmpty())
-                .andExpect(jsonPath("$.garden.objects.length()").value(2)); // посаженное не пропало
+                .andExpect(jsonPath("$.garden.objects.length()").value(3)); // посаженное не пропало
         plant("home", 4, 5).andExpect(status().isCreated());
         greenhouse("home", 5, 5).andExpect(status().isConflict()); // тепло
     }

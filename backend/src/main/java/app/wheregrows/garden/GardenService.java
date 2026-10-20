@@ -92,7 +92,7 @@ public class GardenService {
             throw new InvalidRequestException("«" + tile.name() + "» — не грядка. Сажать можно только на грядку.");
         }
         // зима: земля промёрзла — сажать можно только под теплицей над этой грядкой
-        if (seasons.state(playerId).cold() && !seasons.covered(playerId, map.key(), x, y)) {
+        if (seasons.state(playerId).cold() && !covered(playerId, map, x, y)) {
             throw new ConflictException("Земля промёрзла. Поставьте над грядкой теплицу — и сажайте хоть в снегопад.");
         }
         if (objects.existsByPlayerIdAndGardenKeyAndXAndY(playerId, map.key(), (short) x, (short) y)) {
@@ -139,14 +139,21 @@ public class GardenService {
     public record HarvestResult(String gardenKey, int x, int y, String itemKey, int quantity) {
     }
 
-    /** Поставить зимой теплицу над грядкой (x, y) локации gardenKey: клетка должна быть грядкой. */
+    /** Поставить зимой теплицу над всей грядкой, в которой клетка (x, y) локации gardenKey. */
     @Transactional
     public SeasonService.SeasonState buildGreenhouse(long playerId, String gardenKey, int x, int y) {
         GardenMap map = maps.get(gardenKey).orElseThrow(() -> new InvalidRequestException("Такой локации нет."));
-        if (!map.contains(x, y) || map.propAt(x, y) != null || !tileFor(playerId, map, x, y).plantable()) {
+        List<int[]> bed = map.bedAround(x, y);
+        if (bed.isEmpty()) {
             throw new InvalidRequestException("Теплицу ставят над грядкой.");
         }
-        return seasons.buildGreenhouse(playerId, gardenKey, x, y);
+        return seasons.buildGreenhouse(playerId, gardenKey, bed.get(0)[0], bed.get(0)[1]);
+    }
+
+    /** Стоит ли над грядкой с клеткой (x, y) теплица этой зимой. */
+    private boolean covered(long playerId, GardenMap map, int x, int y) {
+        List<int[]> bed = map.bedAround(x, y);
+        return !bed.isEmpty() && seasons.covered(playerId, map.key(), bed.get(0)[0], bed.get(0)[1]);
     }
 
     /** Прополотые клетки домашнего сада: на них заросшая грядка уже стала обычной. */

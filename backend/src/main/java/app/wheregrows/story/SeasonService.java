@@ -17,8 +17,8 @@ import app.wheregrows.player.PlayerProfileRepository;
 /**
  * Времена года в долине идут условно быстро: каждое длится полчаса — весна, лето, осень, зима и снова весна.
  * У каждого игрока есть часы долины: ими время года можно перевести вперёд или назад (флаг season_shift:N).
- * Зимой холодно: земля промерзает, и сажать можно только под теплицей — её ставят над каждой грядкой отдельно,
- * на одну зиму: весной теплицы разбирают, следующей зимой ставят снова. Посаженное раньше растёт дальше:
+ * Зимой холодно: земля промерзает, и сажать можно только под теплицей — стеклянный домик ставят над всей грядкой
+ * (связным участком), каждой — свой, на одну зиму: весной теплицы разбирают, следующей зимой ставят снова. Посаженное раньше растёт дальше:
  * холод ничего не отнимает.
  * Дни недели часы тоже крутят ({@link app.wheregrows.player.ValleyCalendar}); привычки и награды за них живут
  * по настоящему календарю.
@@ -30,8 +30,8 @@ public class SeasonService {
     public static final Duration LENGTH = Duration.ofMinutes(30);
     static final String SHIFT = "season_shift:";
     static final String GREENHOUSE = "greenhouse:";
-    /** Сколько стоит теплица над одной грядкой. */
-    public static final int GREENHOUSE_COST = 5;
+    /** Сколько стоит теплица над одной грядкой (участком). */
+    public static final int GREENHOUSE_COST = 10;
 
     public enum Season { SPRING, SUMMER, AUTUMN, WINTER }
 
@@ -84,14 +84,14 @@ public class SeasonService {
         return state(playerId);
     }
 
-    /** Стоит ли этой зимой теплица над грядкой (gardenKey, x, y). */
+    /** Стоит ли этой зимой теплица над грядкой с якорем (gardenKey, x, y). */
     public boolean covered(long playerId, String gardenKey, int x, int y) {
         return has(playerId, GREENHOUSE + slot(playerId) + ":" + gardenKey + ":" + x + ":" + y);
     }
 
     /**
-     * Поставить теплицу над грядкой на эту зиму (что клетка — грядка, проверил сад). Не зимой не нужна,
-     * над одной грядкой дважды — не ставится.
+     * Поставить теплицу над грядкой на эту зиму; (x, y) — якорь грядки (что это грядка, проверил сад).
+     * Не зимой не нужна, над одной грядкой дважды — не ставится.
      */
     @Transactional
     public SeasonState buildGreenhouse(long playerId, String gardenKey, int x, int y) {
@@ -121,7 +121,7 @@ public class SeasonService {
     }
 
     /**
-     * season — время года; cold — земля промёрзла (зима); greenhouses — грядки под теплицами этой зимой;
+     * season — время года; cold — земля промёрзла (зима); greenhouses — якоря грядок под теплицами этой зимой;
      * endsAt — когда время года сменится само; wound — часы долины переведены.
      */
     public record SeasonState(Season season, boolean cold, List<Cell> greenhouses, Instant endsAt, boolean wound) {
