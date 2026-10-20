@@ -113,7 +113,7 @@ export function GardenCanvas(props: Props) {
   const dirtyRef = useRef(true)
   const scaleRef = useRef(scale)
 
-  const blocked = useMemo(() => blockedCells(map, scene.objects, standing), [map, scene.objects, standing])
+  const blocked = useMemo(() => blockedCells(map, scene.objects, standing, scene.greenhouses), [map, scene.objects, standing, scene.greenhouses])
   const blockedRef = useRef(blocked)
 
   // Свежие значения для игрового цикла — после каждого рендера

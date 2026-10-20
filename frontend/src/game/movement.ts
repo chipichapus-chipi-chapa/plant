@@ -21,12 +21,19 @@ const WALKABLE = new Set(['grass', 'weeds', 'path', 'soil', 'overgrown', 'floor'
  * Карта проходимости: забор и постройки непроходимы, как и растения и стоящие персонажи.
  * Пустые грядки проходимы — по ним можно подойти к соседней.
  */
-export function blockedCells(map: GardenMap, objects: GardenObject[], standing: Cell[]): boolean[][] {
+export function blockedCells(
+  map: GardenMap,
+  objects: GardenObject[],
+  standing: Cell[],
+  greenhouses: { x: number; y: number; w: number; h: number }[] = [],
+): boolean[][] {
   const blocked = Array.from({ length: map.height }, (_, y) =>
     Array.from({ length: map.width }, (_, x) => !WALKABLE.has(tileAt(map, x, y)?.type ?? '') || !!propAt(map, x, y)),
   )
   for (const o of objects) blocked[o.y][o.x] = true
   for (const c of standing) blocked[c.y][c.x] = true
+  // теплица — стеклянный домик: сквозь стены не пройти, к грядкам подходят снаружи
+  for (const g of greenhouses) for (let y = g.y; y < g.y + g.h; y++) for (let x = g.x; x < g.x + g.w; x++) if (blocked[y]) blocked[y][x] = true
   return blocked
 }
 

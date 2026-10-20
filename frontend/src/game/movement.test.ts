@@ -25,6 +25,12 @@ describe('проходимость', () => {
     expect(blocked[1][3]).toBe(false) // грядка
   })
 
+  it('сквозь стены теплицы не пройти', () => {
+    const blocked = blockedCells(map, [], [], [{ x: 1, y: 1, w: 2, h: 1 }])
+    expect(blocked[1][1]).toBe(true)
+    expect(blocked[1][2]).toBe(true)
+  })
+
   it('растения и стоящие персонажи загораживают клетку', () => {
     const withPlant = blockedCells(
       map,
