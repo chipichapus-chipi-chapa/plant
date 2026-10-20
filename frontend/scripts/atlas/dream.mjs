@@ -2,7 +2,7 @@
 // светящиеся грибы, лесной ручей со звёздами, хрустальные деревья и большие светящиеся кошки.
 
 import { rng, Sprite } from './canvas.mjs'
-import { T } from './tiles.mjs'
+import { bed, T } from './tiles.mjs'
 import { INK, P } from './palette.mjs'
 
 const GRASS = ['#141633', '#1c2046', '#262b5a', '#323a70']
@@ -11,6 +11,8 @@ const TEAL = ['#123a3f', '#1e5e63', '#2f8f8f', '#6fd1c4', '#c4fff2']
 const STAR = ['#1a2a52', '#26407a', '#3c62a8', '#7fa6e0', '#d6e8ff']
 const LILAC = ['#3e2e57', '#5b4680', '#8a74b4', '#c2b2e2', '#f1eaff']
 const CAT = ['#6b5a8f', '#9a88c4', '#c9bbea', '#ece6fb', '#ffffff']
+const MOSS = ['#1f3324', '#2f4f33', '#476e44', '#6b9158', '#9cbf7a']
+const GOLD = ['#5a3d17', '#9a6a26', '#d8a24a', '#ffd88c', '#fff3cf']
 const NIGHTCAT = ['#0f1630', '#1b2752', '#2c3f7a', '#4a63a8', '#8ea6e6']
 
 /** Трава Светлолесья: индиговая, с редкими искрами. */
@@ -36,6 +38,21 @@ function stardust(seed) {
   return s
 }
 
+const EARTH = ['#120e1f', '#1d1631', '#2a2045', '#382b58', '#47386c']
+
+/** Мшистая грядка: тёмная рыхлая земля, края заросли сонной травой, кое-где — бирюзовый мох. */
+function mossBed(mask) {
+  const s = bed(mask, EARTH, (seed) => dreamgrass(seed % 3), 760)
+  const r = rng(800 + mask)
+  for (let i = 0; i < 4; i++) {
+    const x = 8 + Math.floor(r() * 16)
+    const y = 8 + Math.floor(r() * 16)
+    s.px(x, y, TEAL[2])
+    s.px(x + 1, y, TEAL[1])
+  }
+  return s
+}
+
 /** Светящиеся грибы на тёмной траве. */
 function glowshrooms(seed) {
   const s = dreamgrass(seed)
@@ -47,6 +64,30 @@ function glowshrooms(seed) {
     s.shadedEllipse(x, y, 3, 2, TEAL.slice(1))
     s.px(x - 1, y - 1, TEAL[4])
   }
+  return s
+}
+
+/**
+ * Грибница: тёмное пятно с серыми шляпками (спит, внутри тлеет искра) или с золотыми шляпками
+ * и светлыми нитями по земле (проснулась — свет одного дня с привычками).
+ */
+function mycelium(seed, lit) {
+  const s = dreamgrass(seed)
+  const r = rng(150 + seed)
+  s.shadedEllipse(16, 20, 12, 7, lit ? ['#2a2118', '#3d2f1f', '#55402a'] : ['#100c18', '#18121f', '#211a2b'])
+  if (lit) {
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 + r()
+      for (let k = 6; k < 15; k++) s.px(16 + Math.cos(a) * k, 20 + Math.sin(a) * k * 0.6, k % 3 ? GOLD[3] : GOLD[2])
+    }
+  }
+  const caps = lit ? GOLD.slice(1, 5) : ['#2e2a3a', '#433d52', '#5a536b', '#6f6882']
+  for (const [x, y, w] of [[11, 18, 4], [19, 16, 5], [16, 23, 3], [23, 22, 3]]) {
+    s.rect(x, y, 1, 4, lit ? GOLD[4] : '#5a536b')
+    s.shadedEllipse(x, y, w, 2, caps)
+  }
+  if (!lit) s.px(16, 20, TEAL[3]) // искра внутри
+  else s.px(19, 15, '#ffffff')
   return s
 }
 
@@ -130,6 +171,18 @@ function greatCat(ramp, frame, stars) {
   return s
 }
 
+/** Моховой кот Мох: та же большая кошка, но зелёная, в клочьях мха и с грибами на спине. */
+function mossCat(frame) {
+  const s = greatCat(MOSS, frame, false)
+  const r = rng(170)
+  for (let i = 0; i < 14; i++) s.px(18 + Math.floor(r() * 32), 32 + Math.floor(r() * 12), r() > 0.5 ? MOSS[4] : MOSS[1])
+  for (const [x, y] of [[36, 27], [43, 29]]) {
+    s.rect(x, y, 1, 3, '#d9cbb0')
+    s.shadedEllipse(x, y, 3, 2, GOLD.slice(1, 4))
+  }
+  return s
+}
+
 /** Котёнок Искорка 32×48: маленький, весь светится, хвост трубой. */
 function kitten(frame) {
   const s = new Sprite(32, 48)
@@ -157,9 +210,16 @@ export function dreamFrames() {
     glowshrooms_0: glowshrooms(0),
     glowshrooms_1: glowshrooms(1),
     glowshrooms_2: glowshrooms(2),
+    mycelium_0: mycelium(0, false),
+    mycelium_1: mycelium(1, false),
+    mycelium_lit_0: mycelium(0, true),
+    mycelium_lit_1: mycelium(1, true),
+    npc_mosscat_0: mossCat(0),
+    npc_mosscat_1: mossCat(1),
     starwater_0: starwater(0),
     starwater_1: starwater(1),
     starwater_2: starwater(2),
+    ...Object.fromEntries(Array.from({ length: 16 }, (_, m) => [`moss_bed_${m}`, mossBed(m)])),
     prop_crystal_tree: crystalTree(false),
     prop_crystal_tree_awakened: crystalTree(true),
     prop_glow_bush: glowBush(),

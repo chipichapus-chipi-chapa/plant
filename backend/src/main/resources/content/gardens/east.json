@@ -41,7 +41,7 @@
       "plantable": false
     },
     "g": {
-      "type": "soil",
+      "type": "bed",
       "name": "Лесная грядка",
       "description": "Полянка, где мыши прошлой осенью сушили зерно. Земля помнит и ждёт.",
       "plantable": true
@@ -53,7 +53,7 @@
     "FF.......ww.,.FF",
     "F..,.....ww,...F",
     "Fgggg.,..ww....F",
-    "F.,......ww...pp",
+    "F.,p.....ww...pp",
     "pppppppppbbppppF",
     "F...,....ww....F",
     "FFF..FF.Fww.,FFF",

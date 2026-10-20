@@ -30,7 +30,7 @@ class GardenMapTests {
     MockMvc mvc;
 
     /** Те же клетки, по которым клиент пускает ходить (frontend/src/game/movement.ts, WALKABLE). */
-    static final java.util.Set<String> WALKABLE = java.util.Set.of("grass", "weeds", "path", "soil", "overgrown", "floor", "bridge", "rug", "dreamgrass", "stardust");
+    static final java.util.Set<String> WALKABLE = java.util.Set.of("grass", "weeds", "path", "soil", "overgrown", "floor", "bridge", "rug", "dreamgrass", "stardust", "bed", "moss_bed");
 
     /**
      * К каждой двери можно подойти: рядом есть клетка, по которой ходят и которую не занимает постройка.

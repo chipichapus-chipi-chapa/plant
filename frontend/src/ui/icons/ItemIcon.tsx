@@ -1,6 +1,7 @@
 import { LIFE_SEED, SUN_SPARK, type ItemKind } from '../../api/types'
 import { CrystalIcon } from './CrystalIcon'
 import { LifeSeedIcon } from './LifeSeedIcon'
+import { ProduceIcon } from './ProduceIcon'
 import { SeedPacketIcon } from './SeedPacketIcon'
 import { SunSparkIcon } from './SunSparkIcon'
 import { ToolIcon } from './ToolIcon'
@@ -10,6 +11,7 @@ export function ItemIcon({ itemKey, kind, color, size = 16 }: { itemKey: string;
   if (itemKey === LIFE_SEED) return <LifeSeedIcon size={size} />
   if (itemKey === SUN_SPARK) return <SunSparkIcon size={size} />
   if (kind === 'TOOL') return <ToolIcon size={size} />
+  if (kind === 'PRODUCE') return <ProduceIcon size={size} />
   if (color) return <CrystalIcon color={color} size={size} />
   return <SeedPacketIcon size={size} />
 }

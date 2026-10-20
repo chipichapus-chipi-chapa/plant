@@ -26,6 +26,10 @@ export const purchaseItem = (itemKey: string, quantity: number, idempotencyKey: 
 export const plantSeed = (gardenKey: string, x: number, y: number, seedItemKey: string) =>
   apiFetch<GardenObject>('/api/garden/plantings', { method: 'POST', body: JSON.stringify({ gardenKey, x, y, seedItemKey }) })
 
+/** Собрать взрослое растение: урожай — в сумку, грядка освобождается */
+export const harvestPlant = (gardenKey: string, x: number, y: number) =>
+  apiFetch<{ itemKey: string; quantity: number }>('/api/garden/harvests', { method: 'POST', body: JSON.stringify({ gardenKey, x, y }) })
+
 /** Прополоть заросшую грядку (нужны лопата и грабли в сумке) */
 export const weedBed = (x: number, y: number) =>
   apiFetch<WeedResult>('/api/garden/weedings', { method: 'POST', body: JSON.stringify({ x, y }) })

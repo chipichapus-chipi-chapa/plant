@@ -21,6 +21,7 @@ import app.wheregrows.magic.MagicService;
 import app.wheregrows.mentor.PlayerFlag;
 import app.wheregrows.mentor.PlayerFlagRepository;
 import app.wheregrows.player.PlayerProfileRepository;
+import app.wheregrows.story.GlowService;
 
 /**
  * Поручения жителей (мышей, сторожа на тропе). Сначала житель просит (accept), потом игрок отдаёт вещи
@@ -41,10 +42,12 @@ public class ErrandService {
     private final PlayerProfileRepository players;
     private final MagicService magic;
     private final Clock clock;
+    private final GlowService glow;
 
     ErrandService(GardenMaps maps, PlayerFlagRepository flags, PlayerDiscoveryRepository discoveries,
                   ItemDefinitionRepository items, Inventory inventory, PlayerProfileRepository players,
-                  MagicService magic, Clock clock) {
+                  MagicService magic, Clock clock, GlowService glow) {
+        this.glow = glow;
         this.magic = magic;
         this.maps = maps;
         this.flags = flags;
@@ -98,6 +101,10 @@ public class ErrandService {
             if (!sleeping.isEmpty()) {
                 throw new ConflictException("Ещё спят: " + String.join(", ", sleeping) + ".");
             }
+        }
+        if (errand.kind() == GardenMap.Errand.Kind.GLOW
+                && !glow.state(playerId).map(GlowService.GlowState::lit).orElse(false)) {
+            throw new ConflictException("Грибница ещё не разгорелась.");
         }
         for (ItemGrant give : errand.giveOrEmpty()) {
             String name = items.findById(give.itemKey()).map(i -> i.getName()).orElse(give.itemKey());

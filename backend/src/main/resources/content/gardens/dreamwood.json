@@ -35,7 +35,7 @@
       "plantable": false
     },
     "g": {
-      "type": "soil",
+      "type": "moss_bed",
       "name": "Мшистая грядка",
       "description": "Мягкая земля под мхом. Кошки обходят её стороной — уважают чужие посадки.",
       "plantable": true
@@ -44,12 +44,12 @@
   "rows": [
     "FFFFFFFFFFFFFFFFFF",
     "FFssgggg.FF...ssFF",
-    "Fs......pp......sF",
+    "Fs....pppp......sF",
     "Fs.....pp...www..F",
     "Fs....pp...wwwww.F",
-    "F....pp....wwwww.F",
-    "F...pp......www..F",
-    "Fs..p...........sF",
+    "F....ppppp.wwwww.F",
+    "F...pp...p..www..F",
+    "Fs..p....pppppppsF",
     "Fss.p.....ss...ssF",
     "FFFFpFFFFFFFFFFFFF"
   ],
@@ -100,6 +100,24 @@
       "height": 1,
       "name": "Светящийся куст",
       "description": "Бирюзовый куст. Изнутри то и дело доносится тоненькое «дзинь»."
+    },
+    {
+      "key": "dream-deep-path",
+      "kind": "trail_deep",
+      "x": 9,
+      "y": 1,
+      "width": 1,
+      "height": 1,
+      "name": "Тропка вглубь",
+      "description": "Кошачья тропка уходит между елями ещё глубже. Оттуда тянет тёплой сыростью и грибами.",
+      "door": {
+        "map": "hollow",
+        "x": 6,
+        "y": 8,
+        "facing": "up",
+        "label": "Пойти в Грибную лощину",
+        "requiresErrand": "murlana_trees"
+      }
     }
   ],
   "npcs": [
@@ -114,7 +132,8 @@
         "murlana_hello",
         "murlana_dreams",
         "murlana_world",
-        "murlana_habit"
+        "murlana_habit",
+        "murlana_brother"
       ],
       "dialogues": {
         "murlana_hello": {
@@ -183,6 +202,10 @@
             },
             "b": {
               "text": "Возьми искры. И заходи иногда — сюда мало кто доходит, а нам нравится, когда есть кому рассказать про грибы. Мрррр.",
+              "next": "c"
+            },
+            "c": {
+              "text": "И ещё: за ельником, вон там, наверху, — тропка в Грибную лощину. Там спит мой брат Мох. Загляни к нему, он будет рад.",
               "next": null
             }
           }
@@ -196,6 +219,15 @@
             },
             "b": {
               "text": "Одна ночь — чуть-чуть свечения. Сто ночей — и тебя видно с края чащи. Свет копится, как и всё хорошее. Только не бросай.",
+              "next": null
+            }
+          }
+        },
+        "murlana_brother": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Глубже в чаще, в Грибной лощине, живёт мой брат Мох. Тропку туда видно, только когда хрустальные деревья светят.",
               "next": null
             }
           }

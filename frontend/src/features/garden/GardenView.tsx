@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ApiError } from '../../api/client'
-import { acceptErrand, bakeBread, completeErrand, plantSeed, weedBed } from '../../api/game'
+import { acceptErrand, bakeBread, completeErrand, harvestPlant, plantSeed, weedBed } from '../../api/game'
 import type { Catalog, Door, Errand, GameState, GardenMap, Npc, Puzzle } from '../../api/types'
 import { frameImage, loadAtlas, type Atlas } from '../../game/atlas'
 import { composeCharacter, composeCharacterFrames } from '../../game/character'
 import { WEED_MS, type WeedEffect } from '../../game/effects'
 import { fogBand, fogDensity, fogTalk, notchesLine } from '../../game/fog'
+import { glowBand, glowTalk, withGlow } from '../../game/glow'
 import { GardenCanvas } from '../../game/GardenCanvas'
 import { doorOpen, doorReachable, errandReady, isClickable, isNear, markerPoint, npcAt, plantsOn, promptCell, promptPoint, sameThing, WEEDING_TOOLS, type Objective } from '../../game/guidance'
 import type { Facing } from '../../game/movement'
@@ -118,6 +119,26 @@ function rememberFogBand(band: number) {
   }
 }
 
+/** Какую новость о грибнице Мох уже рассказал (тёмная → разгорается → горит вся). */
+const GLOW_HEARD = 'where-grows-glow-heard'
+
+function heardGlowBand(): number | null {
+  try {
+    const value = window.localStorage.getItem(GLOW_HEARD)
+    return value === null ? null : Number(value)
+  } catch {
+    return null
+  }
+}
+
+function rememberGlowBand(band: number) {
+  try {
+    if ((heardGlowBand() ?? -1) < band) window.localStorage.setItem(GLOW_HEARD, String(band))
+  } catch {
+    // не запомнилось — Мох просто повторит новость
+  }
+}
+
 /** Текст постройки + строчка про зарубки, если это причал у тумана. */
 function withNotches(read: string, propKey: string, map: GardenMap, fog: GameState['fog']): string {
   const line = notchesLine(propKey, map, fog)
@@ -163,7 +184,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
   const map = useMemo((): GardenMap => {
     const base = catalog.locations.find((l) => l.key === location.key) ?? catalog.garden
     const awake = new Set(state.worldObjects.map((w) => w.objectKey))
-    const map = withRevived(base.key === HOME ? withWeeded(base, state.garden.weeded) : base, awake)
+    const map = withGlow(withRevived(base.key === HOME ? withWeeded(base, state.garden.weeded) : base, awake), state.glow)
     const done = (key: string | null | undefined) => !!key && !!state.errands.find((e) => e.key === key)?.done
     // сторож уходит с дороги, семья Агаты уплывает из городка и появляется в поместье;
     // пока с жителем идёт разговор, он не исчезает посреди фразы
@@ -171,7 +192,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
       chat?.npc.key !== n.key &&
       ((!!n.errand?.leaves && done(n.errand.key)) || done(n.leavesAfter) || (!!n.appearsAfter && !done(n.appearsAfter)))
     return map.npcs?.some(gone) ? { ...map, npcs: map.npcs.filter((n) => !gone(n)) } : map
-  }, [catalog, location.key, state.garden.weeded, state.worldObjects, state.errands, chat])
+  }, [catalog, location.key, state.garden.weeded, state.worldObjects, state.errands, state.glow, chat])
   // читаем письмо — текст в окне поверх сада
   const [reading, setReading] = useState<{ title: string; text: string } | null>(null)
   // замок крупным планом поверх сада
@@ -362,7 +383,9 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     const secret = secretTalk(npc.secrets, state.player.appearance, npc.key)
     const fog = fogTalk(npc.key, map, state.fog, heardFogBand(), roll())
     if (fog && state.fog) rememberFogBand(fogBand(state.fog))
-    setChat({ npc, dialogue: secret ?? fog ?? nextTalk(npc) })
+    const glow = fog ? null : glowTalk(npc.key, map, state.glow, heardGlowBand(), roll())
+    if (glow && state.glow) rememberGlowBand(glowBand(state.glow))
+    setChat({ npc, dialogue: secret ?? fog ?? glow ?? nextTalk(npc) })
   }
 
   const isMentor = (cell: Cell) => home && sameCell(cell, MENTOR_SPOT)
@@ -463,6 +486,21 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     setTooFar(!!cell && isClickable(cell, state, catalog, map))
   }
 
+  const harvest = async (cell: Cell) => {
+    setPlanting(true)
+    try {
+      const got = await harvestPlant(map.key, cell.x, cell.y)
+      const name = catalog.items.find((i) => i.key === got.itemKey)?.name ?? got.itemKey
+      toast({ message: `Собрано: ${name}${got.quantity > 1 ? ` ×${got.quantity}` : ''}.` })
+      setSelected(null)
+      await onChanged()
+    } catch (e) {
+      toast({ message: e instanceof ApiError ? (e.detail ?? e.title) : 'Не получилось собрать. Попробуйте ещё раз.' })
+    } finally {
+      setPlanting(false)
+    }
+  }
+
   const plant = async (cell: Cell, seedKey: string) => {
     setPlanting(true)
     try {
@@ -548,6 +586,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
               now={now}
               planting={planting}
               onPlant={plant}
+              onHarvest={(cell) => void harvest(cell)}
               onEnter={travel}
               onRead={setReading}
               onLock={setLock}
@@ -626,6 +665,7 @@ type CellInfoProps = {
   now: number
   planting: boolean
   onPlant: (cell: Cell, seedKey: string) => void
+  onHarvest: (cell: Cell) => void
   onEnter: (door: Door) => void
   onRead: (letter: { title: string; text: string }) => void
   onLock: (puzzle: Puzzle) => void
@@ -633,20 +673,31 @@ type CellInfoProps = {
   onChanged: () => Promise<void>
 }
 
-function CellInfo({ cell, player, map, state, catalog, now, planting, onPlant, onEnter, onRead, onLock, onWeeding, onChanged }: CellInfoProps) {
+function CellInfo({ cell, player, map, state, catalog, now, planting, onPlant, onHarvest, onEnter, onRead, onLock, onWeeding, onChanged }: CellInfoProps) {
   const object = objectAt(plantsOn(state, map), cell)
   if (object) {
-    const name = catalog.species.find((s) => s.key === object.speciesKey)?.name ?? object.speciesKey
+    const species = catalog.species.find((s) => s.key === object.speciesKey)
+    const name = species?.name ?? object.speciesKey
     const minutes = minutesUntilNextStage(object, now)
+    const produce = species?.produceKey ? catalog.items.find((i) => i.key === species.produceKey) : undefined
     return (
-      <Said
-        name={name}
-        text={
-          object.mature
-            ? 'Выросло и никуда не денется. Сад стал чуточку живее.'
-            : `Растёт: стадия ${object.stage + 1} из ${object.stageCount}. Следующая — примерно через ${minutes} мин.`
-        }
-      />
+      <div className={styles.cell}>
+        <Said
+          name={name}
+          text={
+            object.mature
+              ? produce
+                ? `Выросло! Можно собрать: ${produce.name}${species!.produceQuantity > 1 ? ` ×${species!.produceQuantity}` : ''}. А можно оставить — никуда не денется.`
+                : 'Выросло и никуда не денется. Сад стал чуточку живее.'
+              : `Растёт: стадия ${object.stage + 1} из ${object.stageCount}. Следующая — примерно через ${minutes} мин.`
+          }
+        />
+        {object.mature && produce && (
+          <div>
+            <Button disabled={planting} onClick={() => onHarvest(cell)}>Собрать</Button>
+          </div>
+        )}
+      </div>
     )
   }
 

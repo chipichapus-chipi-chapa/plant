@@ -7,7 +7,7 @@ import styles from './SettingsPanel.module.css'
 const ACTIONS: { action: TestAction; label: string; done: string }[] = [
   { action: 'resources', label: 'Ресурсы', done: '+100 Семян жизни, 10 искр, по 5 осколков и семян.' },
   { action: 'open-paths', label: 'Открыть все тропы', done: 'Калитка открыта, Хмур пропустил, сад поместья ожил — туман начал редеть.' },
-  { action: 'fog-day', label: 'Туман +1 день', done: 'Как будто прошёл ещё один день с привычками.' },
+  { action: 'fog-day', label: '+1 день с привычками', done: 'Туман поредел, в Грибной лощине загорелось ещё одно пятно.' },
   { action: 'fog-clear', label: 'Рассеять туман', done: 'Туман над озером рассеялся.' },
   { action: 'bread-day', label: 'Сегодня суббота', done: 'Агата испечёт хлеб в любой день (раз в неделю, как обычно).' },
   { action: 'night', label: 'Ночь / день', done: 'Время переключено: ночью открыта тропка на Лунную поляну.' },

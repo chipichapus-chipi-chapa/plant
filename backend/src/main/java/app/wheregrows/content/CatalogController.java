@@ -54,7 +54,8 @@ class CatalogController {
                         .map(c -> new CatalogResponse.Crystal(c.getKey(), c.getName(), c.getColor(), c.getMeaning()))
                         .toList(),
                 species.findAll(Sort.by("key")).stream()
-                        .map(s -> new CatalogResponse.Species(s.getKey(), s.getName(), s.getStageMinutes()))
+                        .map(s -> new CatalogResponse.Species(s.getKey(), s.getName(), s.getStageMinutes(),
+                                s.getProduceKey(), s.getProduceQuantity()))
                         .toList(),
                 items.findAll(Sort.by("key")).stream()
                         .map(i -> new CatalogResponse.Item(i.getKey(), i.getKind(), i.getName(),
@@ -130,7 +131,8 @@ class CatalogController {
         record Crystal(String key, String name, String color, String meaning) {
         }
 
-        record Species(String key, String name, int[] stageMinutes) {
+        /** produceKey — что даёт взрослое растение, когда его собрали (null — ничего). */
+        record Species(String key, String name, int[] stageMinutes, String produceKey, int produceQuantity) {
         }
 
         /** unlockErrand — товар появляется в лавке после этого поручения (null — сразу). */

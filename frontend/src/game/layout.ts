@@ -110,6 +110,10 @@ export function tileFrame(map: GardenMap, x: number, y: number): string {
       return `stardust_${variant(x, y, 2)}`
     case 'glowshrooms':
       return `glowshrooms_${variant(x, y, 3)}`
+    case 'mycelium':
+      return `mycelium_${variant(x, y, 2)}`
+    case 'mycelium_lit':
+      return `mycelium_lit_${variant(x, y, 2)}`
     case 'starwater':
       return `starwater_${variant(x, y, 3)}`
     case 'dry_bed':
@@ -125,6 +129,8 @@ export function tileFrame(map: GardenMap, x: number, y: number): string {
       // стена — чёрная пустота, а со стороны пола у неё каменная кромка
       return `wall_${neighbourMask(map, x, y, 'floor')}`
     case 'path':
+    case 'bed':
+    case 'moss_bed':
     case 'soil':
     case 'overgrown':
       // кадр по соседям того же типа: где соседа нет — трава наползает на тропу, у грядки бортик
