@@ -26,10 +26,12 @@ const CHOICES = [
 type Props = {
   /** Есть, когда игра загружена: тогда в настройках — разделы про сад и кнопки тестирования */
   game?: { state: GameState; onChanged: () => Promise<void> }
+  /** Открыть памятку «Как играть» */
+  onHelp?: () => void
 }
 
 /** Настройки: вид и удобство. Сохраняются в этом браузере. */
-export function SettingsPanel({ game }: Props) {
+export function SettingsPanel({ game, onHelp }: Props) {
   const { settings, change } = useSettings()
   const [fullscreen, setFullscreen] = useState(isFullscreen)
 
@@ -70,6 +72,16 @@ export function SettingsPanel({ game }: Props) {
           </div>
         </div>
       ))}
+      {onHelp && (
+        <div className={styles.row}>
+          <span className={styles.label}>Управление</span>
+          <div className={styles.options}>
+            <button type="button" className={styles.off} onClick={onHelp}>
+              Как играть
+            </button>
+          </div>
+        </div>
+      )}
       <AppSection />
       {game && <TestSection state={game.state} onChanged={game.onChanged} />}
       <p className={styles.note}>Настройки хранятся на этом устройстве. Прогресс игры — на сервере, его они не трогают.</p>

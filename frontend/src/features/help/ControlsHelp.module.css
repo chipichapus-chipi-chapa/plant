@@ -1,0 +1,73 @@
+.help {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 520px;
+}
+
+.rows {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 9.5em 1fr;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* клавиша — маленькая деревянная плашка */
+.key {
+  min-width: 1.6em;
+  padding: 0 6px;
+  background: var(--c-parchment);
+  color: var(--c-ink);
+  font: inherit;
+  font-size: 14px;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--c-ink), inset 0 -3px 0 var(--c-parchment-shade);
+}
+
+.signs {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--c-bark);
+}
+
+.signs p {
+  margin: 0;
+}
+
+.bang {
+  display: inline-block;
+  width: 1.2em;
+  color: var(--c-sun);
+  text-align: center;
+  text-shadow: 1px 1px 0 var(--c-ink);
+}
+
+/* как пузырь реплики в игре: светлое облачко с тёмной рамкой и «!» */
+.bubble {
+  display: inline-block;
+  min-width: 1.3em;
+  margin-right: 4px;
+  background: #f6f1e6;
+  color: var(--c-berry);
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--c-ink);
+}
+
+@media (max-width: 560px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+}

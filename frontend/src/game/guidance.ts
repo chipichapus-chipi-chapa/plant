@@ -2,7 +2,7 @@
 // и с чем рядом можно взаимодействовать (тогда над объектом загорается «!»).
 // Всё считается для текущей локации (map): сад, сарай изнутри…
 
-import type { Catalog, Door, GameState, GardenMap, Npc } from '../api/types'
+import type { Catalog, Door, GameState, GardenMap, GardenProp, Npc } from '../api/types'
 import { fogCleared } from './fog'
 import { HOME, MENTOR_SPOT, objectAt, propAt, TILE, tileAt, type Cell } from './layout'
 import { CHARACTER_HEIGHT } from './renderer'
@@ -35,6 +35,16 @@ export function doorOpen(door: Door, state: GameState): boolean {
   const errand = !door.requiresErrand || !!state.errands?.find((e) => e.key === door.requiresErrand)?.done
   const fog = !door.requiresFog || fogCleared(state.fog)
   return awake && errand && fog
+}
+
+/**
+ * Можно ли войти в дверь отсюда. В постройку выше одной клетки (сарай, дом) входят только спереди —
+ * стоя под ней лицом вверх, а не со стены сбоку или сзади. Калитки, лодку и выход из комнаты (одна клетка)
+ * можно открыть с любой стороны.
+ */
+export function doorReachable(prop: GardenProp, player: Cell, facing: Cell): boolean {
+  if (prop.height <= 1) return true
+  return player.y === prop.y + prop.height && facing.y === prop.y + prop.height - 1 && facing.x === player.x
 }
 
 /**

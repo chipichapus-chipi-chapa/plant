@@ -9,6 +9,7 @@ import { InventoryPanel } from '../features/inventory/InventoryPanel'
 import { ToastProvider } from '../features/notifications/Toasts'
 import { QuestList } from '../features/mentor/QuestList'
 import { activeQuests, questCount } from '../game/quests'
+import { ControlsHelp } from '../features/help/ControlsHelp'
 import { SettingsPanel } from '../features/settings/SettingsPanel'
 import { ShopPanel } from '../features/shop/ShopPanel'
 import { currentObjective } from '../game/guidance'
@@ -26,7 +27,7 @@ import { SettingsProvider } from './SettingsProvider'
 import { Splash } from './Splash'
 import { useGame } from './useGame'
 
-type OpenWindow = 'quests' | 'habits' | 'shop' | 'bag' | 'collection' | 'character' | 'settings' | null
+type OpenWindow = 'help' | 'quests' | 'habits' | 'shop' | 'bag' | 'collection' | 'character' | 'settings' | null
 
 /**
  * Главный экран — игровое поле во весь экран: сад в центре, всё остальное лежит поверх него, как в игре.
@@ -41,6 +42,25 @@ export function App() {
   )
 }
 
+const HELP_SEEN = 'where-grows-help-seen'
+
+/** Флажок в браузере; хранилище может быть недоступно — тогда считаем, что не видели. */
+function readFlag(key: string): boolean {
+  try {
+    return window.localStorage.getItem(key) === '1'
+  } catch {
+    return false
+  }
+}
+
+function writeFlag(key: string) {
+  try {
+    window.localStorage.setItem(key, '1')
+  } catch {
+    // не запомнилось — памятка покажется ещё раз, не страшно
+  }
+}
+
 const coarsePointer = () => window.matchMedia?.('(pointer: coarse)').matches ?? false
 
 function Game() {
@@ -52,9 +72,13 @@ function Game() {
     if (coarsePointer()) void enterFullscreen()
   }, [])
   const [open, setOpen] = useState<OpenWindow>(null)
+  // памятка «Как играть» — сама один раз, когда новый садовник впервые оказался в саду
+  const [helpSeen, setHelpSeen] = useState(() => readFlag(HELP_SEEN))
   const close = useCallback(() => setOpen(null), [])
   const objective = game.status === 'ready' ? currentObjective(game.state, game.catalog) : null
   const quests = game.status === 'ready' ? activeQuests(objective, game.state, game.catalog) : null
+  const helpOpen =
+    open === 'help' || (open === null && !helpSeen && started && game.status === 'ready' && game.state.player.onboarded)
   const isTarget = (key: string) => objective?.target.kind === 'hud' && objective.target.key === key
   const openHud = (key: string) => {
     if (key === 'habits' || key === 'shop' || key === 'bag' || key === 'collection') setOpen(key)
@@ -73,7 +97,7 @@ function Game() {
             catalog={game.catalog}
             onChanged={refresh}
             onEditCharacter={() => setOpen('character')}
-            inputEnabled={started && open === null && game.state.player.onboarded}
+            inputEnabled={started && open === null && !helpOpen && game.state.player.onboarded}
             objective={objective}
             hud={{
               // поверх сада ничего не висит: задания — в отдельном окне по кнопке
@@ -142,7 +166,23 @@ function Game() {
 
         {open === 'settings' && (
           <Window title="Настройки" onClose={close}>
-            <SettingsPanel game={game.status === 'ready' ? { state: game.state, onChanged: refresh } : undefined} />
+            <SettingsPanel
+              game={game.status === 'ready' ? { state: game.state, onChanged: refresh } : undefined}
+              onHelp={() => setOpen('help')}
+            />
+          </Window>
+        )}
+
+        {helpOpen && (
+          <Window
+            title="Как играть"
+            onClose={() => {
+              writeFlag(HELP_SEEN)
+              setHelpSeen(true)
+              close()
+            }}
+          >
+            <ControlsHelp />
           </Window>
         )}
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Catalog, GameState, GardenMap } from '../api/types'
-import { currentObjective, doorOpen, isClickable, isInteractive, isNear, markerPoint, npcAt, promptCell, sameThing } from './guidance'
+import { currentObjective, doorOpen, isClickable, isInteractive, isNear, markerPoint, npcAt, promptCell, sameThing, doorReachable } from './guidance'
 
 const map = {
   key: 'home',
@@ -159,5 +159,21 @@ describe('знаки «!»', () => {
     expect(npcAt(glade, { x: 0, y: 0 })?.key).toBe('krupka')
     expect(isInteractive({ x: 0, y: 0 }, state({}), catalog, glade)).toBe(true)
     expect(isClickable({ x: 2, y: 0 }, state({}), catalog, glade)).toBe(false)
+  })
+})
+
+describe('двери', () => {
+  const shed = { key: 'shed', kind: 'shed', x: 11, y: 1, width: 4, height: 3, name: 'Сарай', description: '' }
+  const gate = { key: 'gate', kind: 'gate', x: 0, y: 6, width: 1, height: 1, name: 'Калитка', description: '' }
+
+  it('в постройку входят только спереди — снизу, лицом к стене', () => {
+    expect(doorReachable(shed, { x: 12, y: 4 }, { x: 12, y: 3 })).toBe(true)
+    expect(doorReachable(shed, { x: 10, y: 2 }, { x: 11, y: 2 })).toBe(false) // со стены сбоку
+    expect(doorReachable(shed, { x: 12, y: 0 }, { x: 12, y: 1 })).toBe(false) // сзади
+  })
+
+  it('калитку и лодку можно открыть с любой стороны', () => {
+    expect(doorReachable(gate, { x: 1, y: 6 }, { x: 0, y: 6 })).toBe(true)
+    expect(doorReachable(gate, { x: 0, y: 5 }, { x: 0, y: 6 })).toBe(true)
   })
 })
