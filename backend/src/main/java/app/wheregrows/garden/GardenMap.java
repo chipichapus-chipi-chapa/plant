@@ -60,6 +60,36 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
     public record Beacon(String after, String prop, int needed, String speaker, List<String> talks) {
     }
 
+    /**
+     * Грядка целиком: связный участок клеток-грядок (и заросших грядок) вокруг (x, y). Пусто — здесь не грядка.
+     * Её «якорь» — верхняя левая клетка (первая по порядку строк): по нему участок узнают.
+     */
+    public List<int[]> bedAround(int x, int y) {
+        java.util.function.BiPredicate<Integer, Integer> bed = (cx, cy) -> contains(cx, cy) && propAt(cx, cy) == null
+                && (tileAt(cx, cy).plantable() || tileAt(cx, cy).type().equals("overgrown"));
+        if (!bed.test(x, y)) {
+            return List.of();
+        }
+        java.util.List<int[]> cells = new java.util.ArrayList<>();
+        java.util.Set<Integer> seen = new java.util.HashSet<>();
+        java.util.ArrayDeque<int[]> queue = new java.util.ArrayDeque<>();
+        queue.add(new int[] {x, y});
+        seen.add(y * width + x);
+        while (!queue.isEmpty()) {
+            int[] c = queue.poll();
+            cells.add(c);
+            for (int[] d : new int[][] {{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+                int nx = c[0] + d[0];
+                int ny = c[1] + d[1];
+                if (bed.test(nx, ny) && seen.add(ny * width + nx)) {
+                    queue.add(new int[] {nx, ny});
+                }
+            }
+        }
+        cells.sort(java.util.Comparator.<int[]>comparingInt(c -> c[1]).thenComparingInt(c -> c[0]));
+        return cells;
+    }
+
     public List<Npc> npcsOrEmpty() {
         return npcs == null ? List.of() : npcs;
     }

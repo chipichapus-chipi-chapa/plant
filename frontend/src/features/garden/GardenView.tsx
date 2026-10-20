@@ -7,7 +7,7 @@ import { composeCharacter, composeCharacterFrames } from '../../game/character'
 import { WEED_MS, type WeedEffect } from '../../game/effects'
 import { fogBand, fogDensity, fogTalk, notchesLine } from '../../game/fog'
 import { beaconBand, beaconEnough, beaconTalk, beaconWindows } from '../../game/beacon'
-import { canPlantNow, greenhouseRect, indoors } from '../../game/season'
+import { canPlantNow, greenhousesOn, indoors } from '../../game/season'
 import { glowBand, glowTalk, withGlow } from '../../game/glow'
 import { GardenCanvas } from '../../game/GardenCanvas'
 import { doorOpen, doorReachable, errandReady, errandWaitsForDay, isClickable, isNear, markerPoint, npcAt, plantsOn, promptCell, promptPoint, sameThing, WEEDING_TOOLS, type Objective } from '../../game/guidance'
@@ -260,6 +260,15 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     }
   }, [])
 
+  // Время года сменится само (каждые полчаса) — тогда тихо перечитываем состояние
+  useEffect(() => {
+    const endsAt = state.season?.endsAt
+    if (!endsAt) return
+    const delay = Math.max(1000, Date.parse(endsAt) - Date.now() + 500)
+    const timer = window.setTimeout(() => void onChanged(), delay)
+    return () => window.clearTimeout(timer)
+  }, [state.season?.endsAt, onChanged])
+
   // Стадию считает сервер; когда наступит ближайшая смена стадии — тихо перечитываем состояние
   useEffect(() => {
     const delay = nextGrowthRefresh(state.garden.objects, Date.now())
@@ -287,7 +296,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
       fog: fogDensity(state.fog, map.key),
       windows: beaconWindows(map, state.beacon, catalog),
       season: indoors(map) ? null : (state.season?.season ?? null),
-      greenhouse: greenhouseRect(map, state),
+      greenhouses: greenhousesOn(state, map),
       awakened,
       variants,
       // секретки не мерцают: догадаться надо самому
@@ -836,8 +845,8 @@ function CellInfo({ cell, player, map, state, catalog, now, planting, onPlant, o
   return (
     <div className={styles.cell}>
       <Said name={info.name} text={info.description} />
-      {info.plantable && !canPlantNow(state, map) && <FrozenBed map={map} onChanged={onChanged} />}
-      {info.plantable && canPlantNow(state, map) &&
+      {info.plantable && !canPlantNow(state, map, cell) && <FrozenBed map={map} cell={cell} onChanged={onChanged} />}
+      {info.plantable && canPlantNow(state, map, cell) &&
         (seeds.length > 0 ? (
           <div className={styles.seeds}>
             <span className={styles.label}>Посадить:</span>
@@ -859,28 +868,27 @@ function CellInfo({ cell, player, map, state, catalog, now, planting, onPlant, o
   )
 }
 
-/** Зимой грядка промёрзла: дома можно построить теплицу, в других местах — ждать весны. */
-function FrozenBed({ map, onChanged }: { map: GardenMap; onChanged: () => Promise<void> }) {
+/** Зимой грядка промёрзла: над всем её участком можно поставить теплицу-домик — на всю зиму, весной её разберут. */
+function FrozenBed({ map, cell, onChanged }: { map: GardenMap; cell: Cell; onChanged: () => Promise<void> }) {
   const [busy, setBusy] = useState(false)
   const toast = useToast()
-  if (map.key !== 'home') return <p className={styles.hint}>Земля промёрзла до весны. Зимой сажают в теплице у дома.</p>
   const build = async () => {
     setBusy(true)
     try {
-      await buildGreenhouse()
-      toast({ message: 'Теплица построена! Под стеклом тепло — можно сажать хоть в снегопад.' })
+      await buildGreenhouse(map.key, cell.x, cell.y)
+      toast({ message: 'Теплица стоит! Под стеклом тепло — можно сажать хоть в снегопад.' })
       await onChanged()
     } catch (e) {
-      toast({ message: e instanceof ApiError ? (e.detail ?? e.title) : 'Не получилось построить. Попробуйте ещё раз.' })
+      toast({ message: e instanceof ApiError ? (e.detail ?? e.title) : 'Не получилось поставить. Попробуйте ещё раз.' })
     } finally {
       setBusy(false)
     }
   }
   return (
     <div>
-      <p className={styles.hint}>Земля промёрзла. Над грядками можно поставить теплицу — на всю зиму, весной её разберут.</p>
+      <p className={styles.hint}>Земля промёрзла. Над всей грядкой можно поставить теплицу-домик — на всю зиму, весной её разберут.</p>
       <Button disabled={busy} onClick={() => void build()}>
-        Построить теплицу: 20 Семян жизни и осколок янтаря
+        Поставить теплицу над грядкой — 10 Семян жизни
       </Button>
     </div>
   )

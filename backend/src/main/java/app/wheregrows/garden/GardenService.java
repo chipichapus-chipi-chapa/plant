@@ -91,12 +91,9 @@ public class GardenService {
         if (!tile.plantable()) {
             throw new InvalidRequestException("«" + tile.name() + "» — не грядка. Сажать можно только на грядку.");
         }
-        // холодно: земля промёрзла — сажать можно только в теплице у дома
-        SeasonService.SeasonState season = seasons.state(players.findById(playerId).orElseThrow());
-        if (season.cold() && !(map.key().equals(GardenMaps.HOME) && season.greenhouse())) {
-            throw new ConflictException(map.key().equals(GardenMaps.HOME)
-                    ? "Земля промёрзла. Постройте теплицу над грядками — и сажайте хоть зимой."
-                    : "Земля промёрзла до весны. Зимой сажают в теплице у дома.");
+        // зима: земля промёрзла — сажать можно только под теплицей над этой грядкой
+        if (seasons.state(playerId).cold() && !covered(playerId, map, x, y)) {
+            throw new ConflictException("Земля промёрзла. Поставьте над грядкой теплицу — и сажайте хоть в снегопад.");
         }
         if (objects.existsByPlayerIdAndGardenKeyAndXAndY(playerId, map.key(), (short) x, (short) y)) {
             throw new ConflictException("На этой грядке уже что-то растёт.");
@@ -140,6 +137,28 @@ public class GardenService {
 
     /** Что собрано и сколько; клетка (x, y) снова свободна. */
     public record HarvestResult(String gardenKey, int x, int y, String itemKey, int quantity) {
+    }
+
+    /** Поставить зимой теплицу над всей грядкой, в которой клетка (x, y) локации gardenKey. */
+    @Transactional
+    public SeasonService.SeasonState buildGreenhouse(long playerId, String gardenKey, int x, int y) {
+        GardenMap map = maps.get(gardenKey).orElseThrow(() -> new InvalidRequestException("Такой локации нет."));
+        List<int[]> bed = map.bedAround(x, y);
+        if (bed.isEmpty()) {
+            throw new InvalidRequestException("Теплицу ставят над грядкой.");
+        }
+        if (covered(playerId, map, x, y)) {
+            throw new ConflictException("Над этой грядкой теплица уже стоит.");
+        }
+        return seasons.buildGreenhouse(playerId, gardenKey, bed.get(0)[0], bed.get(0)[1]);
+    }
+
+    /**
+     * Стоит ли над грядкой с клеткой (x, y) теплица этой зимой. Теплица записана по якорю участка; ранние
+     * теплицы ставились над одной клеткой — они тоже накрывают весь свой участок.
+     */
+    private boolean covered(long playerId, GardenMap map, int x, int y) {
+        return map.bedAround(x, y).stream().anyMatch(c -> seasons.covered(playerId, map.key(), c[0], c[1]));
     }
 
     /** Прополотые клетки домашнего сада: на них заросшая грядка уже стала обычной. */

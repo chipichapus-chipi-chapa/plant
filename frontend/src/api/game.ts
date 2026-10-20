@@ -30,12 +30,13 @@ export const plantSeed = (gardenKey: string, x: number, y: number, seedItemKey: 
 export const harvestPlant = (gardenKey: string, x: number, y: number) =>
   apiFetch<{ itemKey: string; quantity: number }>('/api/garden/harvests', { method: 'POST', body: JSON.stringify({ gardenKey, x, y }) })
 
-/** Покрутить часы долины на days дней (минус — назад); 0 — вернуть настоящее время */
-export const windValleyClock = (days: number) =>
-  apiFetch<{ offset: number }>('/api/valley/clock', { method: 'POST', body: JSON.stringify({ days }) })
+/** Часы долины: перевести на seasons времён года и/или days дней (минус — назад); reset — вернуть как было */
+export const windValleyClock = (turn: { seasons?: number; days?: number; reset?: boolean }) =>
+  apiFetch<unknown>('/api/valley/clock', { method: 'POST', body: JSON.stringify(turn) })
 
-/** Построить теплицу над грядками у дома на эту зиму */
-export const buildGreenhouse = () => apiFetch<unknown>('/api/garden/greenhouse', { method: 'POST' })
+/** Поставить зимой теплицу над грядкой */
+export const buildGreenhouse = (gardenKey: string, x: number, y: number) =>
+  apiFetch<unknown>('/api/garden/greenhouses', { method: 'POST', body: JSON.stringify({ gardenKey, x, y }) })
 
 /** Прополоть заросшую грядку (нужны лопата и грабли в сумке) */
 export const weedBed = (x: number, y: number) =>

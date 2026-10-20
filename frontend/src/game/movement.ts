@@ -30,6 +30,36 @@ export function blockedCells(map: GardenMap, objects: GardenObject[], standing: 
   return blocked
 }
 
+/** Тонкая стена в логических пикселях (стенка теплицы). */
+export type Wall = { x: number; y: number; w: number; h: number }
+
+
+/**
+ * Стены теплицы-домика: по краю участка, кроме проёма под дверцей в нижней стенке. Внутри ходить можно,
+ * зайти — только через дверцу.
+ */
+export function greenhouseWalls(greenhouses: { x: number; y: number; w: number; h: number; door: number }[]): Wall[] {
+  const T = 3
+  return greenhouses.flatMap((g) => {
+    const x0 = g.x * TILE
+    const y0 = g.y * TILE
+    const x1 = (g.x + g.w) * TILE
+    const y1 = (g.y + g.h) * TILE
+    const door = g.door * TILE
+    return [
+      { x: x0, y: y0, w: x1 - x0, h: T },
+      { x: x0, y: y0, w: T, h: y1 - y0 },
+      { x: x1 - T, y: y0, w: T, h: y1 - y0 },
+      { x: x0, y: y1 - T, w: door - x0, h: T },
+      { x: door + TILE, y: y1 - T, w: x1 - door - TILE, h: T },
+    ].filter((w) => w.w > 0)
+  })
+}
+
+function hitsWall(walls: Wall[], left: number, top: number, right: number, bottom: number): boolean {
+  return walls.some((w) => left < w.x + w.w && right > w.x && top < w.y + w.h && bottom > w.y)
+}
+
 function isBlocked(blocked: boolean[][], x: number, y: number): boolean {
   const cx = Math.floor(x / TILE)
   const cy = Math.floor(y / TILE)
@@ -37,12 +67,13 @@ function isBlocked(blocked: boolean[][], x: number, y: number): boolean {
 }
 
 /** Задевают ли ступни в точке (x, y) что-нибудь непроходимое. */
-export function collides(blocked: boolean[][], x: number, y: number): boolean {
+export function collides(blocked: boolean[][], x: number, y: number, walls: Wall[] = []): boolean {
   const left = x - FEET.halfWidth
   const right = x + FEET.halfWidth - 0.01
   const top = y - FEET.height
   const bottom = y - 0.01
   return (
+    hitsWall(walls, left, top, right, bottom) ||
     isBlocked(blocked, left, top) ||
     isBlocked(blocked, right, top) ||
     isBlocked(blocked, left, bottom) ||
@@ -54,7 +85,7 @@ export function collides(blocked: boolean[][], x: number, y: number): boolean {
  * Шаг ходьбы на dt секунд в направлении (dx, dy) — вектор длиной до 1 (джойстик даёт и промежуточные).
  * Оси проверяются по отдельности: упёршись в забор по диагонали, персонаж скользит вдоль него.
  */
-export function walk(w: Walker, dx: number, dy: number, dt: number, blocked: boolean[][]): Walker {
+export function walk(w: Walker, dx: number, dy: number, dt: number, blocked: boolean[][], walls: Wall[] = []): Walker {
   const length = Math.hypot(dx, dy)
   if (length < 0.15) return w
   const scale = Math.min(1, length) / length
@@ -64,11 +95,36 @@ export function walk(w: Walker, dx: number, dy: number, dt: number, blocked: boo
   let { x, y } = w
   // Уже стоим в занятой клетке (под ногами посадили растение, рядом встал житель) — выпускаем
   // в любую сторону, иначе каждое направление «сталкивается» и персонаж застревает навсегда.
-  const stuck = collides(blocked, x, y)
-  if (stuck || !collides(blocked, x + vx, y)) x += vx
-  if (stuck || !collides(blocked, x, y + vy)) y += vy
+  const stuck = collides(blocked, x, y, walls)
+  if (stuck || !collides(blocked, x + vx, y, walls)) x += vx
+  else if (vx !== 0) {
+    const cx = x
+    y += nudge((o) => !collides(blocked, cx, y + o, walls), (o) => !collides(blocked, cx + vx, y + o, walls), Math.abs(vx))
+  }
+  if (stuck || !collides(blocked, x, y + vy, walls)) y += vy
+  else if (vy !== 0) {
+    const cy = y
+    x += nudge((o) => !collides(blocked, x + o, cy, walls), (o) => !collides(blocked, x + o, cy + vy, walls), Math.abs(vy))
+  }
   const facing: Facing = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up'
   return { x, y, facing }
+}
+
+/**
+ * Доводка у проёма: упёрлись в стену, а в сторону — проход (дверца теплицы, щель между постройками).
+ * Ищем ближайший сдвиг до клетки с небольшим запасом, после которого шаг удастся, и подруливаем к нему
+ * со скоростью шага: стоя у стенки рядом с дверцей, достаточно жать «вниз» — герой сам выйдет в неё.
+ */
+const NUDGE = TILE - 4
+
+function nudge(clear: (offset: number) => boolean, passes: (offset: number) => boolean, speed: number): number {
+  for (const sign of [1, -1]) {
+    // в эту сторону — пока путь свободен; сквозь стенку доводка не проводит
+    for (let o = 1; o <= NUDGE && clear(sign * o); o++) {
+      if (passes(sign * o)) return sign * Math.min(speed, o)
+    }
+  }
+  return 0
 }
 
 /** Клетка, в которой стоит персонаж. */

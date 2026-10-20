@@ -18,5 +18,11 @@
 .row {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
+}
+
+.label {
+  min-width: 6.5em;
+  opacity: 0.8;
 }
