@@ -698,8 +698,11 @@ function CellInfo({ cell, player, map, state, catalog, now, planting, onPlant, o
       <WeedInfo cell={cell} name={info.name} description={info.description} state={state} onWeeding={onWeeding} onChanged={onChanged} />
     )
   }
+  // У постройки бывает и находка, и рецепт (в печи лежал фонарь очага, а потом её разжигают):
+  // пока находка не забрана — она; забрана — рецепт, чтобы «вы уже всё нашли» не прятало «Разжечь»
   const spot = prop && catalog.spots.find((s) => s.propKey === prop.key)
-  if (spot) {
+  const recipeHere = prop && catalog.recipes.some((r) => r.targetObjectKey === prop.key)
+  if (spot && !(recipeHere && state.searchedSpots.includes(spot.key))) {
     return (
       <div className={styles.cell}>
         <Said name={info.name} text={info.description} />
