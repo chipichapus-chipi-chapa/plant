@@ -166,7 +166,7 @@ class GardenApiTests {
         try {
             List<Callable<Boolean>> attempts = IntStream.range(0, 10).<Callable<Boolean>>mapToObj(i -> () -> {
                 try {
-                    service.plant(playerId, 5, 5, "seed_chamomile");
+                    service.plant(playerId, GardenMaps.HOME, 5, 5, "seed_chamomile");
                     return true;
                 } catch (Exception rejected) {
                     return false;
@@ -217,6 +217,29 @@ class GardenApiTests {
     private ResultActions weed(int x, int y) throws Exception {
         return mvc.perform(post("/api/garden/weedings").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"x\":" + x + ",\"y\":" + y + "}"));
+    }
+
+    @Test
+    void bedsElsewhereInTheWorldAcceptSeedsToo() throws Exception {
+        give("seed_radish", 3);
+
+        // общий огород городка: клетки x 6..10, y 9
+        plantIn("town", 8, 9, "seed_radish")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.gardenKey").value("town"));
+        plantIn("town", 8, 9, "seed_radish").andExpect(status().isConflict());
+        plantIn("town", 2, 2, "seed_radish").andExpect(status().isBadRequest());
+        plantIn("atlantis", 1, 1, "seed_radish").andExpect(status().isBadRequest());
+
+        mvc.perform(get("/api/state"))
+                .andExpect(jsonPath("$.garden.objects", hasSize(1)))
+                .andExpect(jsonPath("$.garden.objects[0].gardenKey").value("town"));
+        assertThat(quantity("seed_radish")).isEqualTo(2);
+    }
+
+    private ResultActions plantIn(String garden, int x, int y, String seed) throws Exception {
+        return mvc.perform(post("/api/garden/plantings").contentType(MediaType.APPLICATION_JSON)
+                .content("{\"gardenKey\":\"" + garden + "\",\"x\":" + x + ",\"y\":" + y + ",\"seedItemKey\":\"" + seed + "\"}"));
     }
 
     private ResultActions plant(int x, int y, String seed) throws Exception {

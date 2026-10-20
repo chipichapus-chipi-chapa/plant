@@ -47,6 +47,11 @@ public class GardenMaps {
         return maps.get(HOME);
     }
 
+    /** Локация по ключу или пусто. */
+    public Optional<GardenMap> get(String key) {
+        return Optional.ofNullable(maps.get(key));
+    }
+
     /** Все локации: сначала домашний сад. */
     public List<GardenMap> all() {
         return maps.values().stream().sorted((a, b) -> a.key().equals(HOME) ? -1 : b.key().equals(HOME) ? 1 : 0).toList();

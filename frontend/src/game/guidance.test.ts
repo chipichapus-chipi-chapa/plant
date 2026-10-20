@@ -130,7 +130,7 @@ describe('знаки «!»', () => {
 
   it('описание есть у всего, что стоит в саду: тайник (и после поиска), растение, грядка с семенами', () => {
     expect(isClickable({ x: 0, y: 1 }, state({ searchedSpots: ['rock_cache'] }), catalog, map)).toBe(true)
-    expect(isClickable({ x: 2, y: 0 }, state({ garden: { objects: [{ x: 2, y: 0 } as never], weeded: [] } }), catalog, map)).toBe(true)
+    expect(isClickable({ x: 2, y: 0 }, state({ garden: { objects: [{ gardenKey: map.key, x: 2, y: 0 } as never], weeded: [] } }), catalog, map)).toBe(true)
     expect(isClickable({ x: 2, y: 0 }, state({ inventory: [{ itemKey: 'seed_radish', quantity: 1 }] }), catalog, map)).toBe(true)
     // пустая грядка без семян и простая трава — без таблички
     expect(isClickable({ x: 2, y: 0 }, state({}), catalog, map)).toBe(false)

@@ -63,19 +63,19 @@ public class GardenService {
         Map<String, PlantSpecies> catalog = species.findAll().stream()
                 .collect(Collectors.toMap(PlantSpecies::getKey, Function.identity()));
         Instant now = clock.instant();
-        return objects.findByPlayerIdAndGardenKeyOrderByYAscXAsc(playerId, maps.home().key()).stream()
+        return objects.findByPlayerIdOrderByGardenKeyAscYAscXAsc(playerId).stream()
                 .map(o -> view(o, catalog.get(o.getSpeciesKey()), now))
                 .toList();
     }
 
     /**
-     * Сажает семя из сумки в клетку. Списание пакетика и появление растения — одна транзакция.
+     * Сажает семя из сумки в клетку локации (грядки есть не только в домашнем саду). Списание пакетика и появление растения — одна транзакция.
      * Повторная посадка в ту же клетку отклоняется (и уникальный индекс в базе это гарантирует).
      */
     @Transactional
-    public GardenObjectView plant(long playerId, int x, int y, String seedItemKey) {
+    public GardenObjectView plant(long playerId, String gardenKey, int x, int y, String seedItemKey) {
         players.lockById(playerId).orElseThrow(() -> new NotFoundException("Игрок не найден."));
-        GardenMap map = maps.home();
+        GardenMap map = maps.get(gardenKey).orElseThrow(() -> new InvalidRequestException("Такой локации нет."));
 
         if (!map.contains(x, y)) {
             throw new InvalidRequestException("Такой клетки в саду нет.");
@@ -152,7 +152,7 @@ public class GardenService {
 
     private static GardenObjectView view(GardenObject object, PlantSpecies plant, Instant now) {
         PlantGrowth growth = PlantGrowth.at(object.getPlantedAt(), plant.getStageMinutes(), now);
-        return new GardenObjectView(object.getX(), object.getY(), object.getKind(), object.getSpeciesKey(),
+        return new GardenObjectView(object.getGardenKey(), object.getX(), object.getY(), object.getKind(), object.getSpeciesKey(),
                 object.getPlantedAt(), growth.stage(), growth.stageCount(), growth.mature(), growth.nextStageAt());
     }
 }

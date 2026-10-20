@@ -56,6 +56,10 @@ public class GardenObject {
         return object;
     }
 
+    public String getGardenKey() {
+        return gardenKey;
+    }
+
     public int getX() {
         return x;
     }

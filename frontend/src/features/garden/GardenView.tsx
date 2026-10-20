@@ -7,7 +7,7 @@ import { composeCharacter, composeCharacterFrames } from '../../game/character'
 import { WEED_MS, type WeedEffect } from '../../game/effects'
 import { fogBand, fogDensity, fogTalk, notchesLine } from '../../game/fog'
 import { GardenCanvas } from '../../game/GardenCanvas'
-import { doorOpen, doorReachable, errandReady, isClickable, isNear, markerPoint, npcAt, promptCell, promptPoint, sameThing, WEEDING_TOOLS, type Objective } from '../../game/guidance'
+import { doorOpen, doorReachable, errandReady, isClickable, isNear, markerPoint, npcAt, plantsOn, promptCell, promptPoint, sameThing, WEEDING_TOOLS, type Objective } from '../../game/guidance'
 import type { Facing } from '../../game/movement'
 import { CREATURE_GLOW, standingAt, type Scene } from '../../game/renderer'
 import {
@@ -232,7 +232,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     for (const puzzle of catalog.puzzles) if (state.solvedPuzzles.includes(puzzle.key)) variants.set(puzzle.propKey, 'open')
     for (const key of awakened) variants.set(key, 'awakened')
     return {
-      objects: home ? state.garden.objects : [],
+      objects: plantsOn(state, map),
       effects: weeding ? [weeding] : [],
       fog: fogDensity(state.fog, map.key),
       awakened,
@@ -466,7 +466,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
   const plant = async (cell: Cell, seedKey: string) => {
     setPlanting(true)
     try {
-      const planted = await plantSeed(cell.x, cell.y, seedKey)
+      const planted = await plantSeed(map.key, cell.x, cell.y, seedKey)
       setNow(Date.now())
       const name = catalog.species.find((s) => s.key === planted.speciesKey)?.name ?? planted.speciesKey
       const minutes = minutesUntilNextStage(planted, Date.now())
@@ -634,7 +634,7 @@ type CellInfoProps = {
 }
 
 function CellInfo({ cell, player, map, state, catalog, now, planting, onPlant, onEnter, onRead, onLock, onWeeding, onChanged }: CellInfoProps) {
-  const object = map.key === HOME ? objectAt(state.garden.objects, cell) : undefined
+  const object = objectAt(plantsOn(state, map), cell)
   if (object) {
     const name = catalog.species.find((s) => s.key === object.speciesKey)?.name ?? object.speciesKey
     const minutes = minutesUntilNextStage(object, now)

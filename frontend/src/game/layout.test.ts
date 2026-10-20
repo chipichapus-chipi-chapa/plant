@@ -75,6 +75,7 @@ describe('describeCell', () => {
 })
 
 const plant = (x: number, nextStageAt: string | null): GardenObject => ({
+  gardenKey: 'home',
   x,
   y: 1,
   kind: 'PLANT',

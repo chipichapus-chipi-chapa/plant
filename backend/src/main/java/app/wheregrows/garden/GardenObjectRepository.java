@@ -8,5 +8,7 @@ public interface GardenObjectRepository extends JpaRepository<GardenObject, Long
 
     List<GardenObject> findByPlayerIdAndGardenKeyOrderByYAscXAsc(long playerId, String gardenKey);
 
+    List<GardenObject> findByPlayerIdOrderByGardenKeyAscYAscXAsc(long playerId);
+
     boolean existsByPlayerIdAndGardenKeyAndXAndY(long playerId, String gardenKey, short x, short y);
 }
