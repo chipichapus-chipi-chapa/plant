@@ -35,7 +35,7 @@
       "plantable": false
     },
     "g": {
-      "type": "soil",
+      "type": "bed",
       "name": "Грядка у озера",
       "description": "Земля здесь влажная от тумана — семенам не придётся ждать дождя.",
       "plantable": true

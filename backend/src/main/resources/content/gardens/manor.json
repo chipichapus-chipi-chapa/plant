@@ -45,7 +45,7 @@
       }
     },
     "g": {
-      "type": "soil",
+      "type": "bed",
       "name": "Огородик у поместья",
       "description": "Шуршик вскопал полоску земли за дорожкой: «Пусть растёт что-нибудь, кроме крапивы».",
       "plantable": true
@@ -60,8 +60,8 @@
     "F.dd.ddd.p.dd.dd.F",
     "F........p.......F",
     "pppppppppppppppppp",
-    "F................F",
-    "F..,,.ddd.ddd....F",
+    "F........p.......F",
+    "F..,,.dddpddd....F",
     "FFF...ggggggg..FFF",
     "FFFFFFFFFFFFFFFFFF"
   ],

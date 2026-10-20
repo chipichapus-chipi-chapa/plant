@@ -35,7 +35,7 @@
       "plantable": false
     },
     "g": {
-      "type": "soil",
+      "type": "bed",
       "name": "Лунная грядка",
       "description": "Хмур разрыхлил землю у пруда. Говорит, ночью растения растут тише, но вернее.",
       "plantable": true
@@ -47,9 +47,9 @@
     "FFm..........mFF",
     "Fmm...wwww..m..F",
     "Fm...wwwwww...mF",
-    "Fggg.wwwwww....F",
-    "Fmm...wwww...mmF",
-    "FFm....p.....mFF",
+    "Fgggpwwwwww....F",
+    "Fmm.p.wwww...mmF",
+    "FFm.pppp.....mFF",
     "FFFmm..p...mmFFF",
     "FFFFFFFpFFFFFFFF"
   ],

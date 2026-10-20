@@ -63,7 +63,7 @@
       "plantable": false
     },
     "g": {
-      "type": "soil",
+      "type": "bed",
       "name": "Илистая полоса",
       "description": "Река когда-то разливалась до сюда и оставила жирный ил. Тина говорит: «Сажай, не пропадать же».",
       "plantable": true
@@ -72,9 +72,9 @@
   "rows": [
     "FFFFFFFFFFFFwwwwFF",
     "F...ggggg...wwwwrF",
-    "F.........,.wwwwrF",
-    "F..........rwwwwrF",
-    "F..........rwwwwrF",
+    "F...p.....,.wwwwrF",
+    "F...p......rwwwwrF",
+    "F...p......rwwwwrF",
     "ccccbcccccccwwww.F",
     "F...p.......wwww.F",
     "pppppp......wwwwrF",

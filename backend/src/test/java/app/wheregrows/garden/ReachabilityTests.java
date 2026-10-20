@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ReachabilityTests {
 
     /** Те же клетки, по которым клиент пускает ходить (frontend/src/game/movement.ts, WALKABLE). */
-    static final Set<String> WALKABLE = Set.of("grass", "weeds", "path", "soil", "overgrown", "floor", "bridge", "rug", "dreamgrass", "stardust");
+    static final Set<String> WALKABLE = Set.of("grass", "weeds", "path", "soil", "overgrown", "floor", "bridge", "rug", "dreamgrass", "stardust", "bed", "moss_bed");
 
     @Autowired
     GardenMaps maps;

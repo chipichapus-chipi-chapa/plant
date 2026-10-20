@@ -35,7 +35,7 @@
       "plantable": false
     },
     "g": {
-      "type": "soil",
+      "type": "moss_bed",
       "name": "Мшистая грядка",
       "description": "Мягкая земля под мхом. Кошки обходят её стороной — уважают чужие посадки.",
       "plantable": true
@@ -44,12 +44,12 @@
   "rows": [
     "FFFFFFFFFFFFFFFFFF",
     "FFssgggg.FF...ssFF",
-    "Fs......pp......sF",
+    "Fs....pppp......sF",
     "Fs.....pp...www..F",
     "Fs....pp...wwwww.F",
-    "F....pp....wwwww.F",
-    "F...pp......www..F",
-    "Fs..p...........sF",
+    "F....ppppp.wwwww.F",
+    "F...pp...p..www..F",
+    "Fs..p....pppppppsF",
     "Fss.p.....ss...ssF",
     "FFFFpFFFFFFFFFFFFF"
   ],

@@ -2,7 +2,7 @@
 // светящиеся грибы, лесной ручей со звёздами, хрустальные деревья и большие светящиеся кошки.
 
 import { rng, Sprite } from './canvas.mjs'
-import { T } from './tiles.mjs'
+import { bed, T } from './tiles.mjs'
 import { INK, P } from './palette.mjs'
 
 const GRASS = ['#141633', '#1c2046', '#262b5a', '#323a70']
@@ -33,6 +33,21 @@ function stardust(seed) {
   const r = rng(90 + seed)
   for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) s.px(x, y, (x + y * 3 + seed) % 7 === 0 ? DUST[2] : DUST[1])
   for (let i = 0; i < 5; i++) s.px(Math.floor(r() * T), Math.floor(r() * T), LILAC[4])
+  return s
+}
+
+const EARTH = ['#120e1f', '#1d1631', '#2a2045', '#382b58', '#47386c']
+
+/** Мшистая грядка: тёмная рыхлая земля, края заросли сонной травой, кое-где — бирюзовый мох. */
+function mossBed(mask) {
+  const s = bed(mask, EARTH, (seed) => dreamgrass(seed % 3), 760)
+  const r = rng(800 + mask)
+  for (let i = 0; i < 4; i++) {
+    const x = 8 + Math.floor(r() * 16)
+    const y = 8 + Math.floor(r() * 16)
+    s.px(x, y, TEAL[2])
+    s.px(x + 1, y, TEAL[1])
+  }
   return s
 }
 
@@ -160,6 +175,7 @@ export function dreamFrames() {
     starwater_0: starwater(0),
     starwater_1: starwater(1),
     starwater_2: starwater(2),
+    ...Object.fromEntries(Array.from({ length: 16 }, (_, m) => [`moss_bed_${m}`, mossBed(m)])),
     prop_crystal_tree: crystalTree(false),
     prop_crystal_tree_awakened: crystalTree(true),
     prop_glow_bush: glowBush(),

@@ -125,6 +125,8 @@ export function tileFrame(map: GardenMap, x: number, y: number): string {
       // стена — чёрная пустота, а со стороны пола у неё каменная кромка
       return `wall_${neighbourMask(map, x, y, 'floor')}`
     case 'path':
+    case 'bed':
+    case 'moss_bed':
     case 'soil':
     case 'overgrown':
       // кадр по соседям того же типа: где соседа нет — трава наползает на тропу, у грядки бортик

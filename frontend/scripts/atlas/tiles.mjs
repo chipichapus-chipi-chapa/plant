@@ -171,6 +171,34 @@ export function soil(mask, overgrown = false, seed = 400) {
   return s
 }
 
+/**
+ * Грядка в дороге: рыхлая земля бороздами без бортика, края заросли той травой, что вокруг
+ * (ground(seed) — спрайт окружающей травы; по умолчанию обычная). Так грядка вписывается в любое место.
+ */
+export function bed(mask, earth = R.soil, ground = null, seed = 700) {
+  const s = new Sprite(T, T)
+  for (let y = 0; y < T; y++)
+    for (let x = 0; x < T; x++) {
+      const row = (y + 2) % 8
+      const tone = row < 2 ? 3 : row < 5 ? 2 : 1
+      const n = noise(x, y, 4, seed, T)
+      s.px(x, y, earth[Math.max(0, Math.min(4, tone + (n > 0.82 ? 1 : n < 0.12 ? -1 : 0)))])
+    }
+  let groundLayer = ground?.(seed + mask)
+  if (!groundLayer) {
+    groundLayer = new Sprite(T, T)
+    grassFill(groundLayer, seed + 50 + mask, { extras: false })
+  }
+  for (let y = 0; y < T; y++)
+    for (let x = 0; x < T; x++) {
+      const d = edgeDepth(x, y, mask, seed)
+      if (d > 1) s.px(x, y, pixelOf(groundLayer, x, y))
+      else if (d > 0) s.px(x, y, checker(x, y) ? pixelOf(groundLayer, x, y) : earth[0])
+      else if (d > -2) s.px(x, y, earth[0])
+    }
+  return s
+}
+
 // --- Забор и калитка -----------------------------------------------------------------------
 
 /** Доска штакетника: заострённый верх, тёмная трещина, иногда мох у земли. */
@@ -287,6 +315,7 @@ export function tileFrames() {
     frames[`path_${m}`] = path(m)
     frames[`soil_${m}`] = soil(m)
     frames[`overgrown_${m}`] = soil(m, true)
+    frames[`bed_${m}`] = bed(m)
   }
   frames.fence_h = fenceHorizontal()
   frames.fence_v = fenceVertical()
