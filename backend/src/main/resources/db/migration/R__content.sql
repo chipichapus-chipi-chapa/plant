@@ -68,6 +68,8 @@ INSERT INTO item_def (key, kind, name, description, price, species_key, crystal_
         'Сняты с забора. Ручки отполированы чьими-то ладонями — сорнякам теперь не поздоровится.', NULL, NULL, NULL, NULL),
     ('repair_kit',   'TOOL', 'Ремонтный набор',
         'Гаечный ключ, молоток и пара новых шплинтов. Пахнет маслом и чужой аккуратностью.', NULL, NULL, NULL, NULL),
+    ('gardener_hat', 'TOOL', 'Соломенная шляпа с подсолнухом',
+        'Шляпа садовника Ефима. Сухая, чуть мятая. Подсолнух на полях держится так, будто пустил корни.', NULL, NULL, NULL, NULL),
     ('old_lantern',  'TOOL', 'Старый фонарь',
         'Фонарь прежнего садовника. Стекло в трещинках, но фитиль цел — с ним не страшно и в чаще.', NULL, NULL, NULL, NULL),
 
@@ -123,7 +125,10 @@ INSERT INTO recipe_def (key, name, description, target_object_key, result_text, 
         'lamp-post', 'Фонарь вспыхивает тёплым светом. Табличка под ним больше не грустит.', 9, 'Зажечь'),
     ('light_hearth', 'Огонь в очаге',
         'Янтарь очага помнит, как здесь было тепло, а Солнечная искра — как разгорается огонь. Вместе они разбудят печь.',
-        'hearth', 'Угли вздохнули, и в печи заплясал огонь. Кухня сразу стала меньше и уютнее — как и положено кухне.', 10, 'Разжечь')
+        'hearth', 'Угли вздохнули, и в печи заплясал огонь. Кухня сразу стала меньше и уютнее — как и положено кухне.', 10, 'Разжечь'),
+    ('build_lodge', 'Хатка для бобров',
+        'Изумруд — чтобы дом рос крепко, как дерево; сапфир — чтобы помнил дорогу к воде.',
+        'beaver-lodge', 'Ветки сплелись в тёплый купол, мох лёг на макушку. У бобров снова есть дом — а у сада снова есть вода.', 11, 'Построить')
 ON CONFLICT (key) DO UPDATE SET
     name = EXCLUDED.name,
     description = EXCLUDED.description,
@@ -133,7 +138,7 @@ ON CONFLICT (key) DO UPDATE SET
     action_label = EXCLUDED.action_label;
 
 DELETE FROM recipe_ingredient WHERE recipe_key IN ('awaken_basin', 'open_east_gate', 'repair_wheelbarrow', 'fill_barrel',
-    'wake_lily_west', 'wake_lily_east', 'wake_lily_south', 'fill_manor_well', 'light_lamp_post', 'light_hearth');
+    'wake_lily_west', 'wake_lily_east', 'wake_lily_south', 'fill_manor_well', 'light_lamp_post', 'light_hearth', 'build_lodge');
 INSERT INTO recipe_ingredient (recipe_key, item_key, quantity) VALUES
     ('awaken_basin', 'shard_emerald', 2),
     ('awaken_basin', 'shard_amethyst', 1),
@@ -146,7 +151,9 @@ INSERT INTO recipe_ingredient (recipe_key, item_key, quantity) VALUES
     ('fill_manor_well', 'shard_sapphire', 1),
     ('light_lamp_post', 'sun_spark', 1),
     ('light_hearth', 'shard_amber', 2),
-    ('light_hearth', 'sun_spark', 1);
+    ('light_hearth', 'sun_spark', 1),
+    ('build_lodge', 'shard_emerald', 2),
+    ('build_lodge', 'shard_sapphire', 1);
 
 -- Артефакты -------------------------------------------------------------------
 -- Лор раскрывается понемногу: через описание, легенду и подсказки к ещё не найденному.

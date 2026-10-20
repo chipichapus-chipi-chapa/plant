@@ -71,11 +71,18 @@ public class TestToolsService {
                 }
             }
         }
+        // только то, что открывает проходы: сторож на тропе и поручения, которых ждут двери
+        // (сад Мяты — к озеру, очаг Агаты — к плотине); сюжет дальше — проходить самому
+        java.util.Set<String> gates = maps.all().stream().flatMap(m -> m.props().stream())
+                .filter(p -> p.door() != null && p.door().requiresErrand() != null)
+                .map(p -> p.door().requiresErrand())
+                .collect(java.util.stream.Collectors.toSet());
         for (GardenMaps.NpcErrand e : maps.errands()) {
-            if (e.errand().leaves()) {
-                finishErrand(playerId, e.errand().key()); // сторож на тропе уходит с дороги
+            // сторож стоит на тропе с самого начала (Хмур); садовник «уходит» в конце главы — его не трогаем
+            if (e.errand().leaves() && e.npc().appearsAfter() == null) {
+                finishErrand(playerId, e.errand().key());
             }
-            if (e.errand().kind() == GardenMap.Errand.Kind.REVIVE) {
+            if (gates.contains(e.errand().key())) {
                 e.errand().propsOrEmpty().forEach(key -> awaken(playerId, key));
                 finishErrand(playerId, e.errand().key());
             }

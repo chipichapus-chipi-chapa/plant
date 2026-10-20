@@ -44,7 +44,7 @@ class CatalogApiTests {
     @Test
     void catalogListsLocationsConnectedByDoors() throws Exception {
         mvc.perform(get("/api/catalog"))
-                .andExpect(jsonPath("$.locations", hasSize(7)))
+                .andExpect(jsonPath("$.locations", hasSize(8)))
                 .andExpect(jsonPath("$.locations[0].key").value("home"))
                 .andExpect(jsonPath("$.locations[0].props[?(@.key == 'shed')].door.map").value("shed"))
                 // калитка ведёт на тропу, только когда её пробудили
@@ -60,6 +60,10 @@ class CatalogApiTests {
                 // лодка плывёт в городок у мельницы, когда рассеялся туман; жители городка — люди с обликом
                 .andExpect(jsonPath("$.locations[?(@.key == 'lake')].props[?(@.key == 'dock')].door.map").value("town"))
                 .andExpect(jsonPath("$.locations[?(@.key == 'lake')].props[?(@.key == 'dock')].door.requiresFog").value(true))
-                .andExpect(jsonPath("$.locations[?(@.key == 'town')].npcs[?(@.key == 'agata')].appearance.hair").value("bun"));
+                .andExpect(jsonPath("$.locations[?(@.key == 'town')].npcs[?(@.key == 'agata')].appearance.hair").value("bun"))
+                // глава 3: к плотине — когда Агата дома рассказала о садовнике; канава наполняется, когда построена хатка
+                .andExpect(jsonPath("$.locations[?(@.key == 'town')].props[?(@.key == 'dam-path')].door.requiresErrand").value("agata_hearth"))
+                .andExpect(jsonPath("$.locations[?(@.key == 'dam')].tiles.c.revive.when").value("beaver-lodge"))
+                .andExpect(jsonPath("$.locations[?(@.key == 'home')].npcs[?(@.key == 'gardener-home')].appearsAfter").value("gardener_return"));
     }
 }

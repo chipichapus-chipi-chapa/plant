@@ -149,5 +149,77 @@
         "requires": "east-gate"
       }
     }
+  ],
+  "npcs": [
+    {
+      "key": "gardener-home",
+      "name": "Садовник Ефим",
+      "kind": "human",
+      "x": 14,
+      "y": 4,
+      "description": "Ефим дома, у своего сарая. В шляпе с подсолнухом. Чинит что-то, что, кажется, и не было сломано.",
+      "talks": [
+        "efim_home_hello",
+        "efim_home_garden",
+        "efim_home_vereshk",
+        "efim_home_letter"
+      ],
+      "dialogues": {
+        "efim_home_hello": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "А вот и сосед! Сарай мой ты, вижу, обжил. Лампу не гасишь — правильно, она обижается.",
+              "next": null
+            }
+          }
+        },
+        "efim_home_garden": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Сад у тебя… знаешь, лучше, чем был у меня. Я сажал по порядку, а ты — по сердцу. Это видно.",
+              "next": null
+            }
+          }
+        },
+        "efim_home_vereshk": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "С Вереском помирились. Он сказал, что я сорняк, который не спросил разрешения уйти.",
+              "next": "b"
+            },
+            "b": {
+              "text": "Я сказал, что тогда я смелый. Он засмеялся. Потом мы пили чай.",
+              "next": null
+            }
+          }
+        },
+        "efim_home_letter": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "То письмо на столе… Я его писал каждую весну заново. Думал — вернусь, когда починю всё сам.",
+              "next": "b"
+            },
+            "b": {
+              "text": "А оказалось, чинить надо было не одному.",
+              "next": null
+            }
+          }
+        }
+      },
+      "appearance": {
+        "skin": "warm",
+        "hair": "curly",
+        "hair_color": "silver",
+        "outfit": "sweater",
+        "outfit_color": "moss",
+        "accessory": "gardener_hat",
+        "bag": "tote"
+      },
+      "appearsAfter": "gardener_return"
+    }
   ]
 }
