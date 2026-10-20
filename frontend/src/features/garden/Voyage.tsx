@@ -3,7 +3,7 @@ import { frameImage, type Atlas } from '../../game/atlas'
 import styles from './Voyage.module.css'
 
 /** Сколько длится плавание через озеро. */
-export const VOYAGE_MS = 2800
+export const VOYAGE_MS = 5200
 
 const W = 320
 const H = 180
@@ -50,7 +50,7 @@ export function Voyage({ atlas, hero, direction }: Props) {
       const ease = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2
       const span = W + 90
       const bx = Math.round(direction === 1 ? -80 + ease * span : W + 16 - ease * span)
-      const by = 92 + Math.round(Math.sin(now / 260) * 1.5)
+      const by = 92 + Math.round(Math.sin(now / 420) * 1.5)
 
       // след за кормой: две расходящиеся дорожки
       ctx.fillStyle = 'rgba(205, 230, 224, 0.5)'
@@ -116,7 +116,7 @@ export function Voyage({ atlas, hero, direction }: Props) {
   }, [atlas, hero, direction])
 
   return (
-    <div className={styles.voyage} aria-hidden="true">
+    <div className={styles.voyage} style={{ animationDuration: `${VOYAGE_MS}ms` }} aria-hidden="true">
       <canvas ref={ref} width={W} height={H} className={styles.scene} />
       <p className={styles.caption}>{direction === 1 ? 'Лодка скользит по тихой воде…' : 'Обратно, к лилиям и Мяте…'}</p>
     </div>
