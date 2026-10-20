@@ -159,9 +159,9 @@ class ExplorationApiTests {
     @Test
     void catalogListsArtifactsAndSpotsWithoutRevealingTheirContents() throws Exception {
         mvc.perform(get("/api/catalog"))
-                .andExpect(jsonPath("$.artifacts", hasSize(5)))
+                .andExpect(jsonPath("$.artifacts", hasSize(6)))
                 .andExpect(jsonPath("$.artifacts[0].acquisitionHint").value("Ищите там, куда падает свет пробуждённой чаши."))
-                .andExpect(jsonPath("$.spots", hasSize(11)))
+                .andExpect(jsonPath("$.spots", hasSize(12)))
                 // секретки — без мерцания и со своей надписью на кнопке
                 .andExpect(jsonPath("$.spots[?(@.key == 'clock_teatime')].hidden").value(true))
                 .andExpect(jsonPath("$.spots[?(@.key == 'clock_teatime')].actionLabel").value("Подвести стрелки"))

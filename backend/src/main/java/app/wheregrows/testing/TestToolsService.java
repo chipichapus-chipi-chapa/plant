@@ -16,6 +16,7 @@ import app.wheregrows.garden.GardenMap;
 import app.wheregrows.garden.GardenMaps;
 import app.wheregrows.story.BreadService;
 import app.wheregrows.story.FogService;
+import app.wheregrows.story.NightService;
 
 /**
  * Кнопки тестирования: чтобы проверить сюжет, не проходя его неделями. Меняют только сад самого тестировщика.
@@ -113,6 +114,17 @@ public class TestToolsService {
     public void breadDay(long playerId) {
         check(playerId);
         flag(playerId, BreadService.TEST_DAY);
+    }
+
+    /** «Сейчас ночь» / «Вернуть время»: переключает ночь для тропки на Лунную поляну. */
+    @Transactional
+    public void night(long playerId) {
+        check(playerId);
+        int removed = db.sql("DELETE FROM player_flag WHERE player_id = ? AND flag = ?")
+                .params(playerId, NightService.TEST_NIGHT).update();
+        if (removed == 0) {
+            flag(playerId, NightService.TEST_NIGHT);
+        }
     }
 
     /** Новая игра: весь прогресс стирается, имя и облик остаются. */

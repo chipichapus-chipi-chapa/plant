@@ -102,6 +102,8 @@ export function tileFrame(map: GardenMap, x: number, y: number): string {
       return 'bridge'
     case 'flowers':
       return `flowers_${variant(x, y, 3)}`
+    case 'moonflowers':
+      return `moonflowers_${variant(x, y, 3)}`
     case 'dry_bed':
       return `dry_bed_${variant(x, y, 3)}`
     case 'reeds':

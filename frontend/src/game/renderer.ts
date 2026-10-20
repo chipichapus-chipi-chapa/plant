@@ -104,7 +104,13 @@ export function drawGarden(
     ctx,
     map,
     awakened,
-    characters.flatMap((c) => (c.light ? [{ ...c.light, x: c.px + c.light.x, y: c.py + c.light.y }] : [])),
+    [
+      ...characters.flatMap((c) => (c.light ? [{ ...c.light, x: c.px + c.light.x, y: c.py + c.light.y }] : [])),
+      // выросшие лунные цветы светятся в саду голубым
+      ...objects
+        .filter((o) => GLOWING_PLANTS[o.speciesKey] && o.mature)
+        .map((o) => ({ x: o.x * TILE + 16, y: o.y * TILE + 6, ...GLOWING_PLANTS[o.speciesKey] })),
+    ],
     scene.aura && { x: scene.aura.x, y: scene.aura.y + AURA.lift },
     scene.lightLevel ?? 1,
     scene.dim ?? 1,
@@ -149,6 +155,20 @@ type Glow = readonly [number, number, number]
 const LAMP_GLOW: Glow = [255, 168, 72]
 /** Светло-розовое свечение лилий и цветущей вишни. */
 const PETAL_GLOW: Glow = [255, 178, 214]
+/** Голубой лунный свет: лунные цветы на поляне и в саду */
+const MOON_GLOW: Glow = [150, 200, 255]
+/** Лиловый огонь каменных фонарей на поляне */
+const LILAC_GLOW: Glow = [196, 168, 255]
+
+/** Клетки, которые светятся сами. */
+const TILE_LIGHTS: Record<string, Omit<Light, 'x' | 'y'>> = {
+  moonflowers: { radius: 30, strength: 0.55, color: MOON_GLOW },
+}
+
+/** Растения, которые светятся, когда выросли. */
+const GLOWING_PLANTS: Record<string, Omit<Light, 'x' | 'y'>> = {
+  moonflower: { radius: 34, strength: 0.7, color: MOON_GLOW },
+}
 
 /**
  * Свет у построек — смещения от левого верхнего угла постройки. Сарай светится окном и дверью,
@@ -192,13 +212,24 @@ const PROP_LIGHTS: Record<string, [number, number, number, number, Glow?][]> = {
     [104, 61, 34, 0.7],
   ],
   windmill: [[48, 62, 30, 0.6]],
+  // Лунная поляна: зажжённые каменные фонари
+  glade_lamp_awakened: [[16, 16, 70, 0.9, LILAC_GLOW]],
 }
 
 function propLights(map: GardenMap, awakened: ReadonlySet<string>): Light[] {
-  return map.props.flatMap((p) => {
+  const props = map.props.flatMap((p) => {
     const key = awakened.has(p.key) ? `${p.kind}_awakened` : p.kind
     return (PROP_LIGHTS[key] ?? []).map(([dx, dy, radius, strength, color]) => ({ x: p.x * TILE + dx, y: p.y * TILE + dy, radius, strength, color }))
   })
+  // клетки, которые светятся сами (лунные цветы на поляне)
+  const tiles: Light[] = []
+  for (let y = 0; y < map.height; y++) {
+    for (let x = 0; x < map.width; x++) {
+      const glow = TILE_LIGHTS[tileAt(map, x, y)?.type ?? '']
+      if (glow) tiles.push({ x: x * TILE + 16, y: y * TILE + 16, ...glow })
+    }
+  }
+  return [...props, ...tiles]
 }
 
 const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => (v + 0.5) / 16)

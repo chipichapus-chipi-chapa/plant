@@ -72,11 +72,16 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
  * requiresErrand — поручение, которое надо выполнить; requiresFog — туман на этой карте должен рассеяться (лодка).
      */
     public record Door(String map, int x, int y, String facing, String label, String requires, String requiresErrand,
-                       Boolean requiresFog) {
+                       Boolean requiresFog, Boolean requiresNight) {
 
         /** Лодка: плыть можно, когда туман рассеялся. Поле необязательное — у обычных дверей его нет. */
         public boolean waitsForFog() {
             return Boolean.TRUE.equals(requiresFog);
+        }
+
+        /** Тропка на Лунную поляну видна только ночью (по часам игрока). */
+        public boolean waitsForNight() {
+            return Boolean.TRUE.equals(requiresNight);
         }
     }
 
