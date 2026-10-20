@@ -58,8 +58,8 @@ class CatalogApiTests {
                 .andExpect(jsonPath("$.locations[?(@.key == 'manor')].props[?(@.key == 'lake-path')].door.requiresErrand").value("myata_garden"))
                 .andExpect(jsonPath("$.locations[?(@.key == 'manor')].tiles.d.revive.when").value("manor-well"))
                 // лодка плывёт в городок у мельницы, когда рассеялся туман; жители городка — люди с обликом
-                .andExpect(jsonPath("$.locations[?(@.key == 'lake')].props[?(@.key == 'boat')].door.map").value("town"))
-                .andExpect(jsonPath("$.locations[?(@.key == 'lake')].props[?(@.key == 'boat')].door.requiresFog").value(true))
+                .andExpect(jsonPath("$.locations[?(@.key == 'lake')].props[?(@.key == 'dock')].door.map").value("town"))
+                .andExpect(jsonPath("$.locations[?(@.key == 'lake')].props[?(@.key == 'dock')].door.requiresFog").value(true))
                 .andExpect(jsonPath("$.locations[?(@.key == 'town')].npcs[?(@.key == 'agata')].appearance.hair").value("bun"));
     }
 }

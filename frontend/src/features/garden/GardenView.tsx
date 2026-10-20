@@ -611,6 +611,12 @@ function CellInfo({ cell, player, map, state, catalog, now, planting, onPlant, o
           {door && doorOpen(door, state) && !doorReachable(prop, player, cell) && (
             <p className={styles.hint}>Вход — с другой стороны: подойдите к двери.</p>
           )}
+          {door?.requiresFog && !doorOpen(door, state) && (
+            <p className={styles.hint}>
+              В таком тумане плыть рано. Он редеет с каждым днём, когда вы возвращаетесь к привычкам
+              {state.fog?.started ? ` (${state.fog.days} из ${state.fog.needed})` : ''}.
+            </p>
+          )}
           {read && (
             <Button onClick={() => onRead({ title: info.name, text: withNotches(read, prop.key, map, state.fog) })}>Прочитать</Button>
           )}
