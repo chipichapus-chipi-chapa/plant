@@ -44,7 +44,7 @@ class CatalogApiTests {
     @Test
     void catalogListsLocationsConnectedByDoors() throws Exception {
         mvc.perform(get("/api/catalog"))
-                .andExpect(jsonPath("$.locations", hasSize(9)))
+                .andExpect(jsonPath("$.locations", hasSize(10)))
                 .andExpect(jsonPath("$.locations[0].key").value("home"))
                 .andExpect(jsonPath("$.locations[0].props[?(@.key == 'shed')].door.map").value("shed"))
                 // калитка ведёт на тропу, только когда её пробудили
@@ -66,6 +66,9 @@ class CatalogApiTests {
                 .andExpect(jsonPath("$.locations[?(@.key == 'dam')].tiles.c.revive.when").value("beaver-lodge"))
                 .andExpect(jsonPath("$.locations[?(@.key == 'home')].npcs[?(@.key == 'gardener-home')].appearsAfter").value("gardener_return"))
                 // на Лунную поляну — только ночью
-                .andExpect(jsonPath("$.locations[?(@.key == 'east')].props[?(@.key == 'night-path')].door.requiresNight").value(true));
+                .andExpect(jsonPath("$.locations[?(@.key == 'east')].props[?(@.key == 'night-path')].door.requiresNight").value(true))
+                // в Светлолесье — ночью, когда Хмур зажёг фонари
+                .andExpect(jsonPath("$.locations[?(@.key == 'glade')].props[?(@.key == 'glade-deep-path')].door.requiresErrand").value("khmur_lamps"))
+                .andExpect(jsonPath("$.locations[?(@.key == 'dreamwood')].npcs[?(@.key == 'murlana')].kind").value("greatcat"));
     }
 }

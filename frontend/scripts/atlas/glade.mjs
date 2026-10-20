@@ -81,7 +81,16 @@ function owl(frame) {
  * Просвет в лесу 1×1: тропка уходит вниз, в темноту между двумя еловыми стволами,
  * по краям — пара лунных колокольчиков, чтобы выход было видно ночью.
  */
-function trailExit() {
+function trailExit(up = false) {
+  const s = trailDown()
+  if (!up) return s
+  // тропка вглубь чащи (вверх): тот же рисунок, перевёрнутый — у поляны светлее, в чаще темнее
+  const flipped = new Sprite(T, T)
+  for (let y = 0; y < T; y++) flipped.data.set(s.data.subarray((T - 1 - y) * T * 4, (T - y) * T * 4), y * T * 4)
+  return flipped
+}
+
+function trailDown() {
   const s = new Sprite(T, T)
   // тропка: светлее у поляны (сверху), темнее к лесу (снизу)
   for (let y = 0; y < T; y++) {
@@ -108,6 +117,7 @@ export function gladeFrames() {
     moonflowers_1: moonflowers(1),
     moonflowers_2: moonflowers(2),
     prop_trail_exit: trailExit(),
+    prop_trail_deep: trailExit(true),
     prop_glade_lamp: gladeLamp(false),
     prop_glade_lamp_awakened: gladeLamp(true),
     npc_owl_0: owl(0),

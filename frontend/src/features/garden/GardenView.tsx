@@ -9,7 +9,7 @@ import { fogBand, fogDensity, fogTalk, notchesLine } from '../../game/fog'
 import { GardenCanvas } from '../../game/GardenCanvas'
 import { doorOpen, doorReachable, errandReady, isClickable, isNear, markerPoint, npcAt, promptCell, promptPoint, sameThing, WEEDING_TOOLS, type Objective } from '../../game/guidance'
 import type { Facing } from '../../game/movement'
-import { standingAt, type Scene } from '../../game/renderer'
+import { CREATURE_GLOW, standingAt, type Scene } from '../../game/renderer'
 import {
   describeCell,
   HOME,
@@ -249,7 +249,8 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
           }
           const idle = [0, 1].map((f) => frameImage(atlas.atlas, `npc_${npc.kind}_${f}`))
           if (!idle[0] || !idle[1]) return []
-          return [{ ...standingAt(npc, idle[0]), idle: [idle[0], idle[1]] }]
+          // существа Светлолесья светятся сами
+          return [{ ...standingAt(npc, idle[0], CREATURE_GLOW[npc.kind]), idle: [idle[0], idle[1]] }]
         }),
       ],
       bubbles: home && state.mentor.hasNews ? [MENTOR_SPOT] : [],

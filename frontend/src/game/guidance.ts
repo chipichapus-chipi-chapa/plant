@@ -4,6 +4,9 @@
 
 import type { Catalog, Door, GameState, GardenMap, GardenProp, Npc } from '../api/types'
 import { fogCleared } from './fog'
+
+/** Существа крупнее героя: «!» над ними выше обычного. */
+const BIG_CREATURES = new Set(['greatcat', 'nightcat'])
 import { HOME, MENTOR_SPOT, objectAt, propAt, TILE, tileAt, type Cell } from './layout'
 import { CHARACTER_HEIGHT } from './renderer'
 
@@ -171,6 +174,8 @@ export function promptPoint(cell: Cell, map: GardenMap): { x: number; y: number 
   // житель-человек ростом с героя — «!» над головой; мышь маленькая — прямо над ушами
   const npc = npcAt(map, cell)
   if (npc?.appearance) return { x: cell.x * TILE + TILE / 2, y: (cell.y + 1) * TILE - CHARACTER_HEIGHT }
+  // большие кошки Светлолесья — над головой (кадр высотой 56)
+  if (npc && BIG_CREATURES.has(npc.kind)) return { x: cell.x * TILE + TILE / 2, y: (cell.y + 1) * TILE - 58 }
   if (npc) return { x: cell.x * TILE + TILE / 2, y: (cell.y + 1) * TILE - 26 }
   const prop = propAt(map, cell.x, cell.y)
   if (prop) return { x: (prop.x + prop.width / 2) * TILE, y: prop.y * TILE }
