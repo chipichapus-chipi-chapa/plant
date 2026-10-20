@@ -303,19 +303,6 @@
               "next": null
             }
           }
-        },
-        "agata_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Роза… с моего старого куста? Ты её вырастил(а)?",
-              "next": "b"
-            },
-            "b": {
-              "text": "Ох, дай-ка я присяду. Это лучший подарок за много лет.",
-              "next": null
-            }
-          }
         }
       },
       "appearance": {
@@ -352,13 +339,7 @@
         "thanks": "agata_thanks",
         "leaves": false
       },
-      "leavesAfter": "agata_roses",
-      "gifts": {
-        "loves": [
-          "produce_rose"
-        ],
-        "talk": "agata_gift"
-      }
+      "leavesAfter": "agata_roses"
     },
     {
       "key": "liza",
@@ -446,15 +427,6 @@
               "next": null
             }
           }
-        },
-        "liza_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Ирисы! Мои любимые! Я их засушу между страницами — и зимой будет лето.",
-              "next": null
-            }
-          }
         }
       },
       "appearance": {
@@ -487,14 +459,7 @@
         "thanks": "liza_thanks",
         "leaves": false
       },
-      "leavesAfter": "liza_irises",
-      "gifts": {
-        "loves": [
-          "produce_iris",
-          "produce_daisy"
-        ],
-        "talk": "liza_gift"
-      }
+      "leavesAfter": "liza_irises"
     },
     {
       "key": "nika",
@@ -582,15 +547,6 @@
               "next": null
             }
           }
-        },
-        "nika_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Венок! Я надену его и буду качаться высоко-высоко, чтобы все видели!",
-              "next": null
-            }
-          }
         }
       },
       "appearance": {
@@ -623,13 +579,7 @@
         "thanks": "nika_thanks",
         "leaves": false
       },
-      "leavesAfter": "nika_daisies",
-      "gifts": {
-        "loves": [
-          "produce_daisy"
-        ],
-        "talk": "nika_gift"
-      }
+      "leavesAfter": "nika_daisies"
     },
     {
       "key": "timosha",
@@ -688,15 +638,6 @@
               "next": null
             }
           }
-        },
-        "timosha_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Семечки! Я буду кормить ими птиц. И себя. Птиц больше. Ну, поровну!",
-              "next": null
-            }
-          }
         }
       },
       "appearance": {
@@ -708,13 +649,7 @@
         "accessory": "beanie",
         "bag": "backpack"
       },
-      "leavesAfter": "agata_roses",
-      "gifts": {
-        "loves": [
-          "produce_sunflower"
-        ],
-        "talk": "timosha_gift"
-      }
+      "leavesAfter": "agata_roses"
     },
     {
       "key": "miller-fair",
@@ -861,19 +796,6 @@
               "next": null
             }
           }
-        },
-        "agata_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Роза… с моего старого куста? Ты её вырастил(а)?",
-              "next": "b"
-            },
-            "b": {
-              "text": "Ох, дай-ка я присяду. Это лучший подарок за много лет.",
-              "next": null
-            }
-          }
         }
       },
       "appearance": {
@@ -884,12 +806,6 @@
         "outfit_color": "plum",
         "accessory": "glasses",
         "bag": "none"
-      },
-      "gifts": {
-        "loves": [
-          "produce_rose"
-        ],
-        "talk": "agata_gift"
       }
     },
     {
@@ -916,27 +832,7 @@
               "next": null
             }
           }
-        },
-        "krupka_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Семечки?! Целая корзинка?",
-              "next": "b"
-            },
-            "b": {
-              "text": "Это же на всю зиму! Ну, на ползимы. Ладно, до вторника. Спасибо!",
-              "next": null
-            }
-          }
         }
-      },
-      "gifts": {
-        "loves": [
-          "produce_sunflower",
-          "produce_radish"
-        ],
-        "talk": "krupka_gift"
       }
     },
     {
@@ -963,22 +859,7 @@
               "next": null
             }
           }
-        },
-        "tina_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Лилия! Я положу её у входа в хатку. Пусть все видят, что у нас хорошие соседи.",
-              "next": null
-            }
-          }
         }
-      },
-      "gifts": {
-        "loves": [
-          "produce_lily"
-        ],
-        "talk": "tina_gift"
       }
     },
     {
@@ -1005,22 +886,7 @@
               "next": null
             }
           }
-        },
-        "shlep_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Ура-а-а! Семечки! Мама, смотри! Я поделюсь. Одной. Ладно, двумя!",
-              "next": null
-            }
-          }
         }
-      },
-      "gifts": {
-        "loves": [
-          "produce_sunflower"
-        ],
-        "talk": "shlep_gift"
       }
     },
     {
@@ -1047,19 +913,6 @@
               "next": null
             }
           }
-        },
-        "gardener_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Это же… из моего сада? Я думал, он совсем зарос.",
-              "next": "b"
-            },
-            "b": {
-              "text": "Спасибо, что вернул(а) ему жизнь. И мне немного тоже.",
-              "next": null
-            }
-          }
         }
       },
       "appearance": {
@@ -1070,13 +923,6 @@
         "outfit_color": "moss",
         "accessory": "gardener_hat",
         "bag": "tote"
-      },
-      "gifts": {
-        "loves": [
-          "produce_lily",
-          "produce_sunflower"
-        ],
-        "talk": "gardener_gift"
       }
     },
     {
@@ -1103,23 +949,7 @@
               "next": null
             }
           }
-        },
-        "myata_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Мррр, как пахнет! Поставлю в кувшин на подоконник — пусть весь дом знает, что у нас гости бывают.",
-              "next": null
-            }
-          }
         }
-      },
-      "gifts": {
-        "loves": [
-          "produce_chamomile",
-          "produce_lily"
-        ],
-        "talk": "myata_gift"
       }
     }
   ]

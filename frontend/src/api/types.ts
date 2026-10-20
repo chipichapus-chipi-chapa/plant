@@ -85,8 +85,6 @@ export type Npc = {
   appearsAfter?: string | null
   /** …и уходит отсюда после этого поручения (уплывает из городка) */
   leavesAfter?: string | null
-  /** Любимые подарки (ключи урожая) и разговор, которым житель им радуется */
-  gifts?: { loves: string[]; talk: string } | null
 }
 
 /**
@@ -189,8 +187,6 @@ export type MentorContent = {
   appearsAfter?: string | null
   /** …и уходит отсюда после этого поручения (уплывает из городка) */
   leavesAfter?: string | null
-  /** Любимые подарки (ключи урожая) и разговор, которым житель им радуется */
-  gifts?: { loves: string[]; talk: string } | null
 }
 
 export type Catalog = {
@@ -268,8 +264,6 @@ export type GameState = {
   night: boolean
   /** Доступны кнопки тестирования (локально — всегда, на сервере — из списка GAME_TESTERS) */
   tester: boolean
-  /** Кому сегодня уже подарено (ключ человека: agata и agata-home — оба agata) */
-  giftedToday?: string[]
   /** Пробуждённые объекты мира; нет в списке — объект спит */
   worldObjects: { objectKey: string; state: 'AWAKENED' }[]
   /** Обысканные места находок */

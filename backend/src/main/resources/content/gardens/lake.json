@@ -253,25 +253,10 @@
               "next": null
             }
           }
-        },
-        "tish_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Ирис… цвета воды в ясный день. Я так давно не видела озеро без тумана — а теперь оно у меня в клюве.",
-              "next": null
-            }
-          }
         }
       },
       "secrets": {
         "accessory:leaf_clip": "tish_leaf"
-      },
-      "gifts": {
-        "loves": [
-          "produce_iris"
-        ],
-        "talk": "tish_gift"
       }
     }
   ],
