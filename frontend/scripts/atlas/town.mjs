@@ -131,6 +131,49 @@ function flowerStall() {
   return s
 }
 
+const AWNING = {
+  flowers: ['#7a2a38', '#c8708a', '#e6dcc4'],
+  veg: ['#2f4c2e', '#5f8a4a', '#e6dcc4'],
+  moon: ['#22303a', '#4a6a9a', '#e6dcc4'],
+}
+
+/** Ярмарочный прилавок 1×1: полосатый навес и стойка; полный — с урожаем (и фонариком у вечернего). */
+function fairStall(kind, full) {
+  const s = new Sprite(T, T)
+  const b = new Sprite(T, T)
+  const [dark, mid, light] = AWNING[kind]
+  for (let y = 3; y < 10; y++) for (let x = 2; x < T - 2; x++) b.px(x, y, Math.floor((x - 2) / 4) % 2 ? light : mid)
+  for (let x = 2; x < T - 2; x += 4) b.rect(x + 1, 10, 2, 1, Math.floor((x - 2) / 4) % 2 ? light : dark)
+  b.rect(4, 10, 2, 20, R.wood[2])
+  b.rect(T - 6, 10, 2, 20, R.wood[2])
+  b.rect(3, 20, T - 6, 3, R.wood[4])
+  b.rect(3, 23, T - 6, 6, R.wood[2])
+  for (let x = 5; x < T - 4; x += 4) b.rect(x, 24, 1, 5, R.wood[1])
+  if (full) {
+    const r = rng(kind.length * 7)
+    if (kind === 'flowers') {
+      for (const [x, c] of [[9, R.berry[4]], [15, '#7d6cb4'], [21, R.bone[3]]]) {
+        b.rect(x, 15, 1, 5, R.leaf[3])
+        b.shadedEllipse(x, 14, 2.5, 2, [c, c, R.bone[3]])
+      }
+    } else if (kind === 'veg') {
+      for (let i = 0; i < 5; i++) b.shadedEllipse(8 + i * 3, 18, 1.8, 1.6, [R.berry[2], R.berry[3], R.berry[4]])
+      b.rect(19, 15, 7, 5, R.straw[3])
+      for (let i = 0; i < 6; i++) b.px(20 + Math.floor(r() * 5), 15 + Math.floor(r() * 3), R.soil[3])
+    } else {
+      b.rect(8, 15, 3, 5, R.bone[2]) // чайник
+      b.rect(7, 17, 1, 2, R.bone[1])
+      b.shadedEllipse(16, 17, 2.5, 2, ['#e7a3b8', '#f0c2cf', '#fbe6ec']) // лилия
+      b.rect(23, 11, 1, 3, R.wood[1]) // фонарик-цветок на крючке
+      b.shadedEllipse(23, 15, 2.5, 2.5, ['#4f6f93', '#8fb5d6', '#c9e2f2', '#f0f8ff'])
+    }
+  }
+  b.outline(INK)
+  s.shadow(16, 30, 12, 1.5)
+  s.stamp(b)
+  return s
+}
+
 /** Доска объявлений 1×1: записки на кнопках. */
 function noticeBoard() {
   const s = new Sprite(T, T)
@@ -157,5 +200,6 @@ export function townFrames() {
     prop_windmill: windmill(),
     prop_flower_stall: flowerStall(),
     prop_notice_board: noticeBoard(),
+    ...Object.fromEntries(['flowers', 'veg', 'moon'].flatMap((k) => [[`prop_fair_${k}`, fairStall(k, false)], [`prop_fair_${k}_awakened`, fairStall(k, true)]])),
   }
 }

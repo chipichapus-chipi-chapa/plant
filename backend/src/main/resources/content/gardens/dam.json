@@ -255,7 +255,8 @@
         "waiting": "miller_wait",
         "thanks": "miller_thanks",
         "leaves": false
-      }
+      },
+      "leavesAfter": "gardener_return"
     },
     {
       "key": "gardener",

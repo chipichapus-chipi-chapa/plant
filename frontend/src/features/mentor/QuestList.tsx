@@ -62,7 +62,10 @@ export function QuestList({ quests, state, onOpenHud }: Props) {
           <li key={errand.key} className={styles.item}>
             <span className={styles.who}>{npc.name}</span>
             <span className={styles.goal}>{errand.goal}</span>
-            {revive.length > 0 && <span className={styles.progress}>проснулось {awake} из {revive.length}</span>}
+            {revive.length > 0 && <span className={styles.progress}>готово {awake} из {revive.length}</span>}
+            {errand.day === 'FRIDAY' && state.errands.find((e) => e.key === errand.key)?.today === false && (
+              <span className={styles.progress}>открывается в пятницу</span>
+            )}
             {errand.kind === 'GLOW' && state.glow && (
               <span className={styles.progress}>горит {state.glow.days} из {state.glow.needed} пятен</span>
             )}

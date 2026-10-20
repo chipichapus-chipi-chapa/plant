@@ -1,8 +1,8 @@
 package app.wheregrows.errand;
 
 import java.time.Clock;
+import java.time.LocalDate;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -20,6 +20,8 @@ import app.wheregrows.garden.GardenMaps;
 import app.wheregrows.magic.MagicService;
 import app.wheregrows.mentor.PlayerFlag;
 import app.wheregrows.mentor.PlayerFlagRepository;
+import app.wheregrows.player.GameCalendar;
+import app.wheregrows.player.PlayerProfile;
 import app.wheregrows.player.PlayerProfileRepository;
 import app.wheregrows.story.GlowService;
 
@@ -32,6 +34,8 @@ import app.wheregrows.story.GlowService;
 public class ErrandService {
 
     static final String OFFERED = "errand_offered:";
+    /** Флаг кнопки тестирования «Сегодня пятница»: поручения с днём недели можно выполнить в любой день. */
+    public static final String TEST_DAY = "test_errand_day";
     public static final String DONE = "errand_done:";
 
     private final GardenMaps maps;
@@ -43,11 +47,13 @@ public class ErrandService {
     private final MagicService magic;
     private final Clock clock;
     private final GlowService glow;
+    private final GameCalendar calendar;
 
     ErrandService(GardenMaps maps, PlayerFlagRepository flags, PlayerDiscoveryRepository discoveries,
                   ItemDefinitionRepository items, Inventory inventory, PlayerProfileRepository players,
-                  MagicService magic, Clock clock, GlowService glow) {
+                  MagicService magic, Clock clock, GlowService glow, GameCalendar calendar) {
         this.glow = glow;
+        this.calendar = calendar;
         this.magic = magic;
         this.maps = maps;
         this.flags = flags;
@@ -58,12 +64,21 @@ public class ErrandService {
         this.clock = clock;
     }
 
-    /** Где игрок в каждом поручении: попросили ли его и сделано ли. */
+    /** Где игрок в каждом поручении: попросили ли его, сделано ли (и в какой день), подходит ли сегодняшний день. */
     @Transactional(readOnly = true)
     public List<ErrandState> states(long playerId) {
-        Set<String> set = flags.findByIdPlayerId(playerId).stream().map(PlayerFlag::getFlag).collect(Collectors.toSet());
+        PlayerProfile profile = players.findById(playerId).orElseThrow();
+        java.util.Map<String, java.time.Instant> set = flags.findByIdPlayerId(playerId).stream()
+                .collect(Collectors.toMap(PlayerFlag::getFlag, PlayerFlag::getSetAt));
+        LocalDate today = calendar.today(profile);
+        boolean testDay = set.containsKey(TEST_DAY);
         return maps.errands().stream()
-                .map(e -> new ErrandState(e.errand().key(), set.contains(OFFERED + e.errand().key()), set.contains(DONE + e.errand().key())))
+                .map(e -> {
+                    java.time.Instant done = set.get(DONE + e.errand().key());
+                    return new ErrandState(e.errand().key(), set.containsKey(OFFERED + e.errand().key()), done != null,
+                            done == null ? null : done.atZone(profile.getZone()).toLocalDate(),
+                            e.errand().day() == null || testDay || today.getDayOfWeek() == e.errand().day());
+                })
                 .toList();
     }
 
@@ -73,7 +88,7 @@ public class ErrandService {
         GardenMap.Errand errand = find(key);
         players.lockById(playerId).orElseThrow(() -> new NotFoundException("Игрок не найден."));
         setFlag(playerId, OFFERED + errand.key());
-        return new ErrandState(errand.key(), true, flags.existsById(new PlayerFlag.Id(playerId, DONE + errand.key())));
+        return states(playerId).stream().filter(st -> st.key().equals(errand.key())).findFirst().orElseThrow();
     }
 
     /**
@@ -84,7 +99,7 @@ public class ErrandService {
     public ErrandResult complete(long playerId, String key) {
         GardenMaps.NpcErrand found = maps.errand(key).orElseThrow(() -> new NotFoundException("Такого поручения нет."));
         GardenMap.Errand errand = found.errand();
-        players.lockById(playerId).orElseThrow(() -> new NotFoundException("Игрок не найден."));
+        PlayerProfile profile = players.lockById(playerId).orElseThrow(() -> new NotFoundException("Игрок не найден."));
         if (!flags.existsById(new PlayerFlag.Id(playerId, OFFERED + key))) {
             throw new ConflictException(found.npc().name() + " пока ни о чём не просил(а).");
         }
@@ -106,6 +121,10 @@ public class ErrandService {
                 && !glow.state(playerId).map(GlowService.GlowState::lit).orElse(false)) {
             throw new ConflictException("Грибница ещё не разгорелась.");
         }
+        if (errand.day() != null && calendar.today(profile).getDayOfWeek() != errand.day()
+                && !flags.existsById(new PlayerFlag.Id(playerId, TEST_DAY))) {
+            throw new ConflictException("Не сегодня: " + found.npc().name() + " ждёт подходящего дня.");
+        }
         for (ItemGrant give : errand.giveOrEmpty()) {
             String name = items.findById(give.itemKey()).map(i -> i.getName()).orElse(give.itemKey());
             inventory.spend(playerId, give.itemKey(), give.quantity(), name);
@@ -125,8 +144,11 @@ public class ErrandService {
         }
     }
 
-    /** offered — житель уже попросил; done — выполнено (сторож ушёл с дороги, награда выдана). */
-    public record ErrandState(String key, boolean offered, boolean done) {
+    /**
+     * offered — житель уже попросил; done — выполнено (сторож ушёл с дороги, награда выдана); doneOn — в какой
+     * день по часам игрока; today — сегодня подходящий день (у поручений без дня недели — всегда).
+     */
+    public record ErrandState(String key, boolean offered, boolean done, LocalDate doneOn, boolean today) {
     }
 
     /** Что отдано и что получено. */

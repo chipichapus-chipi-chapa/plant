@@ -229,6 +229,7 @@ const PROP_LIGHTS: Record<string, [number, number, number, number, Glow?][]> = {
   windmill: [[48, 62, 30, 0.6]],
   // Лунная поляна: зажжённые каменные фонари
   glade_lamp_awakened: [[16, 16, 70, 0.9, LILAC_GLOW]],
+  fair_moon_awakened: [[23, 15, 40, 0.7, MOON_GLOW]],
   // Светлолесье: проснувшиеся хрустальные деревья, куст
   crystal_tree: [[32, 30, 40, 0.35, LILAC_GLOW]],
   crystal_tree_awakened: [[32, 30, 110, 1, LILAC_GLOW]],
