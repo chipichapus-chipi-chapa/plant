@@ -11,6 +11,7 @@ import app.wheregrows.garden.GardenService;
 import app.wheregrows.habit.HabitService.DailyRewards;
 import app.wheregrows.habit.HabitView;
 import app.wheregrows.mentor.MentorProgress;
+import app.wheregrows.story.BeaconService;
 import app.wheregrows.story.BreadService;
 import app.wheregrows.story.FogService;
 import app.wheregrows.story.GlowService;
@@ -24,7 +25,8 @@ record GameStateResponse(Player player, LocalDate today, List<InventoryEntry> in
                          DailyRewards dailyRewards, Garden garden, List<WorldObject> worldObjects,
                          List<String> searchedSpots, List<CollectedArtifact> artifacts, MentorProgress mentor,
                          List<String> solvedPuzzles, List<ErrandService.ErrandState> errands,
-                         FogService.FogState fog, GlowService.GlowState glow, BreadService.BreadState bread,
+                         FogService.FogState fog, GlowService.GlowState glow, BeaconService.BeaconState beacon,
+                         BreadService.BreadState bread,
                          boolean night, boolean tester, List<String> giftedToday) {
 
     /** Артефакт в коллекции: когда и где найден. Описание — в каталоге. */

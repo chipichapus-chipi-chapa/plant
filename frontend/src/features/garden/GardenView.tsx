@@ -6,6 +6,7 @@ import { frameImage, loadAtlas, type Atlas } from '../../game/atlas'
 import { composeCharacter, composeCharacterFrames } from '../../game/character'
 import { WEED_MS, type WeedEffect } from '../../game/effects'
 import { fogBand, fogDensity, fogTalk, notchesLine } from '../../game/fog'
+import { beaconBand, beaconEnough, beaconTalk, beaconWindows } from '../../game/beacon'
 import { person, thanksDialogue } from '../../game/gifts'
 import { glowBand, glowTalk, withGlow } from '../../game/glow'
 import { GardenCanvas } from '../../game/GardenCanvas'
@@ -141,6 +142,26 @@ function rememberGlowBand(band: number) {
   }
 }
 
+/** Какую новость о маяке Кора уже рассказала (тёмный → загораются → хватает). */
+const BEACON_HEARD = 'where-grows-beacon-heard'
+
+function heardBand(key: string): number | null {
+  try {
+    const value = window.localStorage.getItem(key)
+    return value === null ? null : Number(value)
+  } catch {
+    return null
+  }
+}
+
+function rememberBand(key: string, band: number) {
+  try {
+    if ((heardBand(key) ?? -1) < band) window.localStorage.setItem(key, String(band))
+  } catch {
+    // не запомнилось — новость просто повторится
+  }
+}
+
 /** Текст постройки + строчка про зарубки, если это причал у тумана. */
 function withNotches(read: string, propKey: string, map: GardenMap, fog: GameState['fog']): string {
   const line = notchesLine(propKey, map, fog)
@@ -256,10 +277,13 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     for (const spot of catalog.spots) if (searched.has(spot.key)) variants.set(spot.propKey, 'searched')
     for (const puzzle of catalog.puzzles) if (state.solvedPuzzles.includes(puzzle.key)) variants.set(puzzle.propKey, 'open')
     for (const key of awakened) variants.set(key, 'awakened')
+    // маяк: фонарь наверху горит, когда окон хватает
+    if (state.beacon && beaconEnough(state.beacon)) variants.set(state.beacon.prop, 'awakened')
     return {
       objects: plantsOn(state, map),
       effects: weeding ? [weeding] : [],
       fog: fogDensity(state.fog, map.key),
+      windows: beaconWindows(map, state.beacon, catalog),
       awakened,
       variants,
       // секретки не мерцают: догадаться надо самому
@@ -341,9 +365,9 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     if (reducedMotion()) return enter(door)
     setFade('out')
     const from = map.props.find((p) => p.door === door)
-    if (from?.kind === 'dock') {
-      // в городок — направо (он на том берегу), обратно — налево
-      const direction = door.requiresFog ? 1 : -1
+    if (from?.kind === 'dock' || from?.kind === 'pier') {
+      // в городок — направо (он на том берегу), обратно — налево; к острову — налево, с острова — направо
+      const direction = from.kind === 'pier' ? (door.map === 'island' ? -1 : 1) : door.requiresFog ? 1 : -1
       fadeTimers.current = [
         window.setTimeout(() => setVoyage(direction), FADE_MS),
         window.setTimeout(() => {
@@ -389,7 +413,9 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     if (fog && state.fog) rememberFogBand(fogBand(state.fog))
     const glow = fog ? null : glowTalk(npc.key, map, state.glow, heardGlowBand(), roll())
     if (glow && state.glow) rememberGlowBand(glowBand(state.glow))
-    setChat({ npc, dialogue: secret ?? fog ?? glow ?? nextTalk(npc) })
+    const beacon = fog || glow ? null : beaconTalk(npc.key, map, state.beacon, heardBand(BEACON_HEARD), roll())
+    if (beacon && state.beacon) rememberBand(BEACON_HEARD, beaconBand(state.beacon))
+    setChat({ npc, dialogue: secret ?? fog ?? glow ?? beacon ?? nextTalk(npc) })
   }
 
   const isMentor = (cell: Cell) => home && sameCell(cell, MENTOR_SPOT)

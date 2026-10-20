@@ -14,6 +14,7 @@ import app.wheregrows.economy.ItemGrant;
 import app.wheregrows.errand.ErrandService;
 import app.wheregrows.garden.GardenMap;
 import app.wheregrows.garden.GardenMaps;
+import app.wheregrows.story.BeaconService;
 import app.wheregrows.story.BreadService;
 import app.wheregrows.story.FogService;
 import app.wheregrows.story.NightService;
@@ -114,6 +115,18 @@ public class TestToolsService {
     public void breadDay(long playerId) {
         check(playerId);
         flag(playerId, BreadService.TEST_DAY);
+    }
+
+    /** «Маяк: +окно»: загорается окно следующего кристалла, как будто отмечена привычка этого кристалла. */
+    @Transactional
+    public void beaconWindow(long playerId) {
+        check(playerId);
+        List<String> lit = db.sql("SELECT flag FROM player_flag WHERE player_id = ? AND flag LIKE ?")
+                .params(playerId, BeaconService.TEST_WINDOW + "%").query(String.class).list();
+        db.sql("SELECT key FROM crystal_category ORDER BY sort_order").query(String.class).list().stream()
+                .filter(c -> !lit.contains(BeaconService.TEST_WINDOW + c))
+                .findFirst()
+                .ifPresent(c -> flag(playerId, BeaconService.TEST_WINDOW + c));
     }
 
     /** «Сейчас ночь» / «Вернуть время»: переключает ночь для тропки на Лунную поляну. */

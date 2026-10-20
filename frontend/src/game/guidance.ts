@@ -4,6 +4,7 @@
 
 import type { Catalog, Door, GameState, GardenMap, GardenProp, Npc } from '../api/types'
 import { fogCleared } from './fog'
+import { beaconEnough } from './beacon'
 import { glowLit } from './glow'
 
 /** Существа крупнее героя: «!» над ними выше обычного. */
@@ -199,6 +200,7 @@ export function errandReady(npc: Npc, state: GameState): boolean {
   const have = (key: string) => state.inventory.find((e) => e.itemKey === key)?.quantity ?? 0
   if (errand.kind === 'SHOW') return state.searchedSpots.includes(errand.spot ?? '')
   if (errand.kind === 'GLOW') return glowLit(state.glow)
+  if (errand.kind === 'BEACON') return beaconEnough(state.beacon)
   if (errand.kind === 'REVIVE') return (errand.props ?? []).every((key) => state.worldObjects.some((w) => w.objectKey === key))
   return (errand.give ?? []).every((g) => have(g.itemKey) >= g.quantity)
 }

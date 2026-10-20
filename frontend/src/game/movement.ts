@@ -15,7 +15,7 @@ export const WALK_SPEED = 96
 /** «Ступни» — небольшой прямоугольник, которым персонаж задевает препятствия. */
 const FEET = { halfWidth: 6, height: 6 }
 
-const WALKABLE = new Set(['grass', 'weeds', 'path', 'soil', 'overgrown', 'floor', 'bridge', 'rug', 'dreamgrass', 'stardust', 'bed', 'moss_bed'])
+const WALKABLE = new Set(['grass', 'weeds', 'path', 'soil', 'overgrown', 'floor', 'bridge', 'rug', 'dreamgrass', 'stardust', 'bed', 'moss_bed', 'sand'])
 
 /**
  * Карта проходимости: забор и постройки непроходимы, как и растения и стоящие персонажи.

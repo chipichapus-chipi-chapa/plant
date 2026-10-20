@@ -63,6 +63,9 @@ export function QuestList({ quests, state, onOpenHud }: Props) {
             <span className={styles.who}>{npc.name}</span>
             <span className={styles.goal}>{errand.goal}</span>
             {revive.length > 0 && <span className={styles.progress}>готово {awake} из {revive.length}</span>}
+            {errand.kind === 'BEACON' && state.beacon && (
+              <span className={styles.progress}>горит окон: {state.beacon.lit.length} из {state.beacon.needed}</span>
+            )}
             {errand.kind === 'GLOW' && state.glow && (
               <span className={styles.progress}>горит {state.glow.days} из {state.glow.needed} пятен</span>
             )}

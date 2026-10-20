@@ -55,6 +55,8 @@ export type Scene = {
   aura?: { x: number; y: number } | null
   /** Время в мс — для покачивания «!» над целью задания */
   time?: number
+  /** Горящие окна (маяк): точка в логических пикселях и цвет — рисуются поверх постройки и светятся */
+  windows?: { x: number; y: number; color: string }[]
   /** Густота тумана над локацией (0 — нет, 1 — сплошной): Туманное озеро редеет день за днём */
   fog?: number
 }
@@ -98,6 +100,11 @@ export function drawGarden(
   }
   while (next < people.length) drawPerson(people[next++])
 
+  for (const w of scene.windows ?? []) {
+    ctx.fillStyle = w.color
+    ctx.fillRect(w.x - 2, w.y - 3, 4, 6)
+  }
+
   for (const effect of scene.effects ?? []) drawWeeding(ctx, atlas, effect, time - effect.at, scene.aura)
 
   drawLighting(
@@ -110,6 +117,7 @@ export function drawGarden(
       ...objects
         .filter((o) => GLOWING_PLANTS[o.speciesKey] && o.mature)
         .map((o) => ({ x: o.x * TILE + 16, y: o.y * TILE + 6, ...GLOWING_PLANTS[o.speciesKey] })),
+      ...(scene.windows ?? []).map((w) => ({ x: w.x, y: w.y, radius: 26, strength: 0.75, color: hexGlow(w.color) })),
     ],
     scene.aura && { x: scene.aura.x, y: scene.aura.y + AURA.lift },
     scene.lightLevel ?? 1,
@@ -150,6 +158,12 @@ export type Light = {
 }
 
 type Glow = readonly [number, number, number]
+
+/** Цвет кристалла #rrggbb → отсвет. */
+function hexGlow(hex: string): Glow {
+  const n = parseInt(hex.slice(1), 16)
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+}
 
 /** Тёплый свет лампы и окон. */
 const LAMP_GLOW: Glow = [255, 168, 72]
@@ -230,6 +244,7 @@ const PROP_LIGHTS: Record<string, [number, number, number, number, Glow?][]> = {
   // Лунная поляна: зажжённые каменные фонари
   glade_lamp_awakened: [[16, 16, 70, 0.9, LILAC_GLOW]],
   fair_moon_awakened: [[23, 15, 40, 0.7, MOON_GLOW]],
+  lighthouse_awakened: [[32, 14, 110, 1]],
   // Светлолесье: проснувшиеся хрустальные деревья, куст
   crystal_tree: [[32, 30, 40, 0.35, LILAC_GLOW]],
   crystal_tree_awakened: [[32, 30, 110, 1, LILAC_GLOW]],

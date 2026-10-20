@@ -51,6 +51,12 @@ class TestToolsController {
         tools.breadDay(player.id());
     }
 
+    @PostMapping("/beacon-window")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void beaconWindow() {
+        tools.beaconWindow(player.id());
+    }
+
     @PostMapping("/night")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void night() {

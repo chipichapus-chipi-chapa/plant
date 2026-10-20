@@ -15,6 +15,7 @@ import { dreamFrames } from './atlas/dream.mjs'
 import { gladeFrames } from './atlas/glade.mjs'
 import { eastFrames } from './atlas/east.mjs'
 import { interiorFrames } from './atlas/interior.mjs'
+import { islandFrames } from './atlas/island.mjs'
 import { lakeFrames } from './atlas/lake.mjs'
 import { manorFrames } from './atlas/manor.mjs'
 import { encodePng } from './atlas/png.mjs'
@@ -26,7 +27,7 @@ import { uiFrames } from './atlas/ui.mjs'
 
 const OUT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'assets')
 
-const frames = { ...tileFrames(), ...propFrames(), ...interiorFrames(), ...eastFrames(), ...manorFrames(), ...lakeFrames(), ...townFrames(), ...damFrames(), ...gladeFrames(), ...dreamFrames(), ...plantFrames(), ...characterFrames(), ...uiFrames() }
+const frames = { ...tileFrames(), ...propFrames(), ...interiorFrames(), ...eastFrames(), ...manorFrames(), ...lakeFrames(), ...townFrames(), ...damFrames(), ...gladeFrames(), ...dreamFrames(), ...islandFrames(), ...plantFrames(), ...characterFrames(), ...uiFrames() }
 
 // Упаковка «полками»: кадры по убыванию высоты, слева направо
 const ATLAS_W = 1024

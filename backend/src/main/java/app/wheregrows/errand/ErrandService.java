@@ -21,6 +21,7 @@ import app.wheregrows.magic.MagicService;
 import app.wheregrows.mentor.PlayerFlag;
 import app.wheregrows.mentor.PlayerFlagRepository;
 import app.wheregrows.player.PlayerProfileRepository;
+import app.wheregrows.story.BeaconService;
 import app.wheregrows.story.GlowService;
 
 /**
@@ -43,11 +44,13 @@ public class ErrandService {
     private final MagicService magic;
     private final Clock clock;
     private final GlowService glow;
+    private final BeaconService beacon;
 
     ErrandService(GardenMaps maps, PlayerFlagRepository flags, PlayerDiscoveryRepository discoveries,
                   ItemDefinitionRepository items, Inventory inventory, PlayerProfileRepository players,
-                  MagicService magic, Clock clock, GlowService glow) {
+                  MagicService magic, Clock clock, GlowService glow, BeaconService beacon) {
         this.glow = glow;
+        this.beacon = beacon;
         this.magic = magic;
         this.maps = maps;
         this.flags = flags;
@@ -105,6 +108,10 @@ public class ErrandService {
         if (errand.kind() == GardenMap.Errand.Kind.GLOW
                 && !glow.state(playerId).map(GlowService.GlowState::lit).orElse(false)) {
             throw new ConflictException("Грибница ещё не разгорелась.");
+        }
+        if (errand.kind() == GardenMap.Errand.Kind.BEACON
+                && !beacon.state(playerId).map(BeaconService.BeaconState::enough).orElse(false)) {
+            throw new ConflictException("В маяке горит слишком мало окон.");
         }
         for (ItemGrant give : errand.giveOrEmpty()) {
             String name = items.findById(give.itemKey()).map(i -> i.getName()).orElse(give.itemKey());
