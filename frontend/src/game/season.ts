@@ -40,8 +40,30 @@ export function bedAround(map: GardenMap, cell: { x: number; y: number }): { x: 
   return cells.sort((a, b) => a.y - b.y || a.x - b.x)
 }
 
-/** Теплицы на этой карте (зимой): прямоугольник участка в клетках. */
-export function greenhousesOn(state: GameState, map: GardenMap): { x: number; y: number; w: number; h: number }[] {
+/** Теплица на карте: прямоугольник участка в клетках и столбец дверцы (в нижней стенке). */
+export type Greenhouse = { x: number; y: number; w: number; h: number; door: number }
+
+/**
+ * Где у теплицы дверца: в нижней стенке, ближе к середине — там, где под ней можно встать
+ * (не камни, не постройка, не забор). При равенстве — правее.
+ */
+function doorColumn(map: GardenMap, g: { x: number; y: number; w: number; h: number }): number {
+  const below = g.y + g.h
+  const free = (x: number) => {
+    if (below >= map.height) return false
+    if (map.props.some((p) => x >= p.x && x < p.x + p.width && below >= p.y && below < p.y + p.height)) return false
+    const t = map.tiles[map.rows[below]?.[x] ?? '']
+    return !!t && !['forest', 'fence', 'wall', 'water', 'reeds'].includes(t.type)
+  }
+  const mid = g.x + Math.floor(g.w / 2)
+  for (let d = 0; d < g.w; d++) {
+    for (const x of d === 0 ? [mid] : [mid + d, mid - d]) if (x >= g.x && x < g.x + g.w && free(x)) return x
+  }
+  return mid
+}
+
+/** Теплицы на этой карте (зимой): прямоугольник участка в клетках и дверца. */
+export function greenhousesOn(state: GameState, map: GardenMap): Greenhouse[] {
   if (!state.season?.cold) return []
   return state.season.greenhouses
     .filter((g) => g.gardenKey === map.key)
@@ -52,7 +74,8 @@ export function greenhousesOn(state: GameState, map: GardenMap): { x: number; y:
       const ys = cells.map((c) => c.y)
       const x = Math.min(...xs)
       const y = Math.min(...ys)
-      return [{ x, y, w: Math.max(...xs) - x + 1, h: Math.max(...ys) - y + 1 }]
+      const rect = { x, y, w: Math.max(...xs) - x + 1, h: Math.max(...ys) - y + 1 }
+      return [{ ...rect, door: doorColumn(map, rect) }]
     })
 }
 

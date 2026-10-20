@@ -60,7 +60,7 @@ export type Scene = {
   /** Время года на улице: снег и снежинки, листопад, лепестки (в помещении — null) */
   season?: 'WINTER' | 'SPRING' | 'SUMMER' | 'AUTUMN' | null
   /** Теплицы (зимой): над каждой грядкой-участком — стеклянный домик; прямоугольник участка в клетках */
-  greenhouses?: { x: number; y: number; w: number; h: number }[]
+  greenhouses?: { x: number; y: number; w: number; h: number; door: number }[]
   /** Густота тумана над локацией (0 — нет, 1 — сплошной): Туманное озеро редеет день за днём */
   fog?: number
 }
@@ -164,7 +164,7 @@ export function drawGarden(
  * Теплица-домик над всей грядкой: деревянная рама, стеклянные стены с переплётом, двускатная стеклянная крыша
  * с коньком, дверца посередине и снег на крыше. Стекло полупрозрачное — сквозь него видны растения.
  */
-function drawGreenhouse(ctx: CanvasRenderingContext2D, bed: { x: number; y: number; w: number; h: number }) {
+function drawGreenhouse(ctx: CanvasRenderingContext2D, bed: { x: number; y: number; w: number; h: number; door: number }) {
   const x = bed.x * TILE - 3
   const w = bed.w * TILE + 6
   const bottom = (bed.y + bed.h) * TILE + 1
@@ -220,9 +220,9 @@ function drawGreenhouse(ctx: CanvasRenderingContext2D, bed: { x: number; y: numb
     ctx.fillRect(px, peak + r0, 1, roof - r0)
   }
   ctx.fillRect(Math.round(mid) - 1, peak, 2, roof)
-  // дверца — посередине нижней стенки, над проёмом (клетка greenhouseDoor)
+  // дверца — в нижней стенке над проёмом (там, где снаружи можно встать)
   const dw = 12
-  const dx = (bed.x + Math.floor(bed.w / 2)) * TILE + TILE / 2 - dw / 2
+  const dx = bed.door * TILE + TILE / 2 - dw / 2
   const dh = Math.min(24, bottom - wallTop - 4)
   ctx.fillStyle = WOOD
   ctx.fillRect(dx, bottom - 3 - dh, dw, dh)

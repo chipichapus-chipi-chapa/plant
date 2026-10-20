@@ -24,8 +24,15 @@ describe('времена года', () => {
     expect(canPlantNow(winter, town, { x: 1, y: 3 })).toBe(false)
   })
 
+  it('дверца встаёт туда, где под ней свободно (рядом с камнями — после них)', () => {
+    const upper = { ...winter, season: { ...winter.season!, greenhouses: [{ gardenKey: 'home', x: 1, y: 1 }] } } as GameState
+    expect(greenhousesOn(upper, home)[0].door).toBe(2)
+    const rocks = { ...home, props: [{ key: 'rock', kind: 'rock', x: 2, y: 2, width: 1, height: 1, name: '', description: '' }] } as GardenMap
+    expect(greenhousesOn(upper, rocks)[0].door).toBe(3)
+  })
+
   it('теплица накрывает весь участок, только зимой и на своей карте', () => {
-    expect(greenhousesOn(winter, home)).toEqual([{ x: 1, y: 3, w: 3, h: 2 }])
+    expect(greenhousesOn(winter, home)).toEqual([{ x: 1, y: 3, w: 3, h: 2, door: 2 }])
     expect(greenhousesOn(winter, town)).toEqual([])
     expect(greenhousesOn(autumn, home)).toEqual([])
   })

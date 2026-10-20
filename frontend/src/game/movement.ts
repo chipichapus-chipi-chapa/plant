@@ -33,21 +33,19 @@ export function blockedCells(map: GardenMap, objects: GardenObject[], standing: 
 /** Тонкая стена в логических пикселях (стенка теплицы). */
 export type Wall = { x: number; y: number; w: number; h: number }
 
-/** Клетка, где у теплицы дверца: середина нижнего ряда участка. */
-export const greenhouseDoor = (g: { x: number; y: number; w: number; h: number }): Cell => ({ x: g.x + Math.floor(g.w / 2), y: g.y + g.h - 1 })
 
 /**
  * Стены теплицы-домика: по краю участка, кроме проёма под дверцей в нижней стенке. Внутри ходить можно,
  * зайти — только через дверцу.
  */
-export function greenhouseWalls(greenhouses: { x: number; y: number; w: number; h: number }[]): Wall[] {
+export function greenhouseWalls(greenhouses: { x: number; y: number; w: number; h: number; door: number }[]): Wall[] {
   const T = 3
   return greenhouses.flatMap((g) => {
     const x0 = g.x * TILE
     const y0 = g.y * TILE
     const x1 = (g.x + g.w) * TILE
     const y1 = (g.y + g.h) * TILE
-    const door = greenhouseDoor(g).x * TILE
+    const door = g.door * TILE
     return [
       { x: x0, y: y0, w: x1 - x0, h: T },
       { x: x0, y: y0, w: T, h: y1 - y0 },
