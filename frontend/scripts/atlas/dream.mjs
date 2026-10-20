@@ -1,9 +1,9 @@
-// Светлолесье — волшебный мир за звёздной аркой: индиговая трава с искрами, светящиеся грибы,
-// звёздная вода, хрустальные деревья и большие светящиеся кошки.
+// Светлолесье — глухая часть чащи за Лунной поляной, куда никто не заходит: индиговая трава с искрами,
+// светящиеся грибы, лесной ручей со звёздами, хрустальные деревья и большие светящиеся кошки.
 
 import { rng, Sprite } from './canvas.mjs'
 import { T } from './tiles.mjs'
-import { INK, P, R } from './palette.mjs'
+import { INK, P } from './palette.mjs'
 
 const GRASS = ['#141633', '#1c2046', '#262b5a', '#323a70']
 const DUST = ['#3a3460', '#55497f', '#7a69a6', '#a998cc']
@@ -61,20 +61,6 @@ function starwater(seed) {
     s.rect(x, y, 3, 1, STAR[3])
   }
   for (let i = 0; i < 3; i++) s.px(Math.floor(r() * T), Math.floor(r() * T), STAR[4])
-  return s
-}
-
-/** Звёздная арка 1×1: два светящихся камня и мерцающий проход между ними. */
-function starGate() {
-  const s = new Sprite(T, T)
-  const b = new Sprite(T, T)
-  for (let y = 4; y < T; y++) for (let x = 9; x < 23; x++) b.px(x, y, (x + y) % 3 ? TEAL[3] : TEAL[4], 170)
-  b.rect(3, 6, 6, 26, R.stone[3])
-  b.rect(23, 6, 6, 26, R.stone[3])
-  b.rect(3, 2, 26, 5, R.stone[4])
-  for (const [x, y] of [[5, 12], [25, 18], [14, 3]]) b.rect(x, y, 2, 2, TEAL[4])
-  b.outline(INK)
-  s.stamp(b)
   return s
 }
 
@@ -174,7 +160,6 @@ export function dreamFrames() {
     starwater_0: starwater(0),
     starwater_1: starwater(1),
     starwater_2: starwater(2),
-    prop_star_gate: starGate(),
     prop_crystal_tree: crystalTree(false),
     prop_crystal_tree_awakened: crystalTree(true),
     prop_glow_bush: glowBush(),

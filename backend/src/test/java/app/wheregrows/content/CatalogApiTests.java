@@ -68,7 +68,7 @@ class CatalogApiTests {
                 // на Лунную поляну — только ночью
                 .andExpect(jsonPath("$.locations[?(@.key == 'east')].props[?(@.key == 'night-path')].door.requiresNight").value(true))
                 // в Светлолесье — ночью, когда Хмур зажёг фонари
-                .andExpect(jsonPath("$.locations[?(@.key == 'glade')].props[?(@.key == 'glade-star-gate')].door.requiresErrand").value("khmur_lamps"))
+                .andExpect(jsonPath("$.locations[?(@.key == 'glade')].props[?(@.key == 'glade-deep-path')].door.requiresErrand").value("khmur_lamps"))
                 .andExpect(jsonPath("$.locations[?(@.key == 'dreamwood')].npcs[?(@.key == 'murlana')].kind").value("greatcat"));
     }
 }
