@@ -18,11 +18,12 @@ import { encodePng } from './atlas/png.mjs'
 import { plantFrames } from './atlas/plants.mjs'
 import { propFrames } from './atlas/props.mjs'
 import { tileFrames } from './atlas/tiles.mjs'
+import { townFrames } from './atlas/town.mjs'
 import { uiFrames } from './atlas/ui.mjs'
 
 const OUT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'assets')
 
-const frames = { ...tileFrames(), ...propFrames(), ...interiorFrames(), ...eastFrames(), ...manorFrames(), ...lakeFrames(), ...plantFrames(), ...characterFrames(), ...uiFrames() }
+const frames = { ...tileFrames(), ...propFrames(), ...interiorFrames(), ...eastFrames(), ...manorFrames(), ...lakeFrames(), ...townFrames(), ...plantFrames(), ...characterFrames(), ...uiFrames() }
 
 // Упаковка «полками»: кадры по убыванию высоты, слева направо
 const ATLAS_W = 1024

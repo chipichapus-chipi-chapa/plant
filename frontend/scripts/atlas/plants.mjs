@@ -136,12 +136,93 @@ export function lily(stage) {
   return base
 }
 
+/** Ирис из городка у мельницы: узкие листья-мечи, потом сине-фиолетовый цветок с жёлтой полоской. */
+export function iris(stage) {
+  if (stage === 0) return sprout()
+  const s = new Sprite(PW, PH)
+  const VIOLET = ['#3b2f5e', '#5a4a8c', '#7d6cb4', '#a597d4']
+  const top = stage === 1 ? GROUND - 18 : GROUND - 24
+  // листья-мечи веером
+  for (const [x, h, lean] of [[11, 14, -2], [14, 18, -1], [18, 17, 1], [21, 13, 2]]) {
+    s.line(16, GROUND, x + lean, GROUND - h, R.leaf[3])
+    s.line(17, GROUND, x + lean + 1, GROUND - h + 1, R.leaf[1])
+  }
+  stem(s, 15, top, GROUND - 4)
+  if (stage === 1) {
+    s.shadedEllipse(16, top - 1, 2, 4.5, VIOLET)
+  } else {
+    // три опущенных лепестка и три поднятых
+    for (const [dx, dy, rx, ry] of [[-4, 2, 3, 2.2], [4, 2, 3, 2.2], [0, 4, 2.4, 2.6]]) s.shadedEllipse(16 + dx, top + dy, rx, ry, VIOLET, { bias: -0.1 })
+    for (const [dx, dy] of [[-2, -3], [2, -3], [0, -5]]) s.shadedEllipse(16 + dx, top + dy, 1.6, 2.6, VIOLET.slice(1), { bias: 0.15 })
+    for (const [dx, dy] of [[-4, 2], [4, 2], [0, 4]]) s.px(16 + dx, top + dy, R.lamp[2])
+  }
+  s.outline(INK)
+  const base = canvas()
+  base.stamp(s)
+  return base
+}
+
+/** Роза из городка: кустик с бутонами, потом приглушённо-алые цветы (не кричащие — «не так ярко»). */
+export function rose(stage) {
+  if (stage === 0) return sprout()
+  const s = new Sprite(PW, PH)
+  const RED = ['#5e1f2b', '#8a3040', '#b04b5a', '#d27a84']
+  const big = stage === 2
+  // кустик: ветки и листья
+  for (const [x, y] of [[11, 10], [16, big ? 16 : 13], [21, 11]]) s.line(16, GROUND, x, GROUND - y, R.wood[2])
+  for (const [x, y, rx] of [[10, 8, 3.5], [22, 9, 3.5], [14, 13, 3], [19, 14, 3], [16, 5, 4]]) leaf(s, x, GROUND - y, rx, 2.2, 0.08)
+  const flowers = big ? [[11, 12], [16, 18], [21, 13]] : [[13, 13], [19, 14]]
+  for (const [x, y] of flowers) {
+    const cy = GROUND - y
+    if (big) {
+      s.shadedEllipse(x, cy, 3, 2.6, RED)
+      s.px(x, cy - 1, RED[0])
+      s.px(x - 1, cy, RED[1])
+      s.px(x + 1, cy - 1, RED[3])
+    } else {
+      s.shadedEllipse(x, cy, 1.5, 2.2, RED.slice(1))
+      s.px(x, cy + 2, R.leaf[2])
+    }
+  }
+  s.outline(INK)
+  const base = canvas()
+  base.stamp(s)
+  return base
+}
+
+/** Маргаритки: низкая розетка, потом белые цветочки с розовыми кончиками и жёлтой серединкой. */
+export function daisy(stage) {
+  if (stage === 0) return sprout()
+  const s = new Sprite(PW, PH)
+  for (const [x, y] of [[11, 3], [16, 2], [21, 3], [13, 4], [19, 4]]) leaf(s, x, GROUND - y, 3, 1.5, 0.1)
+  const heads = stage === 1 ? [[12, 8], [19, 9]] : [[9, 11], [15, 15], [22, 12], [19, 8], [12, 8]]
+  for (const [x, y] of heads) {
+    const cy = GROUND - y
+    stem(s, x, cy + 1, GROUND - 2)
+    if (stage === 1) {
+      s.rect(x - 1, cy - 1, 2, 2, '#e8cfd6')
+      continue
+    }
+    for (const [dx, dy] of [[0, -2], [2, 0], [0, 2], [-2, 0], [1, -1], [1, 1], [-1, 1], [-1, -1]]) {
+      s.px(x + dx, cy + dy, Math.abs(dx) + Math.abs(dy) === 2 && dx * dy === 0 ? '#e9b9c6' : P.petal)
+    }
+    s.px(x, cy, R.lamp[2])
+  }
+  s.outline(INK)
+  const base = canvas()
+  base.stamp(s)
+  return base
+}
+
 export function plantFrames() {
   const frames = {}
   for (const i of [0, 1, 2]) frames[`plant_radish_${i}`] = radish(i)
   for (const i of [0, 1, 2]) frames[`plant_chamomile_${i}`] = chamomile(i)
   for (const i of [0, 1, 2, 3]) frames[`plant_sunflower_${i}`] = sunflower(i)
   for (const i of [0, 1, 2]) frames[`plant_lily_${i}`] = lily(i)
+  for (const i of [0, 1, 2]) frames[`plant_iris_${i}`] = iris(i)
+  for (const i of [0, 1, 2]) frames[`plant_rose_${i}`] = rose(i)
+  for (const i of [0, 1, 2]) frames[`plant_daisy_${i}`] = daisy(i)
   return frames
 }
 

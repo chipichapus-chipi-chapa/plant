@@ -96,6 +96,20 @@ class ShopApiTests {
     }
 
     @Test
+    void townFlowersAreSoldOnlyAfterLizasErrand() throws Exception {
+        giveLifeSeeds(100);
+        jdbc.update("DELETE FROM player_flag WHERE player_id = ? AND flag LIKE 'errand_done:liza_irises'", playerId);
+
+        buy(UUID.randomUUID(), "seed_iris", 1).andExpect(status().isConflict());
+        assertThat(quantity("life_seed")).isEqualTo(100);
+
+        jdbc.update("INSERT INTO player_flag (player_id, flag, set_at) VALUES (?, 'errand_done:liza_irises', now())", playerId);
+        buy(UUID.randomUUID(), "seed_iris", 1).andExpect(status().isCreated());
+        assertThat(quantity("seed_iris")).isEqualTo(1);
+        jdbc.update("DELETE FROM player_flag WHERE player_id = ? AND flag = 'errand_done:liza_irises'", playerId);
+    }
+
+    @Test
     void unknownItemIsNotFound() throws Exception {
         giveLifeSeeds(100);
         buy(UUID.randomUUID(), "seed_dragonfruit", 1).andExpect(status().isNotFound());

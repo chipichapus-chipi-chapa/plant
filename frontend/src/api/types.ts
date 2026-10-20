@@ -12,6 +12,8 @@ export type CatalogItem = {
   price: number | null
   speciesKey: string | null
   crystalCategory: string | null
+  /** Появляется в лавке после этого поручения (цветы из городка); null — продаётся сразу */
+  unlockErrand?: string | null
 }
 
 export type TileType = {
@@ -75,6 +77,8 @@ export type Npc = {
   errand?: Errand | null
   /** Пасхалки: «слот:вариант» облика игрока → особый разговор */
   secrets?: Record<string, string> | null
+  /** Облик человека (слот → вариант, как у героя): жители-люди собираются из тех же слоёв; у зверей — нет */
+  appearance?: Record<string, string> | null
 }
 
 /**
@@ -167,6 +171,8 @@ export type MentorContent = {
   offerGoal: string | null
   /** Пасхалки: «слот:вариант» облика игрока → особый разговор */
   secrets?: Record<string, string> | null
+  /** Облик человека (слот → вариант, как у героя): жители-люди собираются из тех же слоёв; у зверей — нет */
+  appearance?: Record<string, string> | null
 }
 
 export type Catalog = {

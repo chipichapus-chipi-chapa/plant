@@ -8,6 +8,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import app.wheregrows.common.ConflictException;
+import app.wheregrows.errand.ErrandService;
+import app.wheregrows.mentor.PlayerFlag;
+import app.wheregrows.mentor.PlayerFlagRepository;
 import app.wheregrows.common.InvalidRequestException;
 import app.wheregrows.common.NotFoundException;
 import app.wheregrows.content.ItemDefinition;
@@ -27,9 +30,11 @@ public class ShopService {
     private final ItemDefinitionRepository items;
     private final PlayerProfileRepository players;
     private final Inventory inventory;
+    private final PlayerFlagRepository flags;
 
     ShopService(ShopPurchaseRepository purchases, ItemDefinitionRepository items, PlayerProfileRepository players,
-                Inventory inventory) {
+                Inventory inventory, PlayerFlagRepository flags) {
+        this.flags = flags;
         this.purchases = purchases;
         this.items = items;
         this.players = players;
@@ -55,6 +60,10 @@ public class ShopService {
                 .orElseThrow(() -> new NotFoundException("В лавке нет такого товара."));
         if (item.getPrice() == null) {
             throw new InvalidRequestException("«" + item.getName() + "» не продаётся.");
+        }
+        if (item.getUnlockErrand() != null
+                && !flags.existsById(new PlayerFlag.Id(playerId, ErrandService.DONE + item.getUnlockErrand()))) {
+            throw new ConflictException("«" + item.getName() + "» пока не продаётся — в лавке таких ещё нет.");
         }
         int cost = Math.multiplyExact(item.getPrice(), quantity);
         String currencyName = items.findById(Inventory.LIFE_SEED).map(ItemDefinition::getName).orElse("Семена жизни");

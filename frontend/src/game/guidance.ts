@@ -167,8 +167,10 @@ export function promptPoint(cell: Cell, map: GardenMap): { x: number; y: number 
   if (isMentor(cell, map)) {
     return { x: cell.x * TILE + TILE / 2, y: (cell.y + 1) * TILE - CHARACTER_HEIGHT }
   }
-  // мышь маленькая — «!» прямо над ушами
-  if (npcAt(map, cell)) return { x: cell.x * TILE + TILE / 2, y: (cell.y + 1) * TILE - 26 }
+  // житель-человек ростом с героя — «!» над головой; мышь маленькая — прямо над ушами
+  const npc = npcAt(map, cell)
+  if (npc?.appearance) return { x: cell.x * TILE + TILE / 2, y: (cell.y + 1) * TILE - CHARACTER_HEIGHT }
+  if (npc) return { x: cell.x * TILE + TILE / 2, y: (cell.y + 1) * TILE - 26 }
   const prop = propAt(map, cell.x, cell.y)
   if (prop) return { x: (prop.x + prop.width / 2) * TILE, y: prop.y * TILE }
   return { x: cell.x * TILE + TILE / 2, y: cell.y * TILE + 4 }

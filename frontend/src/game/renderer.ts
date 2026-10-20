@@ -183,6 +183,13 @@ const PROP_LIGHTS: Record<string, [number, number, number, number, Glow?][]> = {
   lamp_post_awakened: [[16, 6, 60, 0.9]],
   dock: [[90, 8, 40, 0.6]],
   blossom_tree: [[32, 30, 58, 0.7, PETAL_GLOW]],
+  // городок у мельницы: окно и фонарик у двери Агаты (и розовый отсвет лилии на подоконнике), окошко мельницы
+  cottage: [
+    [31, 66, 50, 0.9],
+    [31, 66, 22, 0.6, PETAL_GLOW],
+    [104, 61, 34, 0.7],
+  ],
+  windmill: [[48, 62, 30, 0.6]],
 }
 
 function propLights(map: GardenMap, awakened: ReadonlySet<string>): Light[] {

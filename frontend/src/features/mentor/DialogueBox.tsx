@@ -9,8 +9,11 @@ import { useToast } from '../notifications/Toasts'
 import styles from './DialogueBox.module.css'
 import { useTypewriter } from './useTypewriter'
 
-/** Кто говорит: имя и кадр атласа, из которого вырезается портрет (32×32 с точки crop). */
-export type Speaker = { name: string; frame: string; crop: [number, number] }
+/**
+ * Кто говорит: имя и картинка, из которой вырезается портрет (32×32 с точки crop) —
+ * кадр атласа (frame) или уже собранный спрайт (image: жители-люди собираются из слоёв, как герой).
+ */
+export type Speaker = { name: string; frame: string; crop: [number, number]; image?: CanvasImageSource | null }
 
 type Props = {
   speaker: Speaker
@@ -81,11 +84,11 @@ export function DialogueBox({ speaker, dialogue, atlas, onEnd, onClose }: Props)
 
   useEffect(() => {
     const ctx = portraitRef.current?.getContext('2d')
-    const image = frameImage(atlas, speaker.frame)
+    const image = speaker.image ?? frameImage(atlas, speaker.frame)
     if (!ctx || !image) return
     ctx.clearRect(0, 0, 32, 32)
     ctx.drawImage(image, speaker.crop[0], speaker.crop[1], 32, 32, 0, 0, 32, 32)
-  }, [atlas, speaker.frame, speaker.crop])
+  }, [atlas, speaker.frame, speaker.crop, speaker.image])
 
   useEffect(() => boxRef.current?.focus(), [])
 

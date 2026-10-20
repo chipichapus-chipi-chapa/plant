@@ -3,7 +3,7 @@ import { ApiError } from '../../api/client'
 import { acceptErrand, completeErrand, plantSeed, weedBed } from '../../api/game'
 import type { Catalog, Door, Errand, GameState, GardenMap, Npc, Puzzle } from '../../api/types'
 import { frameImage, loadAtlas, type Atlas } from '../../game/atlas'
-import { composeCharacterFrames } from '../../game/character'
+import { composeCharacter, composeCharacterFrames } from '../../game/character'
 import { WEED_MS, type WeedEffect } from '../../game/effects'
 import { fogBand, fogDensity, fogTalk, notchesLine } from '../../game/fog'
 import { GardenCanvas } from '../../game/GardenCanvas'
@@ -73,6 +73,8 @@ function secretTalk(secrets: Record<string, string> | null | undefined, appearan
 
 /** Портрет мыши: вся мышь целиком — она маленькая и сидит внизу кадра 32×48. */
 const MOUSE_CROP: [number, number] = [0, 16]
+/** Портрет жителя-человека: голова и плечи из спрайта 32×48, как у героя */
+const PERSON_CROP: [number, number] = [0, 4]
 
 /**
  * С какой реплики начать разговор с жителем: при первой встрече — знакомство (talks[0]),
@@ -232,6 +234,11 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
       characters: [
         ...(home && mentorImage ? [standingAt(MENTOR_SPOT, mentorImage, MENTOR_LANTERN)] : []),
         ...(map.npcs ?? []).flatMap((npc) => {
+          // житель-человек — собран из тех же слоёв, что и герой; зверь — свой спрайт npc_<kind>_0/1
+          if (npc.appearance) {
+            const person = composeCharacter(atlas.atlas, npc.appearance, catalog.appearance)
+            return [standingAt(npc, person)]
+          }
           const idle = [0, 1].map((f) => frameImage(atlas.atlas, `npc_${npc.kind}_${f}`))
           if (!idle[0] || !idle[1]) return []
           return [{ ...standingAt(npc, idle[0]), idle: [idle[0], idle[1]] }]
@@ -521,7 +528,11 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
       {chat && atlas.status === 'ready' && (
         <DialogueBox
           key={chat.npc.key + chat.dialogue}
-          speaker={{ name: chat.npc.name, frame: `npc_${chat.npc.kind}_0`, crop: MOUSE_CROP }}
+          speaker={
+            chat.npc.appearance && atlas.status === 'ready'
+              ? { name: chat.npc.name, frame: '', crop: PERSON_CROP, image: composeCharacter(atlas.atlas, chat.npc.appearance, catalog.appearance) }
+              : { name: chat.npc.name, frame: `npc_${chat.npc.kind}_0`, crop: MOUSE_CROP }
+          }
           dialogue={chat.npc.dialogues[chat.dialogue]}
           atlas={atlas.atlas}
           onEnd={async () => {
