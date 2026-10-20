@@ -131,7 +131,7 @@
     },
     {
       "key": "night-path",
-      "kind": "thicket",
+      "kind": "trail_exit",
       "x": 4,
       "y": 9,
       "width": 1,

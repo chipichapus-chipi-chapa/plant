@@ -43,20 +43,20 @@
     "Fm...wwwwww...mF",
     "F....wwwwww....F",
     "Fmm...wwww...mmF",
-    "FFm..........mFF",
-    "FFFmm..pp..mmFFF",
-    "FFFFFFFppFFFFFFF"
+    "FFm....p.....mFF",
+    "FFFmm..p...mmFFF",
+    "FFFFFFFpFFFFFFFF"
   ],
   "props": [
     {
       "key": "glade-path-back",
-      "kind": "gate_open",
+      "kind": "trail_exit",
       "x": 7,
       "y": 9,
       "width": 1,
       "height": 1,
       "name": "Тропка к ручью",
-      "description": "Обратно — к мостику, мышам и спящей Крупке.",
+      "description": "Тропка уходит вниз, между елями, в темноту. По краям светятся колокольчики — чтобы найти дорогу обратно.",
       "door": {
         "map": "east",
         "x": 4,
