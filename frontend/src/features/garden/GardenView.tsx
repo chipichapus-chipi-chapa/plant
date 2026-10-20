@@ -8,7 +8,7 @@ import { WEED_MS, type WeedEffect } from '../../game/effects'
 import { fogBand, fogDensity, fogTalk, notchesLine } from '../../game/fog'
 import { glowBand, glowTalk, withGlow } from '../../game/glow'
 import { GardenCanvas } from '../../game/GardenCanvas'
-import { doorOpen, doorReachable, errandReady, isClickable, isNear, markerPoint, npcAt, plantsOn, promptCell, promptPoint, sameThing, WEEDING_TOOLS, type Objective } from '../../game/guidance'
+import { doorOpen, doorReachable, errandReady, errandWaitsForDay, isClickable, isNear, markerPoint, npcAt, plantsOn, promptCell, promptPoint, sameThing, WEEDING_TOOLS, type Objective } from '../../game/guidance'
 import type { Facing } from '../../game/movement'
 import { CREATURE_GLOW, standingAt, type Scene } from '../../game/renderer'
 import {
@@ -188,11 +188,16 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     const done = (key: string | null | undefined) => !!key && !!state.errands.find((e) => e.key === key)?.done
     // сторож уходит с дороги, семья Агаты уплывает из городка и появляется в поместье;
     // пока с жителем идёт разговор, он не исчезает посреди фразы
+    // гость (ярмарки) здесь только в тот день, когда выполнено поручение, — потом уходит домой
+    const visiting = (key: string) => state.errands.find((e) => e.key === key)?.doneOn === state.today
     const gone = (n: Npc) =>
       chat?.npc.key !== n.key &&
-      ((!!n.errand?.leaves && done(n.errand.key)) || done(n.leavesAfter) || (!!n.appearsAfter && !done(n.appearsAfter)))
+      ((!!n.errand?.leaves && done(n.errand.key)) ||
+        done(n.leavesAfter) ||
+        (!!n.appearsAfter && !done(n.appearsAfter)) ||
+        (!!n.visitsOn && !visiting(n.visitsOn)))
     return map.npcs?.some(gone) ? { ...map, npcs: map.npcs.filter((n) => !gone(n)) } : map
-  }, [catalog, location.key, state.garden.weeded, state.worldObjects, state.errands, state.glow, chat])
+  }, [catalog, location.key, state.garden.weeded, state.worldObjects, state.errands, state.glow, state.today, chat])
   // читаем письмо — текст в окне поверх сада
   const [reading, setReading] = useState<{ title: string; text: string } | null>(null)
   // замок крупным планом поверх сада
@@ -372,6 +377,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     const errand = npc.errand
     const status = errand && state.errands.find((e) => e.key === errand.key)
     if (errand && !status?.offered) return setChat({ npc, dialogue: errand.offer, accept: errand })
+    if (errand && !status?.done && errand.notToday && errandWaitsForDay(npc, state)) return setChat({ npc, dialogue: errand.notToday })
     if (errand && !status?.done) return setChat({ npc, dialogue: errand.waiting })
     // субботний хлеб: у пекаря (Агаты дома) разговор о каравае
     if (map.bread?.npc === npc.key && state.bread?.home) {

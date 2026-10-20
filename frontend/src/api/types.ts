@@ -85,6 +85,8 @@ export type Npc = {
   appearsAfter?: string | null
   /** …и уходит отсюда после этого поручения (уплывает из городка) */
   leavesAfter?: string | null
+  /** Гость: здесь только в тот день, когда выполнено это поручение (гости ярмарки), потом уходит домой */
+  visitsOn?: string | null
 }
 
 /**
@@ -104,6 +106,10 @@ export type Errand = {
   waiting: string
   thanks: string
   leaves: boolean
+  /** Выполнить можно только в этот день недели по часам игрока (ярмарка — FRIDAY) */
+  day?: string | null
+  /** Что житель говорит, когда всё готово, но день не тот */
+  notToday?: string | null
 }
 
 /** Карта локации (сад, сарай изнутри): строки символов, легенда символов и постройки поверх тайлов */
@@ -187,6 +193,8 @@ export type MentorContent = {
   appearsAfter?: string | null
   /** …и уходит отсюда после этого поручения (уплывает из городка) */
   leavesAfter?: string | null
+  /** Гость: здесь только в тот день, когда выполнено это поручение (гости ярмарки), потом уходит домой */
+  visitsOn?: string | null
 }
 
 export type Catalog = {
@@ -247,7 +255,8 @@ export type GameState = {
   /** Разгаданные загадки */
   solvedPuzzles: string[]
   /** Поручения жителей: попросили ли и сделано ли */
-  errands: { key: string; offered: boolean; done: boolean }[]
+  /** doneOn — день выполнения (по часам игрока); today — сегодня подходящий день (у поручений с днём недели) */
+  errands: { key: string; offered: boolean; done: boolean; doneOn?: string | null; today?: boolean }[]
   /**
    * Туман над озером; null — тумана в игре нет. started — сад поместья ожил и туман начал редеть;
    * days — сколько дней-возвращений набралось (не больше needed).

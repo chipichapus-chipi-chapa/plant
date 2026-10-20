@@ -1,30 +1,52 @@
 package app.wheregrows.story;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
+import app.wheregrows.MutableClock;
 import app.wheregrows.TestcontainersConfiguration;
 import app.wheregrows.player.CurrentPlayer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Осенняя ярмарка: три прилавка заполняют своим урожаем, и мельник открывает ярмарку и вручает ленту. */
-@Import(TestcontainersConfiguration.class)
-@SpringBootTest(properties = "game.local.username=fair-test")
+/** Осенняя ярмарка: прилавки заполняют своим урожаем, а открывает её мельник только в пятницу. */
+@Import({TestcontainersConfiguration.class, FairApiTests.Clocks.class})
+@SpringBootTest(properties = {"game.local.username=fair-test", "game.local.timezone=Europe/Moscow"})
 @AutoConfigureMockMvc
 class FairApiTests {
+
+    /** Четверг, полдень по Москве. */
+    static final Instant THURSDAY = Instant.parse("2026-10-15T09:00:00Z");
+
+    @TestConfiguration(proxyBeanMethods = false)
+    static class Clocks {
+        @Bean
+        @Primary
+        MutableClock mutableClock() {
+            return new MutableClock(THURSDAY);
+        }
+    }
+
+    @Autowired
+    MutableClock clock;
 
     @Autowired
     MockMvc mvc;
@@ -39,6 +61,7 @@ class FairApiTests {
 
     @BeforeEach
     void cleanSlate() {
+        clock.set(THURSDAY);
         playerId = player.id();
         jdbc.update("DELETE FROM inventory_item WHERE player_id = ?", playerId);
         jdbc.update("DELETE FROM player_flag WHERE player_id = ?", playerId);
@@ -60,9 +83,16 @@ class FairApiTests {
 
         give("produce_chamomile", 1);
         cast("fill_stall_moon").andExpect(status().isCreated());
+        // всё готово, но сегодня четверг
+        mvc.perform(get("/api/state")).andExpect(jsonPath("$.errands[?(@.key == 'fair_open')].today").value(false));
+        mvc.perform(post("/api/errands/{key}/complete", "fair_open")).andExpect(status().isConflict());
+
+        clock.advance(Duration.ofDays(1));
         mvc.perform(post("/api/errands/{key}/complete", "fair_open"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.reward[0].itemKey").value("fair_ribbon"));
+        // день ярмарки запомнен: гости здесь только сегодня
+        mvc.perform(get("/api/state")).andExpect(jsonPath("$.errands[?(@.key == 'fair_open')].doneOn").value("2026-10-16"));
 
         assertThat(quantity("fair_ribbon")).isEqualTo(1);
         assertThat(quantity("produce_rose")).isZero();

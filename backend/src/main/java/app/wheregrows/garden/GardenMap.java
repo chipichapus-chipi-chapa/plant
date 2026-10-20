@@ -107,20 +107,26 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
      * appearsAfter / leavesAfter — поручение, после которого житель появляется здесь / уходит отсюда
      * (семья Агаты уплывает из городка и возвращается в поместье).
      */
+    /**
+     * Житель локации. visitsOn — гость: он здесь только в тот день (по часам игрока), когда выполнено
+     * это поручение, а потом уходит домой (гости ярмарки).
+     */
     public record Npc(String key, String name, String kind, int x, int y, String description, List<String> talks,
                       Map<String, app.wheregrows.mentor.MentorContent.Dialogue> dialogues, Errand errand,
                       Map<String, String> secrets, Map<String, String> appearance,
-                      String appearsAfter, String leavesAfter) {
+                      String appearsAfter, String leavesAfter, String visitsOn) {
     }
 
     /**
      * Поручение жителя. GIVE — отдать вещи (give), SHOW — показать находку (spot обыскан).
      * offer — разговор-просьба, waiting — пока не сделано, thanks — благодарность; reward выдаётся один раз.
      * leaves — житель уходит с дороги, когда поручение выполнено (сторож на тропе).
+     * day — выполнить можно только в этот день недели по часам игрока (ярмарка — в пятницу), notToday — что
+     * житель говорит, когда всё готово, но день не тот.
      */
     public record Errand(String key, Kind kind, String goal, List<app.wheregrows.economy.ItemGrant> give, String spot,
                          List<app.wheregrows.economy.ItemGrant> reward, String offer, String waiting, String thanks,
-                         boolean leaves, List<String> props) {
+                         boolean leaves, List<String> props, java.time.DayOfWeek day, String notToday) {
 
         /**
          * GIVE — отдать вещи, SHOW — показать находку, REVIVE — пробудить все постройки из props,
