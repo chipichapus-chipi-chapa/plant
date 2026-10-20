@@ -53,6 +53,8 @@ export type Door = {
   requiresErrand?: string | null
   /** Плыть можно, когда туман над этой локацией рассеялся (лодка) */
   requiresFog?: boolean | null
+  /** Тропка видна только ночью — с 20:00 до 6:00 по часам игрока (на Лунную поляну) */
+  requiresNight?: boolean | null
 }
 
 /**
@@ -251,6 +253,8 @@ export type GameState = {
    * baked — на этой неделе уже испечён; days — дни недели с привычками; loaf — сколько Семян жизни в каравае.
    */
   bread: { home: boolean; today: boolean; baked: boolean; days: number; loaf: number } | null
+  /** Сейчас ночь по часам игрока (с 20:00 до 6:00): открыта тропка на Лунную поляну */
+  night: boolean
   /** Доступны кнопки тестирования (локально — всегда, на сервере — из списка GAME_TESTERS) */
   tester: boolean
   /** Пробуждённые объекты мира; нет в списке — объект спит */

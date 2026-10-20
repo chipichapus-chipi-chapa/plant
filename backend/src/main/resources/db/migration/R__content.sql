@@ -27,7 +27,9 @@ INSERT INTO plant_species (key, name, stage_minutes) VALUES
     -- цветы из городка у мельницы (глава 2)
     ('iris',      'Ирис',       ARRAY[90, 240]),
     ('rose',      'Роза',       ARRAY[120, 360]),
-    ('daisy',     'Маргаритки', ARRAY[20, 60])
+    ('daisy',     'Маргаритки', ARRAY[20, 60]),
+    -- с Лунной поляны: выросший светится в саду голубым
+    ('moonflower', 'Лунный цветок', ARRAY[60, 180])
 ON CONFLICT (key) DO UPDATE SET
     name = EXCLUDED.name,
     stage_minutes = EXCLUDED.stage_minutes;
@@ -78,7 +80,9 @@ INSERT INTO item_def (key, kind, name, description, price, species_key, crystal_
     ('seed_rose',  'SEED', 'Черенок розы Агаты',
         'Колючая, но очень благодарная. Росла у крыльца поместья, пока все не уплыли.', 6, 'rose', NULL, 'liza_irises'),
     ('seed_daisy', 'SEED', 'Пакетик маргариток',
-        'Ника собирала их сама. Маленькие, но их много — любят, когда на них смотрят.', 3, 'daisy', NULL, 'liza_irises')
+        'Ника собирала их сама. Маленькие, но их много — любят, когда на них смотрят.', 3, 'daisy', NULL, 'liza_irises'),
+    ('seed_moonflower', 'SEED', 'Семена лунного цветка',
+        'От совы Ухты с Лунной поляны. Сажайте там, где смотрите перед сном, — тогда цветок точно проснётся и будет светиться.', 5, 'moonflower', NULL, 'owl_moonstone')
 ON CONFLICT (key) DO UPDATE SET
     kind = EXCLUDED.kind,
     name = EXCLUDED.name,
@@ -128,7 +132,16 @@ INSERT INTO recipe_def (key, name, description, target_object_key, result_text, 
         'hearth', 'Угли вздохнули, и в печи заплясал огонь. Кухня сразу стала меньше и уютнее — как и положено кухне.', 10, 'Разжечь'),
     ('build_lodge', 'Хатка для бобров',
         'Изумруд — чтобы дом рос крепко, как дерево; сапфир — чтобы помнил дорогу к воде.',
-        'beaver-lodge', 'Ветки сплелись в тёплый купол, мох лёг на макушку. У бобров снова есть дом — а у сада снова есть вода.', 11, 'Построить')
+        'beaver-lodge', 'Ветки сплелись в тёплый купол, мох лёг на макушку. У бобров снова есть дом — а у сада снова есть вода.', 11, 'Построить'),
+    ('light_glade_lamp_1', 'Огонёк для фонаря',
+        'Аметист светится, когда что-то создаёшь. Положите его в каменный фонарь — и поляна станет светлее.',
+        'glade-lamp-1', 'Фонарь наверху слева загорается мягким лиловым светом. Лунные цветы рядом будто придвинулись поближе.', 12, 'Зажечь'),
+    ('light_glade_lamp_2', 'Огонёк для фонаря',
+        'Аметист светится, когда что-то создаёшь. Положите его в каменный фонарь — и поляна станет светлее.',
+        'glade-lamp-2', 'Фонарь наверху справа загорается мягким лиловым светом. Лунные цветы рядом будто придвинулись поближе.', 13, 'Зажечь'),
+    ('light_glade_lamp_3', 'Огонёк для фонаря',
+        'Аметист светится, когда что-то создаёшь. Положите его в каменный фонарь — и поляна станет светлее.',
+        'glade-lamp-3', 'Фонарь у тропки загорается мягким лиловым светом. Лунные цветы рядом будто придвинулись поближе.', 14, 'Зажечь')
 ON CONFLICT (key) DO UPDATE SET
     name = EXCLUDED.name,
     description = EXCLUDED.description,
@@ -138,7 +151,7 @@ ON CONFLICT (key) DO UPDATE SET
     action_label = EXCLUDED.action_label;
 
 DELETE FROM recipe_ingredient WHERE recipe_key IN ('awaken_basin', 'open_east_gate', 'repair_wheelbarrow', 'fill_barrel',
-    'wake_lily_west', 'wake_lily_east', 'wake_lily_south', 'fill_manor_well', 'light_lamp_post', 'light_hearth', 'build_lodge');
+    'wake_lily_west', 'wake_lily_east', 'wake_lily_south', 'fill_manor_well', 'light_lamp_post', 'light_hearth', 'build_lodge', 'light_glade_lamp_1', 'light_glade_lamp_2', 'light_glade_lamp_3');
 INSERT INTO recipe_ingredient (recipe_key, item_key, quantity) VALUES
     ('awaken_basin', 'shard_emerald', 2),
     ('awaken_basin', 'shard_amethyst', 1),
@@ -153,7 +166,10 @@ INSERT INTO recipe_ingredient (recipe_key, item_key, quantity) VALUES
     ('light_hearth', 'shard_amber', 2),
     ('light_hearth', 'sun_spark', 1),
     ('build_lodge', 'shard_emerald', 2),
-    ('build_lodge', 'shard_sapphire', 1);
+    ('build_lodge', 'shard_sapphire', 1),
+    ('light_glade_lamp_1', 'shard_amethyst', 1),
+    ('light_glade_lamp_2', 'shard_amethyst', 1),
+    ('light_glade_lamp_3', 'shard_amethyst', 1);
 
 -- Артефакты -------------------------------------------------------------------
 -- Лор раскрывается понемногу: через описание, легенду и подсказки к ещё не найденному.
@@ -183,7 +199,12 @@ INSERT INTO artifact_def (key, name, crystal_category, description, legend, acqu
         'Свёрнутый листок с нотами и пятнами от чая. Мелодия простая, слова — смешные.',
         'Ту самую песню, за которую цапля отдала луковицу лилии. Цапля говорит, песня была плохая. Цапля лукавит.',
         'Тот, кто сядет отдохнуть у воды, услышит песню.',
-        'Если напеть её лилиям, они, кажется, светятся ярче.', 5)
+        'Если напеть её лилиям, они, кажется, светятся ярче.', 5),
+    ('moonstone', 'Лунный камень', 'amethyst',
+        'Гладкий камешек, внутри которого лежит лунный блик и не уходит даже днём.',
+        'Луна уронила его, когда смотрелась в пруд на поляне. Сова Ухта уверена, что луна до сих пор его ищет.',
+        'Ночью, у тихой воды, ищите блик, который не уходит.',
+        'Пока просто светится в ладони. Может быть, однажды покажет дорогу в темноте.', 6)
 ON CONFLICT (key) DO UPDATE SET
     name = EXCLUDED.name,
     crystal_category = EXCLUDED.crystal_category,
@@ -246,7 +267,10 @@ INSERT INTO discovery_spot (key, prop_key, found_text, empty_text, requires_awak
         'Качели скрипят. Просто приятно покачаться.', NULL, NULL, NULL, TRUE, 'Покачаться'),
     ('bench_song', 'lake-bench',
         'Вы сидите, слушаете туман… Под скамейкой — свёрнутые ноты. Та самая песня садовника.',
-        'Туман дышит над водой. Хорошо просто посидеть.', NULL, NULL, 'gardener_song', TRUE, 'Посидеть')
+        'Туман дышит над водой. Хорошо просто посидеть.', NULL, NULL, 'gardener_song', TRUE, 'Посидеть'),
+    ('moonstone', 'pond-stone',
+        'Вы поднимаете камень — и блик остаётся в нём, тёплый и голубой. Это лунный камень.',
+        'У пруда тихо. Луна смотрится в воду и, кажется, улыбается.', NULL, NULL, 'moonstone', FALSE, 'Поднять камень')
 ON CONFLICT (key) DO UPDATE SET
     prop_key = EXCLUDED.prop_key,
     found_text = EXCLUDED.found_text,
@@ -262,7 +286,7 @@ UPDATE discovery_spot SET action_label = 'Заглянуть под рогожу
 UPDATE discovery_spot SET action_label = 'Заглянуть под камни' WHERE key = 'rock_cache';
 
 DELETE FROM discovery_spot_reward WHERE spot_key IN ('rock_cache', 'shed_corner', 'fence_tools', 'bridge_compass', 'hearth_glow',
-    'rock_whisper', 'shelf_jar', 'burrow_knock', 'oak_swing');
+    'rock_whisper', 'shelf_jar', 'burrow_knock', 'oak_swing', 'moonstone');
 INSERT INTO discovery_spot_reward (spot_key, item_key, quantity) VALUES
     ('rock_cache', 'shard_amethyst', 2),
     ('rock_cache', 'shard_emerald', 1),
@@ -274,7 +298,8 @@ INSERT INTO discovery_spot_reward (spot_key, item_key, quantity) VALUES
     ('shelf_jar', 'seed_sunflower', 1),
     ('burrow_knock', 'shard_amber', 1),
     ('burrow_knock', 'life_seed', 1),
-    ('oak_swing', 'sun_spark', 1);
+    ('oak_swing', 'sun_spark', 1),
+    ('moonstone', 'life_seed', 2);
 
 -- Загадки ---------------------------------------------------------------------
 -- Подсказка к ящику — в письме прежнего садовника (content/gardens/shed.json, постройка letter).

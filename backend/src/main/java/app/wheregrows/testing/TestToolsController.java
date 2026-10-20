@@ -51,6 +51,12 @@ class TestToolsController {
         tools.breadDay(player.id());
     }
 
+    @PostMapping("/night")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void night() {
+        tools.night(player.id());
+    }
+
     @PostMapping("/reset")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void reset() {

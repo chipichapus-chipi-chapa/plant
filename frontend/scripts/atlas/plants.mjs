@@ -214,6 +214,29 @@ export function daisy(stage) {
   return base
 }
 
+/** Лунный цветок с поляны: тонкий стебель, потом бледно-голубые колокольчики (светятся в саду ночью). */
+export function moonflower(stage) {
+  if (stage === 0) return sprout()
+  const s = new Sprite(PW, PH)
+  const MOON = ['#4f6f93', '#8fb5d6', '#c9e2f2', '#f0f8ff']
+  const top = stage === 1 ? GROUND - 14 : GROUND - 22
+  stem(s, 15, top, GROUND)
+  leaf(s, 11, GROUND - 5, 4, 1.4, 0.1)
+  leaf(s, 20, GROUND - 8, 4, 1.4)
+  const bells = stage === 1 ? [[16, top]] : [[16, top], [11, top + 5], [21, top + 4]]
+  for (const [x, y] of bells) {
+    if (x !== 16) s.line(16, y + 2, x, y, R.leaf[3])
+    s.shadedEllipse(x, y + 1, 2.5, 2, MOON)
+    s.px(x - 2, y + 3, MOON[1])
+    s.px(x + 2, y + 3, MOON[1])
+    s.px(x, y + 3, MOON[3])
+  }
+  s.outline(INK)
+  const base = canvas()
+  base.stamp(s)
+  return base
+}
+
 export function plantFrames() {
   const frames = {}
   for (const i of [0, 1, 2]) frames[`plant_radish_${i}`] = radish(i)
@@ -223,6 +246,7 @@ export function plantFrames() {
   for (const i of [0, 1, 2]) frames[`plant_iris_${i}`] = iris(i)
   for (const i of [0, 1, 2]) frames[`plant_rose_${i}`] = rose(i)
   for (const i of [0, 1, 2]) frames[`plant_daisy_${i}`] = daisy(i)
+  for (const i of [0, 1, 2]) frames[`plant_moonflower_${i}`] = moonflower(i)
   return frames
 }
 

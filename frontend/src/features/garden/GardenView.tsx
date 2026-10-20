@@ -653,7 +653,8 @@ function CellInfo({ cell, player, map, state, catalog, now, planting, onPlant, o
   if (!info) return null
 
   const prop = propAt(map, cell.x, cell.y)
-  if ((prop?.door && doorOpen(prop.door, state)) || prop?.read) {
+  // ночная тропка днём закрыта, но описание с подсказкой «приходите вечером» всё равно нужно
+  if ((prop?.door && (doorOpen(prop.door, state) || prop.door.requiresNight)) || prop?.read) {
     const { door, read } = prop
     return (
       <div className={styles.cell}>
@@ -662,6 +663,9 @@ function CellInfo({ cell, player, map, state, catalog, now, planting, onPlant, o
           {door && doorOpen(door, state) && doorReachable(prop, player, cell) && <Button onClick={() => onEnter(door)}>{door.label}</Button>}
           {door && doorOpen(door, state) && !doorReachable(prop, player, cell) && (
             <p className={styles.hint}>Вход — с другой стороны: подойдите к двери.</p>
+          )}
+          {door?.requiresNight && !state.night && (
+            <p className={styles.hint}>Днём тропка теряется через три шага. Приходите вечером — с 20:00 до 6:00 её освещают цветы.</p>
           )}
           {door?.requiresFog && !doorOpen(door, state) && (
             <p className={styles.hint}>

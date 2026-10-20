@@ -17,6 +17,7 @@ import app.wheregrows.puzzle.PuzzleService;
 import app.wheregrows.errand.ErrandService;
 import app.wheregrows.story.BreadService;
 import app.wheregrows.story.FogService;
+import app.wheregrows.story.NightService;
 import app.wheregrows.testing.Testers;
 
 @Service
@@ -36,11 +37,13 @@ class GameStateService {
     private final FogService fog;
     private final Testers testers;
     private final BreadService bread;
+    private final NightService night;
 
     GameStateService(PlayerProfileRepository profiles, InventoryItemRepository inventory, HabitService habits,
                      GameCalendar calendar, GardenService garden, MagicService magic,
                      ExplorationService exploration, ProfileService profileService, MentorService mentor,
-                     PuzzleService puzzles, ErrandService errands, FogService fog, Testers testers, BreadService bread) {
+                     PuzzleService puzzles, ErrandService errands, FogService fog, Testers testers, BreadService bread, NightService night) {
+        this.night = night;
         this.bread = bread;
         this.fog = fog;
         this.testers = testers;
@@ -84,6 +87,7 @@ class GameStateService {
                 errands.states(playerId),
                 fog.state(playerId).orElse(null),
                 bread.state(playerId).orElse(null),
+                night.isNight(playerId),
                 testers.isTester(playerId));
     }
 }

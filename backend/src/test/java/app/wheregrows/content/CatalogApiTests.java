@@ -31,7 +31,7 @@ class CatalogApiTests {
                 .andExpect(jsonPath("$.crystals[0].color").value("#4fae6a"))
                 .andExpect(jsonPath("$.items[?(@.key == 'life_seed')].kind").value("CURRENCY"))
                 .andExpect(jsonPath("$.items[?(@.key == 'shard_rose')].crystalCategory").value("rose"))
-                .andExpect(jsonPath("$.species", hasSize(7)))
+                .andExpect(jsonPath("$.species", hasSize(8)))
                 .andExpect(jsonPath("$.species[?(@.key == 'radish')].stageMinutes[0]").value(10))
                 .andExpect(jsonPath("$.items[?(@.key == 'seed_radish')].kind").value("SEED"))
                 .andExpect(jsonPath("$.items[?(@.key == 'seed_radish')].price").value(2))
@@ -44,7 +44,7 @@ class CatalogApiTests {
     @Test
     void catalogListsLocationsConnectedByDoors() throws Exception {
         mvc.perform(get("/api/catalog"))
-                .andExpect(jsonPath("$.locations", hasSize(8)))
+                .andExpect(jsonPath("$.locations", hasSize(9)))
                 .andExpect(jsonPath("$.locations[0].key").value("home"))
                 .andExpect(jsonPath("$.locations[0].props[?(@.key == 'shed')].door.map").value("shed"))
                 // калитка ведёт на тропу, только когда её пробудили
@@ -64,6 +64,8 @@ class CatalogApiTests {
                 // глава 3: к плотине — когда Агата дома рассказала о садовнике; канава наполняется, когда построена хатка
                 .andExpect(jsonPath("$.locations[?(@.key == 'town')].props[?(@.key == 'dam-path')].door.requiresErrand").value("agata_hearth"))
                 .andExpect(jsonPath("$.locations[?(@.key == 'dam')].tiles.c.revive.when").value("beaver-lodge"))
-                .andExpect(jsonPath("$.locations[?(@.key == 'home')].npcs[?(@.key == 'gardener-home')].appearsAfter").value("gardener_return"));
+                .andExpect(jsonPath("$.locations[?(@.key == 'home')].npcs[?(@.key == 'gardener-home')].appearsAfter").value("gardener_return"))
+                // на Лунную поляну — только ночью
+                .andExpect(jsonPath("$.locations[?(@.key == 'east')].props[?(@.key == 'night-path')].door.requiresNight").value(true));
     }
 }

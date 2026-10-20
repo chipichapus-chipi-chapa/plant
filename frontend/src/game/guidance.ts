@@ -34,7 +34,8 @@ export function doorOpen(door: Door, state: GameState): boolean {
   const awake = !door.requires || state.worldObjects.some((w) => w.objectKey === door.requires)
   const errand = !door.requiresErrand || !!state.errands?.find((e) => e.key === door.requiresErrand)?.done
   const fog = !door.requiresFog || fogCleared(state.fog)
-  return awake && errand && fog
+  const night = !door.requiresNight || state.night
+  return awake && errand && fog && night
 }
 
 /**
