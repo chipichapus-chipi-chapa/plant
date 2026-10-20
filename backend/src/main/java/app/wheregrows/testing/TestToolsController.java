@@ -45,6 +45,12 @@ class TestToolsController {
         tools.fogClear(player.id());
     }
 
+    @PostMapping("/bread-day")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void breadDay() {
+        tools.breadDay(player.id());
+    }
+
     @PostMapping("/reset")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void reset() {

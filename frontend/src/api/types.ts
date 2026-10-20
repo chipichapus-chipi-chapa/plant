@@ -79,6 +79,10 @@ export type Npc = {
   secrets?: Record<string, string> | null
   /** Облик человека (слот → вариант, как у героя): жители-люди собираются из тех же слоёв; у зверей — нет */
   appearance?: Record<string, string> | null
+  /** Житель появляется здесь после этого поручения (семья Агаты возвращается в поместье) */
+  appearsAfter?: string | null
+  /** …и уходит отсюда после этого поручения (уплывает из городка) */
+  leavesAfter?: string | null
 }
 
 /**
@@ -113,6 +117,8 @@ export type GardenMap = {
   npcs?: Npc[] | null
   /** Туман (Туманное озеро) */
   fog?: Fog | null
+  /** Субботний хлеб: кто печёт и его разговоры — ready (испечён сейчас), baked (уже был), waiting (ждём субботы) */
+  bread?: { npc: string; after: string; day: string; base: number; talks: { ready: string; baked: string; waiting: string } } | null
 }
 
 /** Магический рецепт: ингредиенты пробуждают постройку с карты (targetObjectKey) */
@@ -173,6 +179,10 @@ export type MentorContent = {
   secrets?: Record<string, string> | null
   /** Облик человека (слот → вариант, как у героя): жители-люди собираются из тех же слоёв; у зверей — нет */
   appearance?: Record<string, string> | null
+  /** Житель появляется здесь после этого поручения (семья Агаты возвращается в поместье) */
+  appearsAfter?: string | null
+  /** …и уходит отсюда после этого поручения (уплывает из городка) */
+  leavesAfter?: string | null
 }
 
 export type Catalog = {
@@ -236,6 +246,11 @@ export type GameState = {
    * days — сколько дней-возвращений набралось (не больше needed).
    */
   fog: { map: string; started: boolean; days: number; needed: number } | null
+  /**
+   * Субботний хлеб; null — в игре его нет. home — Агата дома и печь горит; today — сегодня суббота;
+   * baked — на этой неделе уже испечён; days — дни недели с привычками; loaf — сколько Семян жизни в каравае.
+   */
+  bread: { home: boolean; today: boolean; baked: boolean; days: number; loaf: number } | null
   /** Доступны кнопки тестирования (локально — всегда, на сервере — из списка GAME_TESTERS) */
   tester: boolean
   /** Пробуждённые объекты мира; нет в списке — объект спит */

@@ -40,6 +40,7 @@ public class GardenMaps {
         }
         validateDoors();
         validateFog();
+        validateStory();
     }
 
     public GardenMap home() {
@@ -69,6 +70,36 @@ public class GardenMaps {
     }
 
     public record NpcErrand(GardenMap.Npc npc, GardenMap.Errand errand) {
+    }
+
+    /** Карта, где пекут субботний хлеб, или пусто. */
+    public Optional<GardenMap> bakery() {
+        return maps.values().stream().filter(m -> m.bread() != null).findFirst();
+    }
+
+    /** Субботний хлеб и переезды жителей ссылаются на настоящие поручения и жителей. */
+    private void validateStory() {
+        for (GardenMap map : maps.values()) {
+            for (GardenMap.Npc npc : map.npcsOrEmpty()) {
+                map.require(npc.appearsAfter() == null || errand(npc.appearsAfter()).isPresent(),
+                        npc.name() + " появляется после несуществующего поручения " + npc.appearsAfter());
+                map.require(npc.leavesAfter() == null || errand(npc.leavesAfter()).isPresent(),
+                        npc.name() + " уходит после несуществующего поручения " + npc.leavesAfter());
+            }
+            GardenMap.Bread bread = map.bread();
+            if (bread == null) {
+                continue;
+            }
+            GardenMap.Npc baker = map.npcsOrEmpty().stream().filter(n -> n.key().equals(bread.npc())).findFirst().orElse(null);
+            map.require(baker != null, "хлеб печёт несуществующий житель " + bread.npc());
+            map.require(errand(bread.after()).isPresent(), "хлеб ждёт несуществующее поручение " + bread.after());
+            map.require(bread.day() != null && bread.base() >= 0, "у хлеба нет дня или размер отрицательный");
+            for (String key : List.of("ready", "baked", "waiting")) {
+                String talk = bread.talks() == null ? null : bread.talks().get(key);
+                map.require(talk != null && baker.dialogues() != null && baker.dialogues().containsKey(talk),
+                        "у " + baker.name() + " нет разговора о хлебе «" + key + "»");
+            }
+        }
     }
 
     /** Карта с туманом (Туманное озеро) или пусто. */

@@ -120,7 +120,10 @@ INSERT INTO recipe_def (key, name, description, target_object_key, result_text, 
         'manor-well', 'Где-то глубоко булькает, и ведро поднимается полным. Клумбы вокруг вздыхают — и расцветают.', 8, 'Наполнить'),
     ('light_lamp_post', 'Первый холодный вечер',
         'Фонарь зажигают в первый холодный вечер. Солнечной искры хватит, чтобы он вспомнил, как это.',
-        'lamp-post', 'Фонарь вспыхивает тёплым светом. Табличка под ним больше не грустит.', 9, 'Зажечь')
+        'lamp-post', 'Фонарь вспыхивает тёплым светом. Табличка под ним больше не грустит.', 9, 'Зажечь'),
+    ('light_hearth', 'Огонь в очаге',
+        'Янтарь очага помнит, как здесь было тепло, а Солнечная искра — как разгорается огонь. Вместе они разбудят печь.',
+        'hearth', 'Угли вздохнули, и в печи заплясал огонь. Кухня сразу стала меньше и уютнее — как и положено кухне.', 10, 'Разжечь')
 ON CONFLICT (key) DO UPDATE SET
     name = EXCLUDED.name,
     description = EXCLUDED.description,
@@ -130,7 +133,7 @@ ON CONFLICT (key) DO UPDATE SET
     action_label = EXCLUDED.action_label;
 
 DELETE FROM recipe_ingredient WHERE recipe_key IN ('awaken_basin', 'open_east_gate', 'repair_wheelbarrow', 'fill_barrel',
-    'wake_lily_west', 'wake_lily_east', 'wake_lily_south', 'fill_manor_well', 'light_lamp_post');
+    'wake_lily_west', 'wake_lily_east', 'wake_lily_south', 'fill_manor_well', 'light_lamp_post', 'light_hearth');
 INSERT INTO recipe_ingredient (recipe_key, item_key, quantity) VALUES
     ('awaken_basin', 'shard_emerald', 2),
     ('awaken_basin', 'shard_amethyst', 1),
@@ -141,7 +144,9 @@ INSERT INTO recipe_ingredient (recipe_key, item_key, quantity) VALUES
     ('wake_lily_east', 'shard_emerald', 1),
     ('wake_lily_south', 'shard_amber', 1),
     ('fill_manor_well', 'shard_sapphire', 1),
-    ('light_lamp_post', 'sun_spark', 1);
+    ('light_lamp_post', 'sun_spark', 1),
+    ('light_hearth', 'shard_amber', 2),
+    ('light_hearth', 'sun_spark', 1);
 
 -- Артефакты -------------------------------------------------------------------
 -- Лор раскрывается понемногу: через описание, легенду и подсказки к ещё не найденному.

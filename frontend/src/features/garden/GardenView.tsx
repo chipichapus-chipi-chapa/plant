@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ApiError } from '../../api/client'
-import { acceptErrand, completeErrand, plantSeed, weedBed } from '../../api/game'
+import { acceptErrand, bakeBread, completeErrand, plantSeed, weedBed } from '../../api/game'
 import type { Catalog, Door, Errand, GameState, GardenMap, Npc, Puzzle } from '../../api/types'
 import { frameImage, loadAtlas, type Atlas } from '../../game/atlas'
 import { composeCharacter, composeCharacterFrames } from '../../game/character'
@@ -95,6 +95,9 @@ function nextTalk(npc: Npc): string {
   return !met || rest.length === 0 ? npc.talks[0] : rest[Math.floor(Math.random() * rest.length)]
 }
 
+/** Случайное число для выбора реплики (вне компонента: в разговорах случайность — это нормально). */
+const roll = () => Math.random()
+
 /** Какую новость о тумане Тишь уже рассказала (густой → редеет → рассеялся) — чтобы новую сказать сразу. */
 const FOG_HEARD = 'where-grows-fog-heard'
 
@@ -161,8 +164,12 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     const base = catalog.locations.find((l) => l.key === location.key) ?? catalog.garden
     const awake = new Set(state.worldObjects.map((w) => w.objectKey))
     const map = withRevived(base.key === HOME ? withWeeded(base, state.garden.weeded) : base, awake)
+    const done = (key: string | null | undefined) => !!key && !!state.errands.find((e) => e.key === key)?.done
+    // сторож уходит с дороги, семья Агаты уплывает из городка и появляется в поместье;
+    // пока с жителем идёт разговор, он не исчезает посреди фразы
     const gone = (n: Npc) =>
-      !!n.errand?.leaves && !!state.errands.find((e) => e.key === n.errand!.key)?.done && chat?.npc.key !== n.key
+      chat?.npc.key !== n.key &&
+      ((!!n.errand?.leaves && done(n.errand.key)) || done(n.leavesAfter) || (!!n.appearsAfter && !done(n.appearsAfter)))
     return map.npcs?.some(gone) ? { ...map, npcs: map.npcs.filter((n) => !gone(n)) } : map
   }, [catalog, location.key, state.garden.weeded, state.worldObjects, state.errands, chat])
   // читаем письмо — текст в окне поверх сада
@@ -344,8 +351,15 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     const status = errand && state.errands.find((e) => e.key === errand.key)
     if (errand && !status?.offered) return setChat({ npc, dialogue: errand.offer, accept: errand })
     if (errand && !status?.done) return setChat({ npc, dialogue: errand.waiting })
+    // субботний хлеб: у пекаря (Агаты дома) разговор о каравае
+    if (map.bread?.npc === npc.key && state.bread?.home) {
+      if (state.bread.today && !state.bread.baked) return void bake(npc)
+      if (state.bread.baked || roll() < 0.4) {
+        return setChat({ npc, dialogue: state.bread.baked ? map.bread.talks.baked : map.bread.talks.waiting })
+      }
+    }
     const secret = secretTalk(npc.secrets, state.player.appearance, npc.key)
-    const fog = fogTalk(npc.key, map, state.fog, heardFogBand(), Math.random())
+    const fog = fogTalk(npc.key, map, state.fog, heardFogBand(), roll())
     if (fog && state.fog) rememberFogBand(fogBand(state.fog))
     setChat({ npc, dialogue: secret ?? fog ?? nextTalk(npc) })
   }
@@ -357,6 +371,25 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
    * вместе с наградой), и житель благодарит; иначе просто разговор.
    */
   const [handing, setHanding] = useState(false)
+  /** Суббота: Агата отдаёт каравай — Семена жизни по числу хороших дней недели. */
+  const bake = async (npc: Npc) => {
+    if (handing || !map.bread) return
+    setHanding(true)
+    try {
+      const result = await bakeBread()
+      toast({
+        message: `Субботний каравай: хороших дней на этой неделе — ${result.days}.`,
+        reward: describeReward(result.reward, catalog),
+      })
+      setChat({ npc, dialogue: map.bread.talks.ready })
+      await onChanged()
+    } catch (e) {
+      toast({ message: e instanceof ApiError ? (e.detail ?? e.title) : 'Не получилось. Попробуйте ещё раз.' })
+    } finally {
+      setHanding(false)
+    }
+  }
+
   const meet = async (npc: Npc) => {
     if (!errandReady(npc, state) || handing) return talkTo(npc)
     setHanding(true)

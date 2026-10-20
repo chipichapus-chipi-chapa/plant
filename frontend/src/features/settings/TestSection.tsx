@@ -9,6 +9,7 @@ const ACTIONS: { action: TestAction; label: string; done: string }[] = [
   { action: 'open-paths', label: 'Открыть все тропы', done: 'Калитка открыта, Хмур пропустил, сад поместья ожил — туман начал редеть.' },
   { action: 'fog-day', label: 'Туман +1 день', done: 'Как будто прошёл ещё один день с привычками.' },
   { action: 'fog-clear', label: 'Рассеять туман', done: 'Туман над озером рассеялся.' },
+  { action: 'bread-day', label: 'Сегодня суббота', done: 'Агата испечёт хлеб в любой день (раз в неделю, как обычно).' },
 ]
 
 /**

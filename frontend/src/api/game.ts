@@ -1,5 +1,5 @@
 import { apiFetch } from './client'
-import type { AttemptResult, CastResult, ErrandResult, Catalog, CompletionResult, DayCompletionResult, FinishDialogueResult, HabitHistory, GameState, GardenObject, Habit, HabitInput, PurchaseResult, SearchResult, WeedResult } from './types'
+import type { AttemptResult, CastResult, ErrandResult, Catalog, CompletionResult, DayCompletionResult, FinishDialogueResult, HabitHistory, GameState, GardenObject, Habit, HabitInput, PurchaseResult, SearchResult, WeedResult, ItemGrant } from './types'
 
 export const fetchGameState = () => apiFetch<GameState>('/api/state')
 export const fetchCatalog = () => apiFetch<Catalog>('/api/catalog')
@@ -64,5 +64,8 @@ export const finishDialogue = (key: string) =>
   apiFetch<FinishDialogueResult>(`/api/mentor/dialogues/${key}/finish`, { method: 'POST' })
 
 /** Кнопки тестирования (только для тестировщиков): ресурсы, все тропы, туман, новая игра */
-export type TestAction = 'resources' | 'open-paths' | 'fog-day' | 'fog-clear' | 'reset'
+export type TestAction = 'resources' | 'open-paths' | 'fog-day' | 'fog-clear' | 'bread-day' | 'reset'
 export const runTestAction = (action: TestAction) => apiFetch<void>(`/api/test/${action}`, { method: 'POST' })
+
+/** Испечь субботний каравай у Агаты: Семена жизни по числу дней недели с привычками */
+export const bakeBread = () => apiFetch<{ days: number; reward: ItemGrant[] }>('/api/story/bread', { method: 'POST' })

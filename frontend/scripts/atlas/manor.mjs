@@ -449,7 +449,8 @@ function cupboard(open) {
 }
 
 /** Печь: белёный бок, чугунная дверца, угли, пузатый чайник на плите. */
-function hearth() {
+/** Печь; lit — разожжена: в устье пляшет огонь, угли светятся, из чайника пар. */
+function hearth(lit = false) {
   const s = new Sprite(2 * T, T)
   const h = new Sprite(2 * T, T)
   for (let y = 6; y < 30; y++) for (let x = 4; x < 60; x++) h.px(x, y, x < 7 ? R.bone[3] : x > 56 ? R.bone[0] : y < 9 ? R.bone[3] : R.bone[2])
@@ -457,6 +458,16 @@ function hearth() {
   h.rect(18, 14, 26, 13, R.silver[0])
   for (let y = 16; y < 25; y++) for (let x = 20; x < 42; x++) h.px(x, y, y > 20 ? pick(R.lamp.slice(0, 3), (y - 20) / 5, x, y) : P.dark)
   h.rect(18, 27, 26, 2, R.silver[1])
+  if (lit) {
+    // огонь: три языка пламени над углями, от жёлтого к оранжевому
+    for (const [cx, height] of [[25, 8], [31, 10], [37, 7]]) {
+      for (let y = 0; y < height; y++) {
+        const w = Math.max(1, Math.round((height - y) / 3))
+        for (let x = -w; x <= w; x++) h.px(cx + x, 25 - y, y > height * 0.6 ? R.lamp[5] : y > height * 0.3 ? R.lamp[4] : R.lamp[3])
+      }
+    }
+    for (let x = 20; x < 42; x += 2) h.px(x, 25, R.lamp[2])
+  }
   h.outline(INK)
   s.stamp(h)
   const k = new Sprite(2 * T, T)
@@ -465,6 +476,7 @@ function hearth() {
   k.rect(46, -1, 4, 2, R.silver[2])
   k.outline(INK)
   s.stamp(k)
+  if (lit) for (const [x, y] of [[55, 0], [57, -2], [56, -4]]) s.px(x, y, R.bone[3], 160) // пар из носика
   return s
 }
 
@@ -679,6 +691,7 @@ export function manorFrames() {
     prop_lamp_post: lampPost(),
     prop_lamp_post_awakened: lampPost(true),
     prop_hearth: hearth(),
+    prop_hearth_awakened: hearth(true),
     prop_jar_shelf: jarShelf(),
     prop_cupboard: cupboard(false),
     prop_cupboard_open: cupboard(true),

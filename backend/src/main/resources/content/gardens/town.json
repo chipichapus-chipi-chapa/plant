@@ -228,6 +228,10 @@
             },
             "b": {
               "text": "Вот розы. Колючие, но очень благодарные. Посади там, где их будет видно из окна.",
+              "next": "c"
+            },
+            "c": {
+              "text": "А нам пора. Соберём узелки, и — домой, через озеро. Встретимся на кухне поместья: Мята, поди, заждалась.",
               "next": null
             }
           }
@@ -266,7 +270,8 @@
         "waiting": "agata_wait",
         "thanks": "agata_thanks",
         "leaves": false
-      }
+      },
+      "leavesAfter": "agata_roses"
     },
     {
       "key": "liza",
@@ -333,6 +338,10 @@
             },
             "b": {
               "text": "Держите ирисы. А в вашей лавке теперь будут мои цветы — ирисы, розы и маргаритки. Крупка обещала доставлять, за горсть семечек.",
+              "next": "c"
+            },
+            "c": {
+              "text": "Всё, решено: я домой. Клумбы в поместье без меня совсем заскучали. Найдёте меня у них!",
               "next": null
             }
           }
@@ -367,7 +376,8 @@
         "waiting": "liza_wait",
         "thanks": "liza_thanks",
         "leaves": false
-      }
+      },
+      "leavesAfter": "liza_irises"
     },
     {
       "key": "nika",
@@ -434,6 +444,10 @@
             },
             "b": {
               "text": "Держи маргаритки. Посади там, где ходят, — они любят, когда на них смотрят.",
+              "next": "c"
+            },
+            "c": {
+              "text": "А я — домой! К качелям! Догоняй!",
               "next": null
             }
           }
@@ -468,7 +482,8 @@
         "waiting": "nika_wait",
         "thanks": "nika_thanks",
         "leaves": false
-      }
+      },
+      "leavesAfter": "nika_daisies"
     },
     {
       "key": "timosha",
@@ -523,7 +538,8 @@
         "outfit_color": "mustard",
         "accessory": "beanie",
         "bag": "backpack"
-      }
+      },
+      "leavesAfter": "agata_roses"
     }
   ]
 }

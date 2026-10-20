@@ -279,6 +279,100 @@
         "thanks": "shurshik_thanks",
         "leaves": false
       }
+    },
+    {
+      "key": "liza-home",
+      "name": "Лиза",
+      "kind": "human",
+      "x": 3,
+      "y": 6,
+      "description": "Лиза дома, у своих клумб. Колени в земле, за ухом — ирис. Кажется, она разговаривает с цветами, и они отвечают.",
+      "talks": [
+        "liza_home_hello",
+        "liza_home_beds",
+        "liza_home_shop"
+      ],
+      "dialogues": {
+        "liza_home_hello": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Вы только посмотрите! Здесь всё растёт в полную силу. Земля своя — цветы это чувствуют.",
+              "next": null
+            }
+          }
+        },
+        "liza_home_beds": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Ирисы — к воде, розы — под окна, маргаритки — вдоль тропинок. Так было при садовнике, так будет и сейчас.",
+              "next": null
+            }
+          }
+        },
+        "liza_home_shop": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Крупка доставляет мои цветы в вашу лавку. Берёт горстью семечек за пакетик. Мне кажется, она немножко жульничает. Но очень мило.",
+              "next": null
+            }
+          }
+        }
+      },
+      "appearance": {
+        "skin": "warm",
+        "hair": "braid",
+        "hair_color": "chestnut",
+        "outfit": "dress",
+        "outfit_color": "sky",
+        "accessory": "flower",
+        "bag": "tote"
+      },
+      "appearsAfter": "liza_irises"
+    },
+    {
+      "key": "nika-home",
+      "name": "Ника",
+      "kind": "human",
+      "x": 14,
+      "y": 6,
+      "description": "Ника дома. Сидела бы на качелях, если бы до них дотягивалась. Пока что стоит рядом и смотрит на них с огромным уважением.",
+      "talks": [
+        "nika_home_hello",
+        "nika_home_swing"
+      ],
+      "dialogues": {
+        "nika_home_hello": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Качели висят! Я же говорила! Ну, я надеялась. Это почти то же самое.",
+              "next": null
+            }
+          }
+        },
+        "nika_home_swing": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Мой подсолнух растёт? Обещай, что он будет выше дуба. Ну, выше меня. Ладно, хотя бы выше Шуршика.",
+              "next": null
+            }
+          }
+        }
+      },
+      "appearance": {
+        "skin": "light",
+        "hair": "gathered",
+        "hair_color": "copper",
+        "outfit": "overalls",
+        "outfit_color": "berry",
+        "accessory": "leaf_clip",
+        "bag": "none"
+      },
+      "appearsAfter": "nika_daisies"
     }
   ]
 }
