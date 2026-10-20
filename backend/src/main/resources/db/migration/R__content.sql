@@ -100,7 +100,9 @@ INSERT INTO item_def (key, kind, name, description, price, species_key, crystal_
     ('produce_daisy',      'PRODUCE', 'Венок из маргариток',
         'Ника научила плести: три цветка, перекрестить, ещё три.', NULL, NULL, NULL, NULL),
     ('produce_moonflower', 'PRODUCE', 'Лунный цветок',
-        'Светится в ладонях голубым. Днём засыпает, но не вянет.', NULL, NULL, NULL, NULL)
+        'Светится в ладонях голубым. Днём засыпает, но не вянет.', NULL, NULL, NULL, NULL),
+    ('fair_ribbon', 'DECOR', 'Голубая лента «Лучший сад»',
+        'Награда осенней ярмарки. Мельник вышивал буквы сам — «С» получилась немного кривой, и от этого лента ещё дороже.', NULL, NULL, NULL, NULL)
 ON CONFLICT (key) DO UPDATE SET
     kind = EXCLUDED.kind,
     name = EXCLUDED.name,
@@ -172,7 +174,17 @@ INSERT INTO recipe_def (key, name, description, target_object_key, result_text, 
         'star-tree-1', 'Стекло теплеет изнутри, листья вспыхивают лиловым и звенят — будто смеются.', 15, 'Разбудить'),
     ('wake_star_tree_2', 'Свет для хрустального дерева',
         'Аметист напомнит дереву, как светиться, а сапфир — дорогу к звёздной воде.',
-        'star-tree-2', 'Хрустальные листья загораются один за другим, и по траве бегут искорки.', 16, 'Разбудить')
+        'star-tree-2', 'Хрустальные листья загораются один за другим, и по траве бегут искорки.', 16, 'Разбудить'),
+    -- осенняя ярмарка: прилавки заполняют своим урожаем
+    ('fill_stall_flowers', 'Цветочный прилавок',
+        'Роза, ирис и маргаритки — всё, что выросло на ваших грядках.',
+        'fair-stall-flowers', 'Цветы встают в горшки и вёдра, навес будто становится ярче. Кто-то уже остановился понюхать розу.', 17, 'Разложить'),
+    ('fill_stall_veg', 'Овощной прилавок',
+        'Пара пучков редиса и корзинка семечек — для тех, кто придёт голодным.',
+        'fair-stall-veg', 'Редис ложится аккуратной горкой, семечки — в бумажные кулёчки. Пахнет землёй и летом.', 18, 'Разложить'),
+    ('fill_stall_moon', 'Вечерний прилавок',
+        'Лунный цветок — для фонарика, лилия — для красоты, ромашки — для чая.',
+        'fair-stall-moon', 'Лунный цветок повисает на крючке и светится, как фонарик. Рядом в чайнике заваривается ромашка.', 19, 'Разложить')
 ON CONFLICT (key) DO UPDATE SET
     name = EXCLUDED.name,
     description = EXCLUDED.description,
@@ -182,7 +194,8 @@ ON CONFLICT (key) DO UPDATE SET
     action_label = EXCLUDED.action_label;
 
 DELETE FROM recipe_ingredient WHERE recipe_key IN ('awaken_basin', 'open_east_gate', 'repair_wheelbarrow', 'fill_barrel',
-    'wake_lily_west', 'wake_lily_east', 'wake_lily_south', 'fill_manor_well', 'light_lamp_post', 'light_hearth', 'build_lodge', 'light_glade_lamp_1', 'light_glade_lamp_2', 'light_glade_lamp_3', 'wake_star_tree_1', 'wake_star_tree_2');
+    'wake_lily_west', 'wake_lily_east', 'wake_lily_south', 'fill_manor_well', 'light_lamp_post', 'light_hearth', 'build_lodge', 'light_glade_lamp_1', 'light_glade_lamp_2', 'light_glade_lamp_3', 'wake_star_tree_1', 'wake_star_tree_2',
+    'fill_stall_flowers', 'fill_stall_veg', 'fill_stall_moon');
 INSERT INTO recipe_ingredient (recipe_key, item_key, quantity) VALUES
     ('awaken_basin', 'shard_emerald', 2),
     ('awaken_basin', 'shard_amethyst', 1),
@@ -204,7 +217,15 @@ INSERT INTO recipe_ingredient (recipe_key, item_key, quantity) VALUES
     ('wake_star_tree_1', 'shard_amethyst', 1),
     ('wake_star_tree_1', 'shard_sapphire', 1),
     ('wake_star_tree_2', 'shard_amethyst', 1),
-    ('wake_star_tree_2', 'shard_sapphire', 1);
+    ('wake_star_tree_2', 'shard_sapphire', 1),
+    ('fill_stall_flowers', 'produce_rose', 1),
+    ('fill_stall_flowers', 'produce_iris', 1),
+    ('fill_stall_flowers', 'produce_daisy', 1),
+    ('fill_stall_veg', 'produce_radish', 2),
+    ('fill_stall_veg', 'produce_sunflower', 1),
+    ('fill_stall_moon', 'produce_moonflower', 1),
+    ('fill_stall_moon', 'produce_lily', 1),
+    ('fill_stall_moon', 'produce_chamomile', 1);
 
 -- Артефакты -------------------------------------------------------------------
 -- Лор раскрывается понемногу: через описание, легенду и подсказки к ещё не найденному.
