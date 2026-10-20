@@ -141,7 +141,13 @@ INSERT INTO recipe_def (key, name, description, target_object_key, result_text, 
         'glade-lamp-2', 'Фонарь наверху справа загорается мягким лиловым светом. Лунные цветы рядом будто придвинулись поближе.', 13, 'Зажечь'),
     ('light_glade_lamp_3', 'Огонёк для фонаря',
         'Аметист светится, когда что-то создаёшь. Положите его в каменный фонарь — и поляна станет светлее.',
-        'glade-lamp-3', 'Фонарь у тропки загорается мягким лиловым светом. Лунные цветы рядом будто придвинулись поближе.', 14, 'Зажечь')
+        'glade-lamp-3', 'Фонарь у тропки загорается мягким лиловым светом. Лунные цветы рядом будто придвинулись поближе.', 14, 'Зажечь'),
+    ('wake_star_tree_1', 'Свет для хрустального дерева',
+        'Аметист напомнит дереву, как светиться, а сапфир — дорогу к звёздной воде.',
+        'star-tree-1', 'Стекло теплеет изнутри, листья вспыхивают лиловым и звенят — будто смеются.', 15, 'Разбудить'),
+    ('wake_star_tree_2', 'Свет для хрустального дерева',
+        'Аметист напомнит дереву, как светиться, а сапфир — дорогу к звёздной воде.',
+        'star-tree-2', 'Хрустальные листья загораются один за другим, и по траве бегут искорки.', 16, 'Разбудить')
 ON CONFLICT (key) DO UPDATE SET
     name = EXCLUDED.name,
     description = EXCLUDED.description,
@@ -151,7 +157,7 @@ ON CONFLICT (key) DO UPDATE SET
     action_label = EXCLUDED.action_label;
 
 DELETE FROM recipe_ingredient WHERE recipe_key IN ('awaken_basin', 'open_east_gate', 'repair_wheelbarrow', 'fill_barrel',
-    'wake_lily_west', 'wake_lily_east', 'wake_lily_south', 'fill_manor_well', 'light_lamp_post', 'light_hearth', 'build_lodge', 'light_glade_lamp_1', 'light_glade_lamp_2', 'light_glade_lamp_3');
+    'wake_lily_west', 'wake_lily_east', 'wake_lily_south', 'fill_manor_well', 'light_lamp_post', 'light_hearth', 'build_lodge', 'light_glade_lamp_1', 'light_glade_lamp_2', 'light_glade_lamp_3', 'wake_star_tree_1', 'wake_star_tree_2');
 INSERT INTO recipe_ingredient (recipe_key, item_key, quantity) VALUES
     ('awaken_basin', 'shard_emerald', 2),
     ('awaken_basin', 'shard_amethyst', 1),
@@ -169,7 +175,11 @@ INSERT INTO recipe_ingredient (recipe_key, item_key, quantity) VALUES
     ('build_lodge', 'shard_sapphire', 1),
     ('light_glade_lamp_1', 'shard_amethyst', 1),
     ('light_glade_lamp_2', 'shard_amethyst', 1),
-    ('light_glade_lamp_3', 'shard_amethyst', 1);
+    ('light_glade_lamp_3', 'shard_amethyst', 1),
+    ('wake_star_tree_1', 'shard_amethyst', 1),
+    ('wake_star_tree_1', 'shard_sapphire', 1),
+    ('wake_star_tree_2', 'shard_amethyst', 1),
+    ('wake_star_tree_2', 'shard_sapphire', 1);
 
 -- Артефакты -------------------------------------------------------------------
 -- Лор раскрывается понемногу: через описание, легенду и подсказки к ещё не найденному.
@@ -204,7 +214,12 @@ INSERT INTO artifact_def (key, name, crystal_category, description, legend, acqu
         'Гладкий камешек, внутри которого лежит лунный блик и не уходит даже днём.',
         'Луна уронила его, когда смотрелась в пруд на поляне. Сова Ухта уверена, что луна до сих пор его ищет.',
         'Ночью, у тихой воды, ищите блик, который не уходит.',
-        'Пока просто светится в ладони. Может быть, однажды покажет дорогу в темноте.', 6)
+        'Пока просто светится в ладони. Может быть, однажды покажет дорогу в темноте.', 6),
+    ('kitten_bell', 'Колокольчик Искорки', 'rose',
+        'Крошечный серебряный колокольчик. Звенит так тихо, что слышно только тем, кто прислушивается.',
+        'Мурлана повесила его котёнку на шею, чтобы та не терялась в Светлолесье. Потерялся — колокольчик.',
+        'В Светлолесье что-то звенит в светящемся кусте.',
+        'Если позвенеть перед сном, сны получаются светлее.', 7)
 ON CONFLICT (key) DO UPDATE SET
     name = EXCLUDED.name,
     crystal_category = EXCLUDED.crystal_category,
@@ -270,7 +285,10 @@ INSERT INTO discovery_spot (key, prop_key, found_text, empty_text, requires_awak
         'Туман дышит над водой. Хорошо просто посидеть.', NULL, NULL, 'gardener_song', TRUE, 'Посидеть'),
     ('moonstone', 'pond-stone',
         'Вы поднимаете камень — и блик остаётся в нём, тёплый и голубой. Это лунный камень.',
-        'У пруда тихо. Луна смотрится в воду и, кажется, улыбается.', NULL, NULL, 'moonstone', FALSE, 'Поднять камень')
+        'У пруда тихо. Луна смотрится в воду и, кажется, улыбается.', NULL, NULL, 'moonstone', FALSE, 'Поднять камень'),
+    ('kitten_bell', 'glow-bush',
+        'Вы осторожно раздвигаете светящиеся ветки — дзинь! На донышке куста лежит крошечный колокольчик.',
+        'В кусте тихо. Только грибы рядом светятся чуть ярче — будто довольны.', NULL, NULL, 'kitten_bell', FALSE, 'Заглянуть в куст')
 ON CONFLICT (key) DO UPDATE SET
     prop_key = EXCLUDED.prop_key,
     found_text = EXCLUDED.found_text,
@@ -286,7 +304,7 @@ UPDATE discovery_spot SET action_label = 'Заглянуть под рогожу
 UPDATE discovery_spot SET action_label = 'Заглянуть под камни' WHERE key = 'rock_cache';
 
 DELETE FROM discovery_spot_reward WHERE spot_key IN ('rock_cache', 'shed_corner', 'fence_tools', 'bridge_compass', 'hearth_glow',
-    'rock_whisper', 'shelf_jar', 'burrow_knock', 'oak_swing', 'moonstone');
+    'rock_whisper', 'shelf_jar', 'burrow_knock', 'oak_swing', 'moonstone', 'kitten_bell');
 INSERT INTO discovery_spot_reward (spot_key, item_key, quantity) VALUES
     ('rock_cache', 'shard_amethyst', 2),
     ('rock_cache', 'shard_emerald', 1),
@@ -299,7 +317,8 @@ INSERT INTO discovery_spot_reward (spot_key, item_key, quantity) VALUES
     ('burrow_knock', 'shard_amber', 1),
     ('burrow_knock', 'life_seed', 1),
     ('oak_swing', 'sun_spark', 1),
-    ('moonstone', 'life_seed', 2);
+    ('moonstone', 'life_seed', 2),
+    ('kitten_bell', 'life_seed', 1);
 
 -- Загадки ---------------------------------------------------------------------
 -- Подсказка к ящику — в письме прежнего садовника (content/gardens/shed.json, постройка letter).

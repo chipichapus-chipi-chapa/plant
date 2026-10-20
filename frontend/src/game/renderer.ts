@@ -160,9 +160,21 @@ const MOON_GLOW: Glow = [150, 200, 255]
 /** Лиловый огонь каменных фонарей на поляне */
 const LILAC_GLOW: Glow = [196, 168, 255]
 
+/** Бирюзовое свечение грибов и звёздной арки Светлолесья */
+const TEAL_GLOW: Glow = [120, 230, 210]
+
 /** Клетки, которые светятся сами. */
 const TILE_LIGHTS: Record<string, Omit<Light, 'x' | 'y'>> = {
   moonflowers: { radius: 30, strength: 0.55, color: MOON_GLOW },
+  glowshrooms: { radius: 30, strength: 0.6, color: TEAL_GLOW },
+  starwater: { radius: 26, strength: 0.35, color: MOON_GLOW },
+}
+
+/** Существа, которые светятся сами (кошки Светлолесья): свет от их клетки. */
+export const CREATURE_GLOW: Record<string, Light> = {
+  greatcat: { x: 0, y: -14, radius: 80, strength: 0.9, color: [220, 205, 255] },
+  nightcat: { x: 0, y: -14, radius: 70, strength: 0.75, color: MOON_GLOW },
+  kitten: { x: 0, y: -10, radius: 44, strength: 0.7, color: [240, 230, 255] },
 }
 
 /** Растения, которые светятся, когда выросли. */
@@ -214,6 +226,11 @@ const PROP_LIGHTS: Record<string, [number, number, number, number, Glow?][]> = {
   windmill: [[48, 62, 30, 0.6]],
   // Лунная поляна: зажжённые каменные фонари
   glade_lamp_awakened: [[16, 16, 70, 0.9, LILAC_GLOW]],
+  // Светлолесье: арка, проснувшиеся хрустальные деревья, куст
+  star_gate: [[16, 16, 56, 0.85, TEAL_GLOW]],
+  crystal_tree: [[32, 30, 40, 0.35, LILAC_GLOW]],
+  crystal_tree_awakened: [[32, 30, 110, 1, LILAC_GLOW]],
+  glow_bush: [[16, 18, 40, 0.6, TEAL_GLOW]],
 }
 
 function propLights(map: GardenMap, awakened: ReadonlySet<string>): Light[] {
@@ -415,14 +432,18 @@ function idleImage(c: CharacterSprite, time: number): CanvasImageSource {
 }
 
 function drawCharacter(ctx: CanvasRenderingContext2D, c: CharacterSprite) {
-  const left = Math.round(c.px - CHARACTER_WIDTH / 2)
-  const top = Math.round(c.py - CHARACTER_HEIGHT + 2 - (c.lift ?? 0))
+  // обычно кадр 32×48; большие существа (кошки Светлолесья) шире — встают по центру своей клетки
+  const size = c.image as { width?: number; height?: number }
+  const width = size.width || CHARACTER_WIDTH
+  const height = size.height || CHARACTER_HEIGHT
+  const left = Math.round(c.px - width / 2)
+  const top = Math.round(c.py - height + 2 - (c.lift ?? 0))
   if (!c.flip) {
     ctx.drawImage(c.image, left, top)
     return
   }
   ctx.save()
-  ctx.translate(left + CHARACTER_WIDTH, top)
+  ctx.translate(left + width, top)
   ctx.scale(-1, 1)
   ctx.drawImage(c.image, 0, 0)
   ctx.restore()
