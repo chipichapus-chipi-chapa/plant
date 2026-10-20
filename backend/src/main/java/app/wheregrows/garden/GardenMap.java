@@ -6,15 +6,17 @@ import java.util.Map;
 /**
  * Карта локации (сад, сарай изнутри): тайлы задаются строками символов, легенда описывает каждый символ,
  * постройки (props) лежат поверх тайлов. Хранится как контент в resources/content/gardens.
+ * beyond — что видно за краем карты, когда экран шире неё: sea — озеро (у острова); без него — темнота
+ * (у домашнего сада свой мир вокруг).
  */
 public record GardenMap(String key, String name, int width, int height, Map<String, TileType> tiles,
                         List<String> rows, List<Prop> props, List<Npc> npcs, Fog fog, Bread bread,
-                        Glow glow, Beacon beacon) {
+                        Glow glow, Beacon beacon, String beyond) {
 
     /** Карта без жителей — для коротких описаний в тестах и простых локаций. */
     public GardenMap(String key, String name, int width, int height, Map<String, TileType> tiles,
                      List<String> rows, List<Prop> props) {
-        this(key, name, width, height, tiles, rows, props, List.of(), null, null, null, null);
+        this(key, name, width, height, tiles, rows, props, List.of(), null, null, null, null, null);
     }
 
     /**

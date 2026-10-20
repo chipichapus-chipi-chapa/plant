@@ -110,20 +110,6 @@ public class TestToolsService {
         }
     }
 
-    /** «Сегодня пятница»: поручения, которые ждут своего дня недели (открытие ярмарки), можно выполнить сегодня. */
-    @Transactional
-    public void errandDay(long playerId) {
-        check(playerId);
-        flag(playerId, ErrandService.TEST_DAY);
-    }
-
-    /** «Сегодня суббота»: Агата испечёт хлеб в любой день (раз в неделю — как обычно). */
-    @Transactional
-    public void breadDay(long playerId) {
-        check(playerId);
-        flag(playerId, BreadService.TEST_DAY);
-    }
-
     /** «Маяк: +окно»: загорается окно следующего кристалла, как будто отмечена привычка этого кристалла. */
     @Transactional
     public void beaconWindow(long playerId) {

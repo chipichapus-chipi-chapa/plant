@@ -13,6 +13,7 @@ import app.wheregrows.habit.HabitView;
 import app.wheregrows.mentor.MentorProgress;
 import app.wheregrows.story.BeaconService;
 import app.wheregrows.story.BreadService;
+import app.wheregrows.story.SeasonService;
 import app.wheregrows.story.FogService;
 import app.wheregrows.story.GlowService;
 
@@ -27,7 +28,8 @@ record GameStateResponse(Player player, LocalDate today, List<InventoryEntry> in
                          List<String> solvedPuzzles, List<ErrandService.ErrandState> errands,
                          FogService.FogState fog, GlowService.GlowState glow, BeaconService.BeaconState beacon,
                          BreadService.BreadState bread,
-                         boolean night, boolean tester) {
+                         boolean night, boolean tester, SeasonService.SeasonState season,
+                         LocalDate valleyToday) {
 
     /** Артефакт в коллекции: когда и где найден. Описание — в каталоге. */
     record CollectedArtifact(String key, Instant foundAt, String foundWhere) {

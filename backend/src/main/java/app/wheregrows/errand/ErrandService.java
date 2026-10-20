@@ -20,7 +20,7 @@ import app.wheregrows.garden.GardenMaps;
 import app.wheregrows.magic.MagicService;
 import app.wheregrows.mentor.PlayerFlag;
 import app.wheregrows.mentor.PlayerFlagRepository;
-import app.wheregrows.player.GameCalendar;
+import app.wheregrows.player.ValleyCalendar;
 import app.wheregrows.player.PlayerProfile;
 import app.wheregrows.player.PlayerProfileRepository;
 import app.wheregrows.story.BeaconService;
@@ -35,8 +35,6 @@ import app.wheregrows.story.GlowService;
 public class ErrandService {
 
     static final String OFFERED = "errand_offered:";
-    /** Флаг кнопки тестирования «Сегодня пятница»: поручения с днём недели можно выполнить в любой день. */
-    public static final String TEST_DAY = "test_errand_day";
     public static final String DONE = "errand_done:";
 
     private final GardenMaps maps;
@@ -49,11 +47,11 @@ public class ErrandService {
     private final Clock clock;
     private final GlowService glow;
     private final BeaconService beacon;
-    private final GameCalendar calendar;
+    private final ValleyCalendar calendar;
 
     ErrandService(GardenMaps maps, PlayerFlagRepository flags, PlayerDiscoveryRepository discoveries,
                   ItemDefinitionRepository items, Inventory inventory, PlayerProfileRepository players,
-                  MagicService magic, Clock clock, GlowService glow, BeaconService beacon, GameCalendar calendar) {
+                  MagicService magic, Clock clock, GlowService glow, BeaconService beacon, ValleyCalendar calendar) {
         this.glow = glow;
         this.beacon = beacon;
         this.calendar = calendar;
@@ -74,13 +72,13 @@ public class ErrandService {
         java.util.Map<String, java.time.Instant> set = flags.findByIdPlayerId(playerId).stream()
                 .collect(Collectors.toMap(PlayerFlag::getFlag, PlayerFlag::getSetAt));
         LocalDate today = calendar.today(profile);
-        boolean testDay = set.containsKey(TEST_DAY);
+        int offset = calendar.offset(playerId);
         return maps.errands().stream()
                 .map(e -> {
                     java.time.Instant done = set.get(DONE + e.errand().key());
                     return new ErrandState(e.errand().key(), set.containsKey(OFFERED + e.errand().key()), done != null,
-                            done == null ? null : done.atZone(profile.getZone()).toLocalDate(),
-                            e.errand().day() == null || testDay || today.getDayOfWeek() == e.errand().day());
+                            done == null ? null : done.atZone(profile.getZone()).toLocalDate().plusDays(offset),
+                            e.errand().day() == null || today.getDayOfWeek() == e.errand().day());
                 })
                 .toList();
     }
@@ -128,8 +126,7 @@ public class ErrandService {
                 && !beacon.state(playerId).map(BeaconService.BeaconState::enough).orElse(false)) {
             throw new ConflictException("В маяке горит слишком мало окон.");
         }
-        if (errand.day() != null && calendar.today(profile).getDayOfWeek() != errand.day()
-                && !flags.existsById(new PlayerFlag.Id(playerId, TEST_DAY))) {
+        if (errand.day() != null && calendar.today(profile).getDayOfWeek() != errand.day()) {
             throw new ConflictException("Не сегодня: " + found.npc().name() + " ждёт подходящего дня.");
         }
         for (ItemGrant give : errand.giveOrEmpty()) {

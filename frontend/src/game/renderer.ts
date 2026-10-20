@@ -57,6 +57,10 @@ export type Scene = {
   time?: number
   /** Горящие окна (маяк): точка в логических пикселях и цвет — рисуются поверх постройки и светятся */
   windows?: { x: number; y: number; color: string }[]
+  /** Время года на улице: снег и снежинки, листопад, лепестки (в помещении — null) */
+  season?: 'WINTER' | 'SPRING' | 'SUMMER' | 'AUTUMN' | null
+  /** Теплица над грядками (логические пиксели) — стоит зимой, если её построили */
+  greenhouse?: { x: number; y: number; w: number; h: number } | null
   /** Густота тумана над локацией (0 — нет, 1 — сплошной): Туманное озеро редеет день за днём */
   fog?: number
 }
@@ -78,6 +82,12 @@ export function drawGarden(
   ctx.clearRect(0, 0, map.width * TILE, map.height * TILE)
   // земля не меняется от кадра к кадру — один готовый слой вместо сотен отдельных картинок
   ctx.drawImage(groundLayer(map, atlas), 0, 0)
+  // земля по сезону: зимой припорошена снегом, осенью теплее
+  const groundTint = scene.season === 'WINTER' ? 'rgba(225, 235, 245, 0.32)' : scene.season === 'AUTUMN' ? 'rgba(150, 90, 30, 0.12)' : null
+  if (groundTint) {
+    ctx.fillStyle = groundTint
+    ctx.fillRect(0, 0, map.width * TILE, map.height * TILE)
+  }
 
   // Постройки и растения рисуем вместе, по нижнему краю: что ближе к зрителю — поверх
   const sprites = [
@@ -99,6 +109,8 @@ export function drawGarden(
     drawFrame(ctx, atlas, sprite.frame, sprite.x, sprite.y)
   }
   while (next < people.length) drawPerson(people[next++])
+
+  if (scene.greenhouse) drawGreenhouse(ctx, scene.greenhouse)
 
   for (const w of scene.windows ?? []) {
     ctx.fillStyle = w.color
@@ -125,6 +137,7 @@ export function drawGarden(
   )
 
   if (scene.fog) drawFog(ctx, map, scene.fog, time)
+  if (scene.season) drawWeather(ctx, map, scene.season, time)
 
   // Всё, что должно читаться в темноте, — после света: мерцание тайников и знаки «!»
   for (const prop of map.props) {
@@ -144,6 +157,42 @@ export function drawGarden(
   if (marker && !bangs.some((b) => Math.abs(b.x - marker.x) < 16 && Math.abs(b.y - marker.y) < 30)) {
     const bob = Math.round(Math.sin(time / 220) * 2)
     drawFrame(ctx, atlas, 'fx_interact', Math.round(marker.x - 3), Math.round(marker.y - 13 + bob))
+  }
+}
+
+/** Теплица: стеклянные стены с рамами и двускатная крыша; сквозь стекло видны грядки. */
+function drawGreenhouse(ctx: CanvasRenderingContext2D, r: { x: number; y: number; w: number; h: number }) {
+  ctx.fillStyle = 'rgba(190, 225, 235, 0.16)'
+  ctx.fillRect(r.x, r.y, r.w, r.h)
+  ctx.fillStyle = 'rgba(235, 245, 250, 0.28)' // блики на стекле
+  for (let x = r.x + 6; x < r.x + r.w - 8; x += 32) ctx.fillRect(x, r.y + 4, 2, r.h - 8)
+  ctx.fillStyle = '#5a4630'
+  ctx.fillRect(r.x, r.y, r.w, 2)
+  ctx.fillRect(r.x, r.y + r.h - 2, r.w, 2)
+  ctx.fillRect(r.x, r.y, 2, r.h)
+  ctx.fillRect(r.x + r.w - 2, r.y, 2, r.h)
+  for (let x = r.x + 32; x < r.x + r.w - 4; x += 32) ctx.fillRect(x, r.y, 1, r.h)
+  ctx.fillStyle = '#7a6040' // конёк крыши
+  ctx.fillRect(r.x - 2, r.y - 4, r.w + 4, 3)
+}
+
+/** Погода по сезону: снежинки зимой, листья осенью, лепестки весной. Движение зависит только от времени. */
+function drawWeather(ctx: CanvasRenderingContext2D, map: GardenMap, season: 'WINTER' | 'SPRING' | 'SUMMER' | 'AUTUMN', time: number) {
+  if (season === 'SUMMER') return
+  const W = map.width * TILE
+  const H = map.height * TILE
+  const count = season === 'WINTER' ? 70 : 26
+  const colors = season === 'WINTER' ? ['#f2f6fb', '#dfe8f2'] : season === 'AUTUMN' ? ['#c8742a', '#a8451e', '#d9a441'] : ['#f2c4d4', '#fbe3ea']
+  const fall = season === 'WINTER' ? 0.022 : 0.016
+  for (let i = 0; i < count; i++) {
+    const seed = (i * 9301 + 49297) % 233280
+    const x0 = (seed % 1000) / 1000 * W
+    const speed = fall * (0.7 + ((seed >> 3) % 7) / 10)
+    const y = ((time * speed + (seed % 997) / 997 * H) % (H + 20)) - 10
+    const x = Math.round(x0 + Math.sin(time / 900 + i) * (season === 'WINTER' ? 6 : 14))
+    ctx.fillStyle = colors[i % colors.length]
+    if (season === 'WINTER') ctx.fillRect(x, Math.round(y), i % 4 ? 1 : 2, i % 4 ? 1 : 2)
+    else ctx.fillRect(x, Math.round(y), 2, (Math.floor(time / 300) + i) % 2 ? 1 : 2)
   }
 }
 
@@ -600,12 +649,15 @@ export function surroundLayer(map: GardenMap, atlas: Atlas, pad: number): HTMLCa
       const my = y - pad
       if (mx >= 0 && my >= 0 && mx < map.width && my < map.height) continue
       const edge = tileAt(map, Math.min(map.width - 1, Math.max(0, mx)), Math.min(map.height - 1, Math.max(0, my)))?.type
-      const frame = edge === 'water' ? 'water_15' : edge === 'floor' || edge === 'wall' || edge === 'rug' ? 'wall_0' : `grass_${variant(x, y, 4)}`
+      // остров — посреди озера; у дома — продолжение по краю
+      const frame =
+        map.beyond === 'sea' ? 'water_15'
+        : edge === 'water' ? 'water_15' : edge === 'floor' || edge === 'wall' || edge === 'rug' ? 'wall_0' : `grass_${variant(x, y, 4)}`
       drawFrame(ctx, atlas, frame, x * TILE, y * TILE)
     }
   }
   // на траве за краем — заросли и деревья: сад стоит поляной посреди леса
-  for (let y = 0; y < size.h; y += 2) {
+  for (let y = 0; y < size.h && !map.beyond; y += 2) {
     for (let x = 0; x < size.w; x += 2) {
       const mx = x - pad
       const my = y - pad

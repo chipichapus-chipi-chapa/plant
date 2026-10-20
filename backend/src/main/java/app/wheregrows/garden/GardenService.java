@@ -21,6 +21,7 @@ import app.wheregrows.content.PlantSpeciesRepository;
 import app.wheregrows.economy.Inventory;
 import app.wheregrows.economy.InventoryItemRepository;
 import app.wheregrows.player.PlayerProfileRepository;
+import app.wheregrows.story.SeasonService;
 
 /**
  * Сад игрока: что где растёт, посадка и прополка. Клетку, наличие семян и инструментов, рост
@@ -43,10 +44,12 @@ public class GardenService {
     private final InventoryItemRepository inventoryItems;
     private final PlayerTileRepository tiles;
     private final Clock clock;
+    private final SeasonService seasons;
 
     GardenService(GardenObjectRepository objects, GardenMaps maps, ItemDefinitionRepository items,
                   PlantSpeciesRepository species, PlayerProfileRepository players, Inventory inventory,
-                  InventoryItemRepository inventoryItems, PlayerTileRepository tiles, Clock clock) {
+                  InventoryItemRepository inventoryItems, PlayerTileRepository tiles, Clock clock, SeasonService seasons) {
+        this.seasons = seasons;
         this.inventoryItems = inventoryItems;
         this.tiles = tiles;
         this.objects = objects;
@@ -87,6 +90,13 @@ public class GardenService {
         GardenMap.TileType tile = tileFor(playerId, map, x, y);
         if (!tile.plantable()) {
             throw new InvalidRequestException("«" + tile.name() + "» — не грядка. Сажать можно только на грядку.");
+        }
+        // холодно: земля промёрзла — сажать можно только в теплице у дома
+        SeasonService.SeasonState season = seasons.state(players.findById(playerId).orElseThrow());
+        if (season.cold() && !(map.key().equals(GardenMaps.HOME) && season.greenhouse())) {
+            throw new ConflictException(map.key().equals(GardenMaps.HOME)
+                    ? "Земля промёрзла. Постройте теплицу над грядками — и сажайте хоть зимой."
+                    : "Земля промёрзла до весны. Зимой сажают в теплице у дома.");
         }
         if (objects.existsByPlayerIdAndGardenKeyAndXAndY(playerId, map.key(), (short) x, (short) y)) {
             throw new ConflictException("На этой грядке уже что-то растёт.");

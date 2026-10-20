@@ -8,6 +8,8 @@ import { HabitTracker } from '../features/habits/HabitTracker'
 import { InventoryPanel } from '../features/inventory/InventoryPanel'
 import { ToastProvider } from '../features/notifications/Toasts'
 import { QuestList } from '../features/mentor/QuestList'
+import { SEASON_NAMES } from '../game/season'
+import { ValleyClock } from '../features/valley/ValleyClock'
 import { activeQuests, questCount } from '../game/quests'
 import { ControlsHelp } from '../features/help/ControlsHelp'
 import { SettingsPanel } from '../features/settings/SettingsPanel'
@@ -27,7 +29,7 @@ import { SettingsProvider } from './SettingsProvider'
 import { Splash } from './Splash'
 import { useGame } from './useGame'
 
-type OpenWindow = 'help' | 'quests' | 'habits' | 'shop' | 'bag' | 'collection' | 'character' | 'settings' | null
+type OpenWindow = 'help' | 'quests' | 'habits' | 'shop' | 'bag' | 'collection' | 'character' | 'settings' | 'clock' | null
 
 /**
  * Главный экран — игровое поле во весь экран: сад в центре, всё остальное лежит поверх него, как в игре.
@@ -102,7 +104,7 @@ function Game() {
             hud={{
               // поверх сада ничего не висит: задания — в отдельном окне по кнопке
               top: null,
-              corner: <PlayerBadge state={game.state} />,
+              corner: <PlayerBadge state={game.state} onClock={() => setOpen('clock')} />,
               toolbar: (
                 <nav className={styles.toolbar} aria-label="Действия">
                   <HudButton compact icon={<QuestIcon />} label="Задания" onClick={() => setOpen('quests')} badge={questBadge} />
@@ -145,6 +147,12 @@ function Game() {
                 openHud(key)
               }}
             />
+          </Window>
+        )}
+
+        {game.status === 'ready' && open === 'clock' && (
+          <Window title="Часы долины" onClose={close}>
+            <ValleyClock state={game.state} onChanged={refresh} />
           </Window>
         )}
 
@@ -225,12 +233,18 @@ function habitsBadge(state: GameState): string | undefined {
   return done > 0 ? `✓${done}` : undefined
 }
 
-function PlayerBadge({ state }: { state: GameState }) {
+function PlayerBadge({ state, onClock }: { state: GameState; onClock: () => void }) {
   const quantity = (key: string) => state.inventory.find((entry) => entry.itemKey === key)?.quantity ?? 0
   const sparks = quantity(SUN_SPARK)
   return (
     <div className={styles.badge} title="Локальный режим: без входа, данные хранятся на этом компьютере">
       <span className={styles.name}>{state.player.displayName}</span>
+      {state.season && (
+        <button type="button" className={styles.season} title="Часы долины: время года меняется каждую неделю" onClick={onClock}>
+          {SEASON_NAMES[state.season.season]}
+          {state.valleyToday && state.valleyToday !== state.today ? ' ⟳' : ''}
+        </button>
+      )}
       <span className={styles.coins} title="Семена жизни">
         <LifeSeedIcon />
         {quantity(LIFE_SEED)}

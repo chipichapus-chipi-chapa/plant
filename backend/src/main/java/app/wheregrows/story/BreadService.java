@@ -21,6 +21,7 @@ import app.wheregrows.economy.ItemGrant;
 import app.wheregrows.errand.ErrandService;
 import app.wheregrows.garden.GardenMap;
 import app.wheregrows.garden.GardenMaps;
+import app.wheregrows.player.ValleyCalendar;
 import app.wheregrows.player.PlayerProfileRepository;
 
 /**
@@ -32,9 +33,10 @@ import app.wheregrows.player.PlayerProfileRepository;
 @Service
 public class BreadService {
 
+    private final ValleyCalendar valley;
+
     static final String BAKED = "bread:";
     /** Флаг кнопки тестирования «Сегодня суббота»: хлеб можно испечь в любой день. */
-    public static final String TEST_DAY = "test_bread_day";
 
     private final GardenMaps maps;
     private final JdbcClient db;
@@ -42,7 +44,8 @@ public class BreadService {
     private final PlayerProfileRepository players;
     private final Clock clock;
 
-    BreadService(GardenMaps maps, JdbcClient db, Inventory inventory, PlayerProfileRepository players, Clock clock) {
+    BreadService(GardenMaps maps, JdbcClient db, Inventory inventory, PlayerProfileRepository players, Clock clock, ValleyCalendar valley) {
+        this.valley = valley;
         this.maps = maps;
         this.db = db;
         this.inventory = inventory;
@@ -100,7 +103,8 @@ public class BreadService {
     private BreadState state(long playerId, GardenMap.Bread bread) {
         LocalDate today = today(playerId);
         boolean home = flag(playerId, ErrandService.DONE + bread.after());
-        boolean breadDay = today.getDayOfWeek() == bread.day() || flag(playerId, TEST_DAY);
+        // день недели — по часам долины (их можно докрутить до субботы), а каравай — раз в настоящую неделю
+        boolean breadDay = today.plusDays(valley.offset(playerId)).getDayOfWeek() == bread.day();
         boolean baked = flag(playerId, BAKED + week(today));
         LocalDate monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         int days = db.sql("SELECT count(DISTINCT completed_on) FROM habit_completion WHERE player_id = ? AND completed_on BETWEEN ? AND ?")

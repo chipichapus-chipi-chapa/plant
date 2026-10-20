@@ -1,0 +1,22 @@
+.clock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.now {
+  margin: 0;
+  font-size: 1.05em;
+}
+
+.hint {
+  margin: 0;
+  opacity: 0.8;
+  font-size: 0.9em;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}

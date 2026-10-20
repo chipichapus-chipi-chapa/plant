@@ -11,12 +11,14 @@ import app.wheregrows.magic.MagicService;
 import app.wheregrows.mentor.MentorService;
 import app.wheregrows.player.GameCalendar;
 import app.wheregrows.player.PlayerProfile;
+import app.wheregrows.player.ValleyCalendar;
 import app.wheregrows.player.PlayerProfileRepository;
 import app.wheregrows.player.ProfileService;
 import app.wheregrows.puzzle.PuzzleService;
 import app.wheregrows.errand.ErrandService;
 import app.wheregrows.story.BeaconService;
 import app.wheregrows.story.BreadService;
+import app.wheregrows.story.SeasonService;
 import app.wheregrows.story.FogService;
 import app.wheregrows.story.GlowService;
 import app.wheregrows.story.NightService;
@@ -39,6 +41,8 @@ class GameStateService {
     private final FogService fog;
     private final GlowService glow;
     private final BeaconService beacon;
+    private final SeasonService seasons;
+    private final ValleyCalendar valley;
     private final Testers testers;
     private final BreadService bread;
     private final NightService night;
@@ -47,7 +51,10 @@ class GameStateService {
                      GameCalendar calendar, GardenService garden, MagicService magic,
                      ExplorationService exploration, ProfileService profileService, MentorService mentor,
                      PuzzleService puzzles, ErrandService errands, FogService fog, Testers testers, BreadService bread, NightService night,
-                     GlowService glow, BeaconService beacon) {
+                     GlowService glow, BeaconService beacon, SeasonService seasons,
+                     ValleyCalendar valley) {
+        this.valley = valley;
+        this.seasons = seasons;
         this.beacon = beacon;
         this.glow = glow;
         this.night = night;
@@ -97,6 +104,8 @@ class GameStateService {
                 beacon.state(playerId).orElse(null),
                 bread.state(playerId).orElse(null),
                 night.isNight(playerId),
-                testers.isTester(playerId));
+                testers.isTester(playerId),
+                seasons.state(profile),
+                valley.today(profile));
     }
 }

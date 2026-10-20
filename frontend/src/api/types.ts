@@ -125,6 +125,8 @@ export type GardenMap = {
   props: GardenProp[]
   /** Жители локации */
   npcs?: Npc[] | null
+  /** Что видно за краем карты: sea — озеро (у острова); без него — темнота (у дома — свой мир вокруг) */
+  beyond?: 'sea' | null
   /** Туман (Туманное озеро) */
   fog?: Fog | null
   /** Грибница (Грибная лощина): после поручения after по пятну за день с привычками; talks — [тёмная, разгорается, горит] */
@@ -270,6 +272,10 @@ export type GameState = {
   glow?: { map: string; started: boolean; days: number; needed: number } | null
   /** Маяк: кристаллы, чьи окна горят (отмечены привычки этих кристаллов после ярмарки) */
   beacon?: { map: string; prop: string; started: boolean; lit: string[]; needed: number } | null
+  /** Время года в долине (каждое — неделю); cold — земля промёрзла; greenhouse — теплица у дома стоит */
+  season?: { season: 'WINTER' | 'SPRING' | 'SUMMER' | 'AUTUMN'; cold: boolean; greenhouse: boolean } | null
+  /** Дата в долине: сегодня, если часы долины не крутили (время года, ярмарка, гости — по ней) */
+  valleyToday?: string
   /**
    * Субботний хлеб; null — в игре его нет. home — Агата дома и печь горит; today — сегодня суббота;
    * baked — на этой неделе уже испечён; days — дни недели с привычками; loaf — сколько Семян жизни в каравае.
