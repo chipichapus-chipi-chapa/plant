@@ -211,6 +211,8 @@ export type ItemGrant = { itemKey: string; quantity: number }
 
 /** Растение (позже и декор) в клетке сада. Стадию роста считает сервер. */
 export type GardenObject = {
+  /** Локация, где растёт: грядки есть не только в домашнем саду */
+  gardenKey: string
   x: number
   y: number
   kind: 'PLANT'

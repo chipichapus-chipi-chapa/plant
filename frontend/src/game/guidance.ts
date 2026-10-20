@@ -102,7 +102,7 @@ function targetPoint(target: ObjectiveTarget, map: GardenMap, state: GameState):
     case 'tile': {
       for (let y = 0; y < map.height; y++) {
         for (let x = 0; x < map.width; x++) {
-          if (tileAt(map, x, y)?.type === target.type && !objectAt(state.garden.objects, { x, y })) {
+          if (tileAt(map, x, y)?.type === target.type && !objectAt(plantsOn(state, map), { x, y })) {
             return { x: x * TILE + TILE / 2, y: y * TILE - 2 }
           }
         }
@@ -112,6 +112,11 @@ function targetPoint(target: ObjectiveTarget, map: GardenMap, state: GameState):
     default:
       return null
   }
+}
+
+/** Растения на этой локации. */
+export function plantsOn(state: GameState, map: GardenMap): GameState['garden']['objects'] {
+  return state.garden.objects.filter((o) => o.gardenKey === map.key)
 }
 
 /** Есть ли в клетке то, с чем можно что-то сделать прямо сейчас. */
@@ -129,7 +134,7 @@ export function isInteractive(cell: Cell, state: GameState, catalog: Catalog, ma
   }
   const tile = tileAt(map, cell.x, cell.y)
   if (tile?.type === 'overgrown') return has(state, WEEDING_TOOLS)
-  return !!tile?.plantable && !objectAt(state.garden.objects, cell) && hasSeeds(state, catalog)
+  return !!tile?.plantable && !objectAt(plantsOn(state, map), cell) && hasSeeds(state, catalog)
 }
 
 /**
@@ -139,7 +144,7 @@ export function isInteractive(cell: Cell, state: GameState, catalog: Catalog, ma
  */
 export function isClickable(cell: Cell, state: GameState, catalog: Catalog, map: GardenMap): boolean {
   if (isMentor(cell, map) || npcAt(map, cell)) return true
-  if (map.key === HOME && objectAt(state.garden.objects, cell)) return true
+  if (objectAt(plantsOn(state, map), cell)) return true
   if (propAt(map, cell.x, cell.y)) return true
   return isInteractive(cell, state, catalog, map)
 }

@@ -23,7 +23,9 @@ class GardenController {
         this.currentPlayer = currentPlayer;
     }
 
+    /** gardenKey — локация грядки; не указана — домашний сад. */
     record PlantingRequest(
+            String gardenKey,
             @Min(value = 0, message = "Такой клетки в саду нет.") int x,
             @Min(value = 0, message = "Такой клетки в саду нет.") int y,
             @NotBlank(message = "Выберите, что посадить.") String seedItemKey) {
@@ -45,6 +47,7 @@ class GardenController {
     @PostMapping("/api/garden/plantings")
     @ResponseStatus(HttpStatus.CREATED)
     GardenObjectView plant(@Valid @RequestBody PlantingRequest request) {
-        return service.plant(currentPlayer.id(), request.x(), request.y(), request.seedItemKey());
+        return service.plant(currentPlayer.id(),
+                request.gardenKey() == null ? GardenMaps.HOME : request.gardenKey(), request.x(), request.y(), request.seedItemKey());
     }
 }

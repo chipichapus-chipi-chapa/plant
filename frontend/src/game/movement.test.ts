@@ -28,7 +28,7 @@ describe('проходимость', () => {
   it('растения и стоящие персонажи загораживают клетку', () => {
     const withPlant = blockedCells(
       map,
-      [{ x: 3, y: 1, kind: 'PLANT', speciesKey: 'radish', plantedAt: '', stage: 0, stageCount: 3, mature: false, nextStageAt: null }],
+      [{ gardenKey: 'home', x: 3, y: 1, kind: 'PLANT', speciesKey: 'radish', plantedAt: '', stage: 0, stageCount: 3, mature: false, nextStageAt: null }],
       [{ x: 1, y: 2 }],
     )
     expect(withPlant[1][3]).toBe(true)

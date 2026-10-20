@@ -162,7 +162,8 @@
         "efim_home_hello",
         "efim_home_garden",
         "efim_home_vereshk",
-        "efim_home_letter"
+        "efim_home_letter",
+        "gardener_home_habit"
       ],
       "dialogues": {
         "efim_home_hello": {
@@ -205,6 +206,19 @@
             },
             "b": {
               "text": "А оказалось, чинить надо было не одному.",
+              "next": null
+            }
+          }
+        },
+        "gardener_home_habit": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Знаешь, почему сад заглох, когда я ушёл? Не от бури, не от засухи. Просто никто не приходил.",
+              "next": "b"
+            },
+            "b": {
+              "text": "Саду не нужен великий садовник. Ему нужен кто-то, кто приходит каждый день, хоть на минутку. Ты приходишь — и он растёт.",
               "next": null
             }
           }

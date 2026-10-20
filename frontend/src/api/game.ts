@@ -23,8 +23,8 @@ export const purchaseItem = (itemKey: string, quantity: number, idempotencyKey: 
     body: JSON.stringify({ itemKey, quantity }),
   })
 
-export const plantSeed = (x: number, y: number, seedItemKey: string) =>
-  apiFetch<GardenObject>('/api/garden/plantings', { method: 'POST', body: JSON.stringify({ x, y, seedItemKey }) })
+export const plantSeed = (gardenKey: string, x: number, y: number, seedItemKey: string) =>
+  apiFetch<GardenObject>('/api/garden/plantings', { method: 'POST', body: JSON.stringify({ gardenKey, x, y, seedItemKey }) })
 
 /** Прополоть заросшую грядку (нужны лопата и грабли в сумке) */
 export const weedBed = (x: number, y: number) =>
