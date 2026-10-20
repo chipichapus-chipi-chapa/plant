@@ -261,19 +261,6 @@
               "next": null
             }
           }
-        },
-        "krupka_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Семечки?! Целая корзинка?",
-              "next": "b"
-            },
-            "b": {
-              "text": "Это же на всю зиму! Ну, на ползимы. Ладно, до вторника. Спасибо!",
-              "next": null
-            }
-          }
         }
       },
       "errand": {
@@ -300,13 +287,6 @@
         "waiting": "krupka_wait",
         "thanks": "krupka_thanks",
         "leaves": false
-      },
-      "gifts": {
-        "loves": [
-          "produce_sunflower",
-          "produce_radish"
-        ],
-        "talk": "krupka_gift"
       }
     },
     {
@@ -397,15 +377,6 @@
               "text": "Наколдуй мне сыра! Ну пожалуйста! Маленький кусочек! Ладно, большой."
             }
           }
-        },
-        "shorokh_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Ой! Это мне? Я положу их в самый блестящий тайник. Нет, съем. Нет, сначала полюбуюсь!",
-              "next": null
-            }
-          }
         }
       },
       "errand": {
@@ -426,12 +397,6 @@
       },
       "secrets": {
         "accessory:wizard_hat": "shorokh_wizard"
-      },
-      "gifts": {
-        "loves": [
-          "produce_sunflower"
-        ],
-        "talk": "shorokh_gift"
       }
     },
     {
@@ -536,19 +501,6 @@
               "next": null
             }
           }
-        },
-        "vetosh_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Ромашки… Я заварю из них чай и буду пить его медленно, вечером, как раньше.",
-              "next": "b"
-            },
-            "b": {
-              "text": "Спасибо, милый друг. Старым лапам такое тепло дороже зерна.",
-              "next": null
-            }
-          }
         }
       },
       "errand": {
@@ -574,12 +526,6 @@
       },
       "secrets": {
         "accessory:glasses": "vetosh_glasses"
-      },
-      "gifts": {
-        "loves": [
-          "produce_chamomile"
-        ],
-        "talk": "vetosh_gift"
       }
     },
     {
@@ -662,19 +608,6 @@
               "next": null
             }
           }
-        },
-        "khmur_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Лунный цветок… Он светится. Значит, теперь у меня есть фонарь, который не нужно зажигать.",
-              "next": "b"
-            },
-            "b": {
-              "text": "Спасибо. Правда спасибо.",
-              "next": null
-            }
-          }
         }
       },
       "errand": {
@@ -696,12 +629,6 @@
         "waiting": "khmur_wait",
         "thanks": "khmur_thanks",
         "leaves": true
-      },
-      "gifts": {
-        "loves": [
-          "produce_moonflower"
-        ],
-        "talk": "khmur_gift"
       }
     }
   ]

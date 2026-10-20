@@ -1,4 +1,4 @@
-package app.wheregrows.gift;
+package app.wheregrows.garden;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -23,16 +23,15 @@ import app.wheregrows.TestcontainersConfiguration;
 import app.wheregrows.player.CurrentPlayer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Урожай со взрослых растений и подарки жителям: раз в день каждому, любимое — радует больше. */
-@Import({TestcontainersConfiguration.class, HarvestAndGiftApiTests.Clocks.class})
-@SpringBootTest(properties = "game.local.username=gift-test")
+/** Урожай со взрослых растений: только созревшее, один раз, грядка освобождается. */
+@Import({TestcontainersConfiguration.class, HarvestApiTests.Clocks.class})
+@SpringBootTest(properties = "game.local.username=harvest-test")
 @AutoConfigureMockMvc
-class HarvestAndGiftApiTests {
+class HarvestApiTests {
 
     static final Instant START = Instant.parse("2026-10-15T10:00:00Z");
 
@@ -65,7 +64,6 @@ class HarvestAndGiftApiTests {
         playerId = player.id();
         jdbc.update("DELETE FROM garden_object WHERE player_id = ?", playerId);
         jdbc.update("DELETE FROM inventory_item WHERE player_id = ?", playerId);
-        jdbc.update("DELETE FROM player_flag WHERE player_id = ?", playerId);
     }
 
     @Test
@@ -86,38 +84,6 @@ class HarvestAndGiftApiTests {
         plant(); // грядка снова свободна
     }
 
-    @Test
-    void lovedGiftDelightsAndEachPersonGetsOneGiftADay() throws Exception {
-        give("produce_rose", 2);
-        give("produce_radish", 1);
-
-        gift("agata", "produce_rose")
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.loved").value(true))
-                .andExpect(jsonPath("$.talk").value("agata_gift"))
-                .andExpect(jsonPath("$.reward[0].quantity").value(3));
-        // Агата дома — тот же человек
-        gift("agata-home", "produce_rose").andExpect(status().isConflict());
-        mvc.perform(get("/api/state")).andExpect(jsonPath("$.giftedToday[0]").value("agata"));
-
-        clock.advance(Duration.ofDays(1));
-        gift("agata-home", "produce_radish")
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.loved").value(false))
-                .andExpect(jsonPath("$.talk").doesNotExist());
-        assertThat(quantity("life_seed")).isEqualTo(4);
-        assertThat(quantity("produce_rose")).isEqualTo(1);
-    }
-
-    @Test
-    void onlyProduceFromTheBagCanBeGiven() throws Exception {
-        give("seed_radish", 1);
-        gift("krupka", "seed_radish").andExpect(status().isBadRequest());
-        gift("krupka", "produce_sunflower").andExpect(status().isConflict()); // в сумке нет
-        gift("dragon", "produce_sunflower").andExpect(status().isNotFound());
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM player_flag WHERE player_id = ?", Integer.class, playerId)).isZero();
-    }
-
     private void plant() throws Exception {
         mvc.perform(post("/api/garden/plantings").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"x\":3,\"y\":5,\"seedItemKey\":\"seed_radish\"}")).andExpect(status().isCreated());
@@ -126,11 +92,6 @@ class HarvestAndGiftApiTests {
     private ResultActions harvest(String garden, int x, int y) throws Exception {
         return mvc.perform(post("/api/garden/harvests").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"gardenKey\":\"" + garden + "\",\"x\":" + x + ",\"y\":" + y + "}"));
-    }
-
-    private ResultActions gift(String npc, String item) throws Exception {
-        return mvc.perform(post("/api/npcs/{key}/gifts", npc).contentType(MediaType.APPLICATION_JSON)
-                .content("{\"itemKey\":\"" + item + "\"}"));
     }
 
     private void give(String itemKey, int quantity) {

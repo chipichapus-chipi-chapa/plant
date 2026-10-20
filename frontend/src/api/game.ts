@@ -30,13 +30,6 @@ export const plantSeed = (gardenKey: string, x: number, y: number, seedItemKey: 
 export const harvestPlant = (gardenKey: string, x: number, y: number) =>
   apiFetch<{ itemKey: string; quantity: number }>('/api/garden/harvests', { method: 'POST', body: JSON.stringify({ gardenKey, x, y }) })
 
-/** Подарить жителю урожай из сумки (раз в день каждому) */
-export const giveGift = (npcKey: string, itemKey: string) =>
-  apiFetch<{ loved: boolean; talk: string | null; reward: { itemKey: string; quantity: number }[] }>(`/api/npcs/${npcKey}/gifts`, {
-    method: 'POST',
-    body: JSON.stringify({ itemKey }),
-  })
-
 /** Прополоть заросшую грядку (нужны лопата и грабли в сумке) */
 export const weedBed = (x: number, y: number) =>
   apiFetch<WeedResult>('/api/garden/weedings', { method: 'POST', body: JSON.stringify({ x, y }) })

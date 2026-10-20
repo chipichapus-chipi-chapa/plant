@@ -231,15 +231,6 @@
               "next": null
             }
           }
-        },
-        "murlana_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Мрр. Он светится почти как мы. Положу его у хрустального дерева — им будет о чём поговорить.",
-              "next": null
-            }
-          }
         }
       },
       "errand": {
@@ -264,12 +255,6 @@
         "waiting": "murlana_wait",
         "thanks": "murlana_thanks",
         "leaves": false
-      },
-      "gifts": {
-        "loves": [
-          "produce_moonflower"
-        ],
-        "talk": "murlana_gift"
       }
     },
     {
@@ -315,22 +300,7 @@
               "next": null
             }
           }
-        },
-        "ten_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Ирис цвета ночного неба. Мне никогда ничего не дарили. Я… сохраню его.",
-              "next": null
-            }
-          }
         }
-      },
-      "gifts": {
-        "loves": [
-          "produce_iris"
-        ],
-        "talk": "ten_gift"
       }
     },
     {
@@ -411,15 +381,6 @@
               "next": null
             }
           }
-        },
-        "iskorka_gift": {
-          "start": "a",
-          "nodes": {
-            "a": {
-              "text": "Венок! Он мне на голову! Ой, на уши! Смотрите все, я в венке!",
-              "next": null
-            }
-          }
         }
       },
       "errand": {
@@ -441,12 +402,6 @@
         "waiting": "iskorka_wait",
         "thanks": "iskorka_thanks",
         "leaves": false
-      },
-      "gifts": {
-        "loves": [
-          "produce_daisy"
-        ],
-        "talk": "iskorka_gift"
       }
     }
   ]
