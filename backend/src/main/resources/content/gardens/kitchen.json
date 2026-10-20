@@ -386,6 +386,219 @@
       "secrets": {
         "accessory:headphones": "myata_headphones"
       }
+    },
+    {
+      "key": "agata-home",
+      "name": "Бабушка Агата",
+      "kind": "human",
+      "x": 6,
+      "y": 2,
+      "description": "Агата дома. Шаль на плечах, руки в муке, очки съехали на кончик носа. Улыбается так, будто никуда и не уезжала.",
+      "talks": [
+        "agata_home_hello",
+        "agata_home_myata",
+        "agata_home_gardener"
+      ],
+      "dialogues": {
+        "agata_home_hello": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Ты пришёл! Смотри — Мята узнала меня и сделала вид, что не узнала. Значит, простила.",
+              "next": "b"
+            },
+            "b": {
+              "text": "Дом снова пахнет домом. Ещё бы печь растопить…",
+              "next": null
+            }
+          }
+        },
+        "agata_home_myata": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Мята сторожила каравай пять лет. Говорит, это была очень важная работа. Я ей верю.",
+              "next": null
+            }
+          }
+        },
+        "agata_home_gardener": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Садовник… Знаешь, я ведь не всё тебе рассказала там, у мельницы.",
+              "next": "b"
+            },
+            "b": {
+              "text": "Он ушёл вверх по реке, к старой плотине. Говорил, что вода в сад перестала приходить не просто так — и что он это исправит.",
+              "next": "c"
+            },
+            "c": {
+              "text": "Если найдёшь его — скажи, что сад живой. И что хлеб по субботам снова печётся. Он поймёт.",
+              "next": null
+            }
+          }
+        },
+        "agata_hearth_ask": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Печь остыла — без неё дом не дом. В ней когда-то жил огонь первого холодного вечера.",
+              "next": "b"
+            },
+            "b": {
+              "text": "Разожги очаг, милый: янтарь очага и Солнечная искра. А я испеку хлеб — в субботу, как раньше.",
+              "next": null
+            }
+          }
+        },
+        "agata_hearth_wait": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Янтарь очага — два осколка, и Солнечная искра. Печь у меня за спиной, не промахнёшься.",
+              "next": null
+            }
+          }
+        },
+        "agata_hearth_thanks": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Слышишь, как трещит? Вот теперь — дома.",
+              "next": "b"
+            },
+            "b": {
+              "text": "Приходи по субботам. Каравай будет тем пышнее, чем больше хороших дней у тебя случится за неделю. Мне Мята так рассказала про твои привычки.",
+              "next": null
+            }
+          }
+        },
+        "agata_bread_ready": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Суббота! Каравай как раз подошёл — румяный, горячий.",
+              "next": "b"
+            },
+            "b": {
+              "text": "Держи. Сколько хороших дней у тебя было на этой неделе — столько и семечек в нём. Остальное отнесу мышам, на крошки.",
+              "next": null
+            }
+          }
+        },
+        "agata_bread_baked": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Каравай на этой неделе уже испечён и съеден. Ну, почти съеден — Мята сторожит последний кусочек.",
+              "next": "b"
+            },
+            "b": {
+              "text": "Следующий — в субботу. Приходи.",
+              "next": null
+            }
+          }
+        },
+        "agata_bread_waiting": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Хлеб пекут по субботам — так заведено. Тесто любит ждать.",
+              "next": "b"
+            },
+            "b": {
+              "text": "А ты пока живи свою неделю: чем больше хороших дней, тем пышнее каравай.",
+              "next": null
+            }
+          }
+        }
+      },
+      "appearance": {
+        "skin": "light",
+        "hair": "bun",
+        "hair_color": "silver",
+        "outfit": "sweater",
+        "outfit_color": "plum",
+        "accessory": "glasses",
+        "bag": "none"
+      },
+      "appearsAfter": "agata_roses",
+      "errand": {
+        "key": "agata_hearth",
+        "kind": "REVIVE",
+        "goal": "Разожгите очаг на кухне: два осколка янтаря и Солнечная искра",
+        "props": [
+          "hearth"
+        ],
+        "reward": [
+          {
+            "itemKey": "life_seed",
+            "quantity": 5
+          }
+        ],
+        "offer": "agata_hearth_ask",
+        "waiting": "agata_hearth_wait",
+        "thanks": "agata_hearth_thanks",
+        "leaves": false
+      }
+    },
+    {
+      "key": "timosha-home",
+      "name": "Тимоша",
+      "kind": "human",
+      "x": 2,
+      "y": 6,
+      "description": "Тимоша дома. Банка для тумана стоит на подоконнике — пустая, но он уверен, что это ненадолго.",
+      "talks": [
+        "timosha_home_hello",
+        "timosha_home_hat"
+      ],
+      "dialogues": {
+        "timosha_home_hello": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Я проверил: качели на месте! Верёвка только скрипит. Как будто здоровается.",
+              "next": null
+            }
+          }
+        },
+        "timosha_home_hat": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Бабушка говорит, шляпа с подсолнухом — точно садовника. Он посадил подсолнух прямо в неё. Ну кто так делает?",
+              "next": "b"
+            },
+            "b": {
+              "text": "…Я тоже так хочу.",
+              "next": null
+            }
+          }
+        }
+      },
+      "appearance": {
+        "skin": "tan",
+        "hair": "short",
+        "hair_color": "wheat",
+        "outfit": "casual",
+        "outfit_color": "mustard",
+        "accessory": "beanie",
+        "bag": "backpack"
+      },
+      "appearsAfter": "agata_roses"
     }
-  ]
+  ],
+  "bread": {
+    "npc": "agata-home",
+    "after": "agata_hearth",
+    "day": "SATURDAY",
+    "base": 2,
+    "talks": {
+      "ready": "agata_bread_ready",
+      "baked": "agata_bread_baked",
+      "waiting": "agata_bread_waiting"
+    }
+  }
 }

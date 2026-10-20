@@ -14,8 +14,8 @@ type Props = {
  * Сверху — задание от Вереска, ниже — поручения жителей (у оживления — сколько проснулось) и туман.
  */
 export function QuestList({ quests, state, onOpenHud }: Props) {
-  const { objective, errands, fog } = quests
-  if (questCount(quests) === 0) {
+  const { objective, errands, fog, bread } = quests
+  if (questCount(quests) === 0 && !bread) {
     return <p className={styles.empty}>Пока заданий нет. Загляните к Вереску или к жителям — у кого-то найдётся просьба.</p>
   }
   const target = objective?.target
@@ -37,6 +37,21 @@ export function QuestList({ quests, state, onOpenHud }: Props) {
           <span className={styles.who}>{fog.teller.name}</span>
           <span className={styles.goal}>Туман над озером редеет — возвращайтесь к привычкам. Каждый день — новая зарубка на причале.</span>
           <span className={styles.progress}>{fog.days} из {fog.needed} дней</span>
+        </li>
+      )}
+      {bread && (
+        <li className={bread.ready ? `${styles.item} ${styles.main}` : styles.item}>
+          <span className={styles.who}>{bread.baker.name}</span>
+          <span className={styles.goal}>
+            {bread.ready
+              ? 'Суббота! Каравай готов — зайдите на кухню поместья.'
+              : bread.baked
+                ? 'Каравай на этой неделе уже испечён. Следующий — в субботу.'
+                : 'Субботний хлеб: чем больше хороших дней за неделю, тем пышнее каравай.'}
+          </span>
+          <span className={styles.progress}>
+            хороших дней на этой неделе: {bread.days}{bread.baked ? '' : ` · в каравае будет ${bread.loaf} Семян жизни`}
+          </span>
         </li>
       )}
       {errands.map((npc) => {

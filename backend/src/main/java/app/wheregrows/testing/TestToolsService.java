@@ -14,6 +14,7 @@ import app.wheregrows.economy.ItemGrant;
 import app.wheregrows.errand.ErrandService;
 import app.wheregrows.garden.GardenMap;
 import app.wheregrows.garden.GardenMaps;
+import app.wheregrows.story.BreadService;
 import app.wheregrows.story.FogService;
 
 /**
@@ -98,6 +99,13 @@ public class TestToolsService {
         for (int i = 0; i < needed; i++) {
             fogDay(playerId);
         }
+    }
+
+    /** «Сегодня суббота»: Агата испечёт хлеб в любой день (раз в неделю — как обычно). */
+    @Transactional
+    public void breadDay(long playerId) {
+        check(playerId);
+        flag(playerId, BreadService.TEST_DAY);
     }
 
     /** Новая игра: весь прогресс стирается, имя и облик остаются. */

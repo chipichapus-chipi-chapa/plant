@@ -8,12 +8,21 @@ import java.util.Map;
  * постройки (props) лежат поверх тайлов. Хранится как контент в resources/content/gardens.
  */
 public record GardenMap(String key, String name, int width, int height, Map<String, TileType> tiles,
-                        List<String> rows, List<Prop> props, List<Npc> npcs, Fog fog) {
+                        List<String> rows, List<Prop> props, List<Npc> npcs, Fog fog, Bread bread) {
 
     /** Карта без жителей — для коротких описаний в тестах и простых локаций. */
     public GardenMap(String key, String name, int width, int height, Map<String, TileType> tiles,
                      List<String> rows, List<Prop> props) {
-        this(key, name, width, height, tiles, rows, props, List.of(), null);
+        this(key, name, width, height, tiles, rows, props, List.of(), null, null);
+    }
+
+    /**
+     * Субботний хлеб: житель npc (Агата дома) раз в неделю, в день day, печёт каравай — после поручения after
+     * (печь разожжена). Каравай тем больше, чем больше дней этой недели отмечены привычки: base + дни.
+     *
+     * @param talks разговоры: ready — каравай испечён сейчас, baked — на этой неделе уже был, waiting — ждём дня
+     */
+    public record Bread(String npc, String after, java.time.DayOfWeek day, int base, Map<String, String> talks) {
     }
 
     /**
@@ -79,10 +88,13 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
      * secrets — пасхалки: «слот:вариант» облика игрока → особый разговор.
      * appearance — облик человека (слот → вариант, как у героя): жители-люди собираются из тех же слоёв,
      * что и герой; у зверей облика нет — их спрайт npc_&lt;kind&gt;_0/1.
+     * appearsAfter / leavesAfter — поручение, после которого житель появляется здесь / уходит отсюда
+     * (семья Агаты уплывает из городка и возвращается в поместье).
      */
     public record Npc(String key, String name, String kind, int x, int y, String description, List<String> talks,
                       Map<String, app.wheregrows.mentor.MentorContent.Dialogue> dialogues, Errand errand,
-                      Map<String, String> secrets, Map<String, String> appearance) {
+                      Map<String, String> secrets, Map<String, String> appearance,
+                      String appearsAfter, String leavesAfter) {
     }
 
     /**
