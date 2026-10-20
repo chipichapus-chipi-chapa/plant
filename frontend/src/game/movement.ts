@@ -99,9 +99,34 @@ export function walk(w: Walker, dx: number, dy: number, dt: number, blocked: boo
   // в любую сторону, иначе каждое направление «сталкивается» и персонаж застревает навсегда.
   const stuck = collides(blocked, x, y, walls)
   if (stuck || !collides(blocked, x + vx, y, walls)) x += vx
+  else if (vx !== 0) {
+    const cx = x
+    y += nudge((o) => !collides(blocked, cx, y + o, walls), (o) => !collides(blocked, cx + vx, y + o, walls), Math.abs(vx))
+  }
   if (stuck || !collides(blocked, x, y + vy, walls)) y += vy
+  else if (vy !== 0) {
+    const cy = y
+    x += nudge((o) => !collides(blocked, x + o, cy, walls), (o) => !collides(blocked, x + o, cy + vy, walls), Math.abs(vy))
+  }
   const facing: Facing = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up'
   return { x, y, facing }
+}
+
+/**
+ * Доводка у проёма: упёрлись в стену, а в сторону — проход (дверца теплицы, щель между постройками).
+ * Ищем ближайший сдвиг до клетки с небольшим запасом, после которого шаг удастся, и подруливаем к нему
+ * со скоростью шага: стоя у стенки рядом с дверцей, достаточно жать «вниз» — герой сам выйдет в неё.
+ */
+const NUDGE = TILE - 4
+
+function nudge(clear: (offset: number) => boolean, passes: (offset: number) => boolean, speed: number): number {
+  for (const sign of [1, -1]) {
+    // в эту сторону — пока путь свободен; сквозь стенку доводка не проводит
+    for (let o = 1; o <= NUDGE && clear(sign * o); o++) {
+      if (passes(sign * o)) return sign * Math.min(speed, o)
+    }
+  }
+  return 0
 }
 
 /** Клетка, в которой стоит персонаж. */

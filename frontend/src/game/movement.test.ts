@@ -37,6 +37,31 @@ describe('проходимость', () => {
     expect(collides(open, 1 * 32 + 2, 1 * 32 + 20, walls)).toBe(true)
   })
 
+  it('подойдя к дверце чуть сбоку, герой сам подруливает в проём', () => {
+    const walls = greenhouseWalls([{ x: 1, y: 0, w: 3, h: 2 }]) // проём — x 64..96
+    const open = blockedCells({ ...map, rows: map.rows.map((r) => r.replace(/./g, '.')), props: [] }, [], [])
+    let w = { x: 64 + 2, y: 2 * 32 + 20, facing: 'up' as const }
+    for (let i = 0; i < 60; i++) w = { ...walk(w, 0, -1, 1 / 30, open, walls), facing: 'up' }
+    // зашёл в дверцу и дошёл внутри до верхней стенки
+    expect(cellOf(w)).toEqual({ x: 2, y: 0 })
+  })
+
+  it('у стенки доводка не проводит сквозь неё', () => {
+    const walls = greenhouseWalls([{ x: 1, y: 0, w: 2, h: 2 }]) // стенка справа — x 93..96
+    const blocked = blockedCells({ ...map, rows: map.rows.map((r) => r.replace(/./g, '.')), props: [{ key: 'p', kind: 'p', x: 3, y: 0, width: 1, height: 1, name: '', description: '' }] }, [], [])
+    let w = walkerAt({ x: 3, y: 1 }, 'up') // над головой — постройка, слева за стенкой — теплица
+    for (let i = 0; i < 90; i++) w = walk(w, 0, -1, 1 / 30, blocked, walls)
+    expect(cellOf(w).x).toBeGreaterThanOrEqual(3) // обошёл постройку справа, но не попал за стенку теплицы
+  })
+
+  it('изнутри из соседней с дверцей клетки — жмём «вниз» и выходим', () => {
+    const walls = greenhouseWalls([{ x: 1, y: 0, w: 3, h: 2 }]) // дверца — клетка (2, 1), проём x 64..96
+    const open = blockedCells({ ...map, rows: map.rows.map((r) => r.replace(/./g, '.')), props: [] }, [], [])
+    let w = walkerAt({ x: 1, y: 1 }, 'down')
+    for (let i = 0; i < 90; i++) w = walk(w, 0, 1, 1 / 30, open, walls)
+    expect(cellOf(w).y).toBeGreaterThanOrEqual(2)
+  })
+
   it('растения и стоящие персонажи загораживают клетку', () => {
     const withPlant = blockedCells(
       map,

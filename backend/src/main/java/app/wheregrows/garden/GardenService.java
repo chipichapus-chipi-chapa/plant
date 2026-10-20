@@ -147,13 +147,18 @@ public class GardenService {
         if (bed.isEmpty()) {
             throw new InvalidRequestException("Теплицу ставят над грядкой.");
         }
+        if (covered(playerId, map, x, y)) {
+            throw new ConflictException("Над этой грядкой теплица уже стоит.");
+        }
         return seasons.buildGreenhouse(playerId, gardenKey, bed.get(0)[0], bed.get(0)[1]);
     }
 
-    /** Стоит ли над грядкой с клеткой (x, y) теплица этой зимой. */
+    /**
+     * Стоит ли над грядкой с клеткой (x, y) теплица этой зимой. Теплица записана по якорю участка; ранние
+     * теплицы ставились над одной клеткой — они тоже накрывают весь свой участок.
+     */
     private boolean covered(long playerId, GardenMap map, int x, int y) {
-        List<int[]> bed = map.bedAround(x, y);
-        return !bed.isEmpty() && seasons.covered(playerId, map.key(), bed.get(0)[0], bed.get(0)[1]);
+        return map.bedAround(x, y).stream().anyMatch(c -> seasons.covered(playerId, map.key(), c[0], c[1]));
     }
 
     /** Прополотые клетки домашнего сада: на них заросшая грядка уже стала обычной. */
