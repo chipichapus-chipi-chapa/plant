@@ -25,7 +25,10 @@ export function ShopPanel({ state, catalog, onChanged }: Props) {
   const toast = useToast()
 
   const balance = state.inventory.find((entry) => entry.itemKey === LIFE_SEED)?.quantity ?? 0
-  const goods = catalog.items.filter((item) => item.price !== null).sort((a, b) => a.price! - b.price!)
+  // цветы из городка появляются в лавке, когда Лиза разбудила ирисы (её поручение выполнено)
+  const unlocked = (item: (typeof catalog.items)[number]) =>
+    !item.unlockErrand || state.errands.some((e) => e.key === item.unlockErrand && e.done)
+  const goods = catalog.items.filter((item) => item.price !== null && unlocked(item)).sort((a, b) => a.price! - b.price!)
 
   const buy = async (itemKey: string) => {
     const key = pendingKeys.current.get(itemKey) ?? newIdempotencyKey()

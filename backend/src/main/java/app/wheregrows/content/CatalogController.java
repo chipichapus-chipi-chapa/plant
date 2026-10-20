@@ -58,7 +58,8 @@ class CatalogController {
                         .toList(),
                 items.findAll(Sort.by("key")).stream()
                         .map(i -> new CatalogResponse.Item(i.getKey(), i.getKind(), i.getName(),
-                                i.getDescription(), i.getPrice(), i.getSpeciesKey(), i.getCrystalCategory()))
+                                i.getDescription(), i.getPrice(), i.getSpeciesKey(), i.getCrystalCategory(),
+                                i.getUnlockErrand()))
                         .toList(),
                 gardens.home(),
                 gardens.all(),
@@ -132,8 +133,9 @@ class CatalogController {
         record Species(String key, String name, int[] stageMinutes) {
         }
 
+        /** unlockErrand — товар появляется в лавке после этого поручения (null — сразу). */
         record Item(String key, ItemKind kind, String name, String description, Integer price,
-                    String speciesKey, String crystalCategory) {
+                    String speciesKey, String crystalCategory, String unlockErrand) {
         }
     }
 }

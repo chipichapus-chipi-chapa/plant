@@ -38,6 +38,10 @@ public class ItemDefinition {
     @Column(name = "crystal_category")
     private String crystalCategory;
 
+    /** Поручение, после которого товар появляется в лавке; null — продаётся сразу. */
+    @Column(name = "unlock_errand")
+    private String unlockErrand;
+
     protected ItemDefinition() {
     }
 
@@ -67,5 +71,9 @@ public class ItemDefinition {
 
     public String getCrystalCategory() {
         return crystalCategory;
+    }
+
+    public String getUnlockErrand() {
+        return unlockErrand;
     }
 }
