@@ -29,6 +29,36 @@ class GardenMapTests {
     @Autowired
     MockMvc mvc;
 
+    /** Те же клетки, по которым клиент пускает ходить (frontend/src/game/movement.ts, WALKABLE). */
+    static final java.util.Set<String> WALKABLE = java.util.Set.of("grass", "weeds", "path", "soil", "overgrown", "floor", "bridge", "rug");
+
+    /**
+     * К каждой двери можно подойти: рядом есть клетка, по которой ходят и которую не занимает постройка.
+     * Иначе дверь не открыть (так было с лодкой: стояла в воде, а причал не пускал к ней).
+     */
+    @Test
+    void everyDoorCanBeReached() {
+        for (GardenMap map : gardens.all()) {
+            for (GardenMap.Prop prop : map.props()) {
+                if (prop.door() == null) {
+                    continue;
+                }
+                boolean reachable = false;
+                for (int y = prop.y() - 1; y <= prop.y() + prop.height(); y++) {
+                    for (int x = prop.x() - 1; x <= prop.x() + prop.width(); x++) {
+                        boolean side = (x == prop.x() - 1 || x == prop.x() + prop.width()) != (y == prop.y() - 1 || y == prop.y() + prop.height());
+                        if (side && map.contains(x, y) && WALKABLE.contains(map.tileAt(x, y).type()) && map.propAt(x, y) == null) {
+                            reachable = true;
+                        }
+                    }
+                }
+                org.assertj.core.api.Assertions.assertThat(reachable)
+                        .as("к двери «%s» на карте %s не подойти", prop.name(), map.key())
+                        .isTrue();
+            }
+        }
+    }
+
     @Test
     void homeGardenIsLoadedAndHasFreeBeds() {
         GardenMap home = gardens.home();
