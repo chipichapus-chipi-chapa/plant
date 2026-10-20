@@ -23,6 +23,8 @@ type Props = {
   onEnd: () => Promise<void> | void
   /** Закрыть окно: после onEnd или по Escape */
   onClose: () => void
+  /** Ещё одно действие в конце разговора (например, «Подарить…»): закрывает разговор и выполняется */
+  extra?: { label: string; onClick: () => void }
 }
 
 type MentorProps = {
@@ -72,7 +74,7 @@ const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce
  * Разговор внизу экрана: портрет, имя, текст по буквам. Один и тот же для Вереска и жителей тропы.
  * Клик или Enter/Пробел — показать реплику целиком, затем дальше; варианты ответа ведут по графу реплик.
  */
-export function DialogueBox({ speaker, dialogue, atlas, onEnd, onClose }: Props) {
+export function DialogueBox({ speaker, dialogue, atlas, onEnd, onClose, extra }: Props) {
   const [nodeId, setNodeId] = useState(dialogue.start)
   const [finishing, setFinishing] = useState(false)
   const portraitRef = useRef<HTMLCanvasElement>(null)
@@ -153,6 +155,29 @@ export function DialogueBox({ speaker, dialogue, atlas, onEnd, onClose }: Props)
                   ▸ {choice.text}
                 </button>
               ))}
+            </div>
+          ) : complete && !node.next && extra ? (
+            <div className={styles.choices}>
+              <button
+                type="button"
+                className={styles.choice}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  void finish().then(extra.onClick)
+                }}
+              >
+                ▸ {extra.label}
+              </button>
+              <button
+                type="button"
+                className={styles.choice}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  void finish()
+                }}
+              >
+                ▸ Закончить
+              </button>
             </div>
           ) : (
             <span className={styles.more} aria-hidden="true">

@@ -133,6 +133,9 @@ export function isInteractive(cell: Cell, state: GameState, catalog: Catalog, ma
     const recipe = catalog.recipes.find((r) => r.targetObjectKey === prop.key)
     return !!recipe && !state.worldObjects.some((w) => w.objectKey === prop.key)
   }
+  // взрослое растение, с которого есть что собрать
+  const plant = objectAt(plantsOn(state, map), cell)
+  if (plant) return plant.mature && !!catalog.species.find((s) => s.key === plant.speciesKey)?.produceKey
   const tile = tileAt(map, cell.x, cell.y)
   if (tile?.type === 'overgrown') return has(state, WEEDING_TOOLS)
   return !!tile?.plantable && !objectAt(plantsOn(state, map), cell) && hasSeeds(state, catalog)

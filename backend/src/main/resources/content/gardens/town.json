@@ -273,6 +273,19 @@
               "next": null
             }
           }
+        },
+        "agata_gift": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Роза… с моего старого куста? Ты её вырастил(а)?",
+              "next": "b"
+            },
+            "b": {
+              "text": "Ох, дай-ка я присяду. Это лучший подарок за много лет.",
+              "next": null
+            }
+          }
         }
       },
       "appearance": {
@@ -309,7 +322,13 @@
         "thanks": "agata_thanks",
         "leaves": false
       },
-      "leavesAfter": "agata_roses"
+      "leavesAfter": "agata_roses",
+      "gifts": {
+        "loves": [
+          "produce_rose"
+        ],
+        "talk": "agata_gift"
+      }
     },
     {
       "key": "liza",
@@ -397,6 +416,15 @@
               "next": null
             }
           }
+        },
+        "liza_gift": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Ирисы! Мои любимые! Я их засушу между страницами — и зимой будет лето.",
+              "next": null
+            }
+          }
         }
       },
       "appearance": {
@@ -429,7 +457,14 @@
         "thanks": "liza_thanks",
         "leaves": false
       },
-      "leavesAfter": "liza_irises"
+      "leavesAfter": "liza_irises",
+      "gifts": {
+        "loves": [
+          "produce_iris",
+          "produce_daisy"
+        ],
+        "talk": "liza_gift"
+      }
     },
     {
       "key": "nika",
@@ -517,6 +552,15 @@
               "next": null
             }
           }
+        },
+        "nika_gift": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Венок! Я надену его и буду качаться высоко-высоко, чтобы все видели!",
+              "next": null
+            }
+          }
         }
       },
       "appearance": {
@@ -549,7 +593,13 @@
         "thanks": "nika_thanks",
         "leaves": false
       },
-      "leavesAfter": "nika_daisies"
+      "leavesAfter": "nika_daisies",
+      "gifts": {
+        "loves": [
+          "produce_daisy"
+        ],
+        "talk": "nika_gift"
+      }
     },
     {
       "key": "timosha",
@@ -608,6 +658,15 @@
               "next": null
             }
           }
+        },
+        "timosha_gift": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Семечки! Я буду кормить ими птиц. И себя. Птиц больше. Ну, поровну!",
+              "next": null
+            }
+          }
         }
       },
       "appearance": {
@@ -619,7 +678,13 @@
         "accessory": "beanie",
         "bag": "backpack"
       },
-      "leavesAfter": "agata_roses"
+      "leavesAfter": "agata_roses",
+      "gifts": {
+        "loves": [
+          "produce_sunflower"
+        ],
+        "talk": "timosha_gift"
+      }
     }
   ]
 }

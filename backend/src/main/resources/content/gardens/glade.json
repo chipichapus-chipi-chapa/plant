@@ -224,6 +224,19 @@
               "next": null
             }
           }
+        },
+        "khmur_gift": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Лунный цветок… Он светится. Значит, теперь у меня есть фонарь, который не нужно зажигать.",
+              "next": "b"
+            },
+            "b": {
+              "text": "Спасибо. Правда спасибо.",
+              "next": null
+            }
+          }
         }
       },
       "errand": {
@@ -250,7 +263,13 @@
         "thanks": "khmur_lamps_thanks",
         "leaves": false
       },
-      "appearsAfter": "khmur_toll"
+      "appearsAfter": "khmur_toll",
+      "gifts": {
+        "loves": [
+          "produce_moonflower"
+        ],
+        "talk": "khmur_gift"
+      }
     },
     {
       "key": "ukhta",
@@ -348,6 +367,15 @@
               "next": null
             }
           }
+        },
+        "ukhta_gift": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Угу! Лунный цветок с чужой грядки — значит, мои семена прижились. Это лучший отчёт за всю ночь.",
+              "next": null
+            }
+          }
         }
       },
       "errand": {
@@ -365,6 +393,12 @@
         "waiting": "ukhta_wait",
         "thanks": "ukhta_thanks",
         "leaves": false
+      },
+      "gifts": {
+        "loves": [
+          "produce_moonflower"
+        ],
+        "talk": "ukhta_gift"
       }
     }
   ]

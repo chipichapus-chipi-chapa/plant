@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ApiError } from '../../api/client'
-import { acceptErrand, bakeBread, completeErrand, plantSeed, weedBed } from '../../api/game'
-import type { Catalog, Door, Errand, GameState, GardenMap, Npc, Puzzle } from '../../api/types'
+import { acceptErrand, bakeBread, completeErrand, giveGift, harvestPlant, plantSeed, weedBed } from '../../api/game'
+import type { Catalog, Dialogue, Door, Errand, GameState, GardenMap, Npc, Puzzle } from '../../api/types'
 import { frameImage, loadAtlas, type Atlas } from '../../game/atlas'
 import { composeCharacter, composeCharacterFrames } from '../../game/character'
 import { WEED_MS, type WeedEffect } from '../../game/effects'
 import { fogBand, fogDensity, fogTalk, notchesLine } from '../../game/fog'
+import { person, thanksDialogue } from '../../game/gifts'
 import { glowBand, glowTalk, withGlow } from '../../game/glow'
 import { GardenCanvas } from '../../game/GardenCanvas'
 import { doorOpen, doorReachable, errandReady, isClickable, isNear, markerPoint, npcAt, plantsOn, promptCell, promptPoint, sameThing, WEEDING_TOOLS, type Objective } from '../../game/guidance'
@@ -26,6 +27,7 @@ import {
 } from '../../game/layout'
 import { describeReward } from '../../lib/rewards'
 import { Button } from '../../ui/Button'
+import { ProduceIcon } from '../../ui/icons/ProduceIcon'
 import { SeedPacketIcon } from '../../ui/icons/SeedPacketIcon'
 import { Window } from '../../ui/Window'
 import { DialogueBox, MentorDialogue } from '../mentor/DialogueBox'
@@ -178,7 +180,9 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
   const [location, setLocation] = useState<Location>(() => devStart(catalog))
   const home = location.key === HOME
   // разговор с жителем локации; accept — в конце разговора житель даёт поручение
-  const [chat, setChat] = useState<{ npc: Npc; dialogue: string; accept?: Errand } | null>(null)
+  const [chat, setChat] = useState<{ npc: Npc; dialogue: string; accept?: Errand; custom?: Dialogue } | null>(null)
+  // житель, которому выбираем подарок из сумки
+  const [giftFor, setGiftFor] = useState<Npc | null>(null)
   // карта текущей локации; в саду — с учётом прополотых грядок. Сторож, чьё поручение выполнено,
   // уходит с дороги (но договаривает благодарность до конца)
   const map = useMemo((): GardenMap => {
@@ -486,6 +490,42 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
     setTooFar(!!cell && isClickable(cell, state, catalog, map))
   }
 
+  const harvest = async (cell: Cell) => {
+    setPlanting(true)
+    try {
+      const got = await harvestPlant(map.key, cell.x, cell.y)
+      const name = catalog.items.find((i) => i.key === got.itemKey)?.name ?? got.itemKey
+      toast({ message: `Собрано: ${name}${got.quantity > 1 ? ` ×${got.quantity}` : ''}. Можно подарить кому-нибудь из жителей.` })
+      setSelected(null)
+      await onChanged()
+    } catch (e) {
+      toast({ message: e instanceof ApiError ? (e.detail ?? e.title) : 'Не получилось собрать. Попробуйте ещё раз.' })
+    } finally {
+      setPlanting(false)
+    }
+  }
+
+  // урожай в сумке — что можно подарить
+  const produce = catalog.items
+    .filter((item) => item.kind === 'PRODUCE')
+    .map((item) => ({ item, quantity: state.inventory.find((e) => e.itemKey === item.key)?.quantity ?? 0 }))
+    .filter(({ quantity }) => quantity > 0)
+  const canGift = (npc: Npc) => produce.length > 0 && !(state.giftedToday ?? []).includes(person(npc.key))
+
+  const gift = async (npc: Npc, itemKey: string) => {
+    setGiftFor(null)
+    try {
+      const result = await giveGift(npc.key, itemKey)
+      const seeds = result.reward.reduce((sum, r) => sum + r.quantity, 0)
+      if (result.loved && result.talk) setChat({ npc, dialogue: result.talk })
+      else setChat({ npc, dialogue: 'gift-thanks', custom: thanksDialogue(catalog.items.find((i) => i.key === itemKey)?.name) })
+      toast({ message: `${npc.name} благодарит: +${seeds} ${seeds === 1 ? 'Семя' : 'Семени'} жизни.${result.loved ? ' Любимый подарок!' : ''}` })
+      await onChanged()
+    } catch (e) {
+      toast({ message: e instanceof ApiError ? (e.detail ?? e.title) : 'Не получилось подарить. Попробуйте ещё раз.' })
+    }
+  }
+
   const plant = async (cell: Cell, seedKey: string) => {
     setPlanting(true)
     try {
@@ -571,6 +611,7 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
               now={now}
               planting={planting}
               onPlant={plant}
+              onHarvest={(cell) => void harvest(cell)}
               onEnter={travel}
               onRead={setReading}
               onLock={setLock}
@@ -609,8 +650,13 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
               ? { name: chat.npc.name, frame: '', crop: PERSON_CROP, image: composeCharacter(atlas.atlas, chat.npc.appearance, catalog.appearance) }
               : { name: chat.npc.name, frame: `npc_${chat.npc.kind}_0`, crop: MOUSE_CROP }
           }
-          dialogue={chat.npc.dialogues[chat.dialogue]}
+          dialogue={chat.custom ?? chat.npc.dialogues[chat.dialogue]}
           atlas={atlas.atlas}
+          extra={
+            !chat.accept && !chat.custom && chat.dialogue !== chat.npc.gifts?.talk && canGift(chat.npc)
+              ? { label: 'Подарить…', onClick: () => setGiftFor(chat.npc) }
+              : undefined
+          }
           onEnd={async () => {
             if (!chat.accept) return
             try {
@@ -623,6 +669,21 @@ export function GardenView({ state, catalog, onChanged, onEditCharacter, inputEn
           }}
           onClose={() => setChat(null)}
         />
+      )}
+
+      {giftFor && (
+        <Window title={`Подарок: ${giftFor.name}`} onClose={() => setGiftFor(null)}>
+          <div className={styles.seeds}>
+            <span className={styles.label}>Что подарить? Каждому жителю — один подарок в день.</span>
+            {produce.map(({ item, quantity }) => (
+              <Button key={item.key} onClick={() => void gift(giftFor, item.key)} className={styles.seed}>
+                <ProduceIcon />
+                {item.name}
+                <span className={styles.count}>×{quantity}</span>
+              </Button>
+            ))}
+          </div>
+        </Window>
       )}
 
       {dialogue && atlas.status === 'ready' && (
@@ -649,6 +710,7 @@ type CellInfoProps = {
   now: number
   planting: boolean
   onPlant: (cell: Cell, seedKey: string) => void
+  onHarvest: (cell: Cell) => void
   onEnter: (door: Door) => void
   onRead: (letter: { title: string; text: string }) => void
   onLock: (puzzle: Puzzle) => void
@@ -656,20 +718,31 @@ type CellInfoProps = {
   onChanged: () => Promise<void>
 }
 
-function CellInfo({ cell, player, map, state, catalog, now, planting, onPlant, onEnter, onRead, onLock, onWeeding, onChanged }: CellInfoProps) {
+function CellInfo({ cell, player, map, state, catalog, now, planting, onPlant, onHarvest, onEnter, onRead, onLock, onWeeding, onChanged }: CellInfoProps) {
   const object = objectAt(plantsOn(state, map), cell)
   if (object) {
-    const name = catalog.species.find((s) => s.key === object.speciesKey)?.name ?? object.speciesKey
+    const species = catalog.species.find((s) => s.key === object.speciesKey)
+    const name = species?.name ?? object.speciesKey
     const minutes = minutesUntilNextStage(object, now)
+    const produce = species?.produceKey ? catalog.items.find((i) => i.key === species.produceKey) : undefined
     return (
-      <Said
-        name={name}
-        text={
-          object.mature
-            ? 'Выросло и никуда не денется. Сад стал чуточку живее.'
-            : `Растёт: стадия ${object.stage + 1} из ${object.stageCount}. Следующая — примерно через ${minutes} мин.`
-        }
-      />
+      <div className={styles.cell}>
+        <Said
+          name={name}
+          text={
+            object.mature
+              ? produce
+                ? `Выросло! Можно собрать: ${produce.name}${species!.produceQuantity > 1 ? ` ×${species!.produceQuantity}` : ''}. А можно оставить — никуда не денется.`
+                : 'Выросло и никуда не денется. Сад стал чуточку живее.'
+              : `Растёт: стадия ${object.stage + 1} из ${object.stageCount}. Следующая — примерно через ${minutes} мин.`
+          }
+        />
+        {object.mature && produce && (
+          <div>
+            <Button disabled={planting} onClick={() => onHarvest(cell)}>Собрать</Button>
+          </div>
+        )}
+      </div>
     )
   }
 

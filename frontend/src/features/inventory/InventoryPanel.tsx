@@ -19,7 +19,7 @@ export function InventoryPanel({ inventory, catalog }: Props) {
     return item ? [{ crystal, item, quantity: quantities.get(item.key) ?? 0 }] : []
   })
   const things = catalog.items
-    .filter((item) => (item.kind === 'SEED' || item.kind === 'DECOR' || item.kind === 'TOOL') && (quantities.get(item.key) ?? 0) > 0)
+    .filter((item) => (item.kind === 'SEED' || item.kind === 'DECOR' || item.kind === 'TOOL' || item.kind === 'PRODUCE') && (quantities.get(item.key) ?? 0) > 0)
     .map((item) => ({ item, quantity: quantities.get(item.key)! }))
 
   return (

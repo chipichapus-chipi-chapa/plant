@@ -36,6 +36,20 @@ class GardenController {
             @Min(value = 0, message = "Такой клетки в саду нет.") int y) {
     }
 
+    record HarvestRequest(
+            String gardenKey,
+            @Min(value = 0, message = "Такой клетки в саду нет.") int x,
+            @Min(value = 0, message = "Такой клетки в саду нет.") int y) {
+    }
+
+    /** Собрать взрослое растение в клетке (x, y) локации gardenKey (без неё — домашний сад). 201 — собрано. */
+    @PostMapping("/api/garden/harvests")
+    @ResponseStatus(HttpStatus.CREATED)
+    GardenService.HarvestResult harvest(@Valid @RequestBody HarvestRequest request) {
+        return service.harvest(currentPlayer.id(),
+                request.gardenKey() == null ? GardenMaps.HOME : request.gardenKey(), request.x(), request.y());
+    }
+
     /** Прополоть заросшую грядку (x, y). 201 — прополота; в ответе — сколько заросших клеток осталось. */
     @PostMapping("/api/garden/weedings")
     @ResponseStatus(HttpStatus.CREATED)

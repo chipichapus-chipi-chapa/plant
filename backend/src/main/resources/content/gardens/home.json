@@ -222,6 +222,19 @@
               "next": null
             }
           }
+        },
+        "gardener_gift": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Это же… из моего сада? Я думал, он совсем зарос.",
+              "next": "b"
+            },
+            "b": {
+              "text": "Спасибо, что вернул(а) ему жизнь. И мне немного тоже.",
+              "next": null
+            }
+          }
         }
       },
       "appearance": {
@@ -233,7 +246,14 @@
         "accessory": "gardener_hat",
         "bag": "tote"
       },
-      "appearsAfter": "gardener_return"
+      "appearsAfter": "gardener_return",
+      "gifts": {
+        "loves": [
+          "produce_lily",
+          "produce_sunflower"
+        ],
+        "talk": "gardener_gift"
+      }
     }
   ]
 }

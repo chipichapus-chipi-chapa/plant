@@ -65,6 +65,11 @@ public class GardenMaps {
         return maps.values().stream().flatMap(m -> m.props().stream()).filter(p -> p.key().equals(key)).findFirst();
     }
 
+    /** Житель с данным ключом на любой карте. */
+    public Optional<GardenMap.Npc> npc(String key) {
+        return maps.values().stream().flatMap(m -> m.npcsOrEmpty().stream()).filter(n -> n.key().equals(key)).findFirst();
+    }
+
     /** Поручение жителя по ключу (на любой карте) — вместе с жителем, который его даёт. */
     public Optional<NpcErrand> errand(String key) {
         return errands().stream().filter(e -> e.errand().key().equals(key)).findFirst();
@@ -93,6 +98,11 @@ public class GardenMaps {
                         npc.name() + " появляется после несуществующего поручения " + npc.appearsAfter());
                 map.require(npc.leavesAfter() == null || errand(npc.leavesAfter()).isPresent(),
                         npc.name() + " уходит после несуществующего поручения " + npc.leavesAfter());
+            }
+            for (GardenMap.Npc npc : map.npcsOrEmpty()) {
+                map.require(npc.gifts() == null || (npc.gifts().talk() != null && npc.dialogues() != null
+                                && npc.dialogues().containsKey(npc.gifts().talk())),
+                        "у " + npc.name() + " нет разговора о любимом подарке");
             }
             GardenMap.Bread bread = map.bread();
             if (bread == null) {

@@ -1,6 +1,6 @@
 // Формы ответов backend. Держим их рядом с клиентом и меняем вместе с API.
 
-export type ItemKind = 'CURRENCY' | 'SHARD' | 'SEED' | 'DECOR' | 'TOOL'
+export type ItemKind = 'CURRENCY' | 'SHARD' | 'SEED' | 'DECOR' | 'TOOL' | 'PRODUCE'
 
 export type CrystalCategory = { key: string; name: string; color: string; meaning: string }
 
@@ -85,6 +85,8 @@ export type Npc = {
   appearsAfter?: string | null
   /** …и уходит отсюда после этого поручения (уплывает из городка) */
   leavesAfter?: string | null
+  /** Любимые подарки (ключи урожая) и разговор, которым житель им радуется */
+  gifts?: { loves: string[]; talk: string } | null
 }
 
 /**
@@ -187,13 +189,16 @@ export type MentorContent = {
   appearsAfter?: string | null
   /** …и уходит отсюда после этого поручения (уплывает из городка) */
   leavesAfter?: string | null
+  /** Любимые подарки (ключи урожая) и разговор, которым житель им радуется */
+  gifts?: { loves: string[]; talk: string } | null
 }
 
 export type Catalog = {
   mentor: MentorContent
   appearance: AppearanceSlot[]
   crystals: CrystalCategory[]
-  species: { key: string; name: string; stageMinutes: number[] }[]
+  /** produceKey — что даёт взрослое растение, когда его собрали (null — ничего) */
+  species: { key: string; name: string; stageMinutes: number[]; produceKey: string | null; produceQuantity: number }[]
   items: CatalogItem[]
   /** Домашний сад (он же первая из locations) */
   garden: GardenMap
@@ -263,6 +268,8 @@ export type GameState = {
   night: boolean
   /** Доступны кнопки тестирования (локально — всегда, на сервере — из списка GAME_TESTERS) */
   tester: boolean
+  /** Кому сегодня уже подарено (ключ человека: agata и agata-home — оба agata) */
+  giftedToday?: string[]
   /** Пробуждённые объекты мира; нет в списке — объект спит */
   worldObjects: { objectKey: string; state: 'AWAKENED' }[]
   /** Обысканные места находок */

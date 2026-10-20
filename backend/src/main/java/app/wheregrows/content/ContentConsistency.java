@@ -86,6 +86,13 @@ class ContentConsistency implements ApplicationRunner {
                 throw new IllegalStateException("Поручение " + errand.key() + " — неизвестная находка " + errand.spot());
             }
         }
+        // любимые подарки жителей — существующий урожай
+        maps.all().stream().flatMap(m -> m.npcsOrEmpty().stream()).filter(n -> n.gifts() != null).forEach(npc ->
+                npc.gifts().lovesOrEmpty().forEach(key -> {
+                    if (items.findById(key).filter(i -> i.getKind() == ItemKind.PRODUCE).isEmpty()) {
+                        throw new IllegalStateException(npc.name() + " любит " + key + ", но такого урожая нет");
+                    }
+                }));
         // подарки наставника — существующие предметы каталога
         mentor.content().dialogues().forEach((key, dialogue) -> dialogue.giftOrEmpty().forEach(gift -> {
             if (!items.existsById(gift.itemKey())) {

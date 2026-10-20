@@ -110,7 +110,18 @@ public record GardenMap(String key, String name, int width, int height, Map<Stri
     public record Npc(String key, String name, String kind, int x, int y, String description, List<String> talks,
                       Map<String, app.wheregrows.mentor.MentorContent.Dialogue> dialogues, Errand errand,
                       Map<String, String> secrets, Map<String, String> appearance,
-                      String appearsAfter, String leavesAfter) {
+                      String appearsAfter, String leavesAfter, Gifts gifts) {
+    }
+
+    /**
+     * Что житель любит получать в подарок (ключи урожая) и разговор, которым он радуется любимому подарку.
+     * Остальные подарки он тоже принимает — с обычной благодарностью: неправильных подарков нет.
+     */
+    public record Gifts(List<String> loves, String talk) {
+
+        public List<String> lovesOrEmpty() {
+            return loves == null ? List.of() : loves;
+        }
     }
 
     /**

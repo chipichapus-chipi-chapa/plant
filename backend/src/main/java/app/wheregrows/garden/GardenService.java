@@ -104,6 +104,34 @@ public class GardenService {
         return view(planted, plant, now);
     }
 
+    /**
+     * Собрать взрослое растение: урожай — в сумку, грядка освобождается. Недозревшее не срывается —
+     * сервер сам считает стадию, поэтому поторопить растение с клиента нельзя.
+     */
+    @Transactional
+    public HarvestResult harvest(long playerId, String gardenKey, int x, int y) {
+        players.lockById(playerId).orElseThrow(() -> new NotFoundException("Игрок не найден."));
+        GardenObject object = objects.findByPlayerIdAndGardenKeyAndXAndY(playerId, gardenKey, (short) x, (short) y)
+                .orElseThrow(() -> new NotFoundException("Здесь ничего не растёт."));
+        PlantSpecies plant = species.findById(object.getSpeciesKey()).orElseThrow();
+        if (!PlantGrowth.at(object.getPlantedAt(), plant.getStageMinutes(), clock.instant()).mature()) {
+            throw new ConflictException("«" + plant.getName() + "» ещё растёт. Пусть дозреет.");
+        }
+        if (plant.getProduceKey() == null) {
+            throw new ConflictException("«" + plant.getName() + "» не собирают — пусть просто растёт.");
+        }
+        objects.delete(object);
+        objects.flush();
+        java.util.List<app.wheregrows.economy.ItemGrant> grants =
+                List.of(new app.wheregrows.economy.ItemGrant(plant.getProduceKey(), plant.getProduceQuantity()));
+        inventory.grant(playerId, grants);
+        return new HarvestResult(gardenKey, x, y, plant.getProduceKey(), plant.getProduceQuantity());
+    }
+
+    /** Что собрано и сколько; клетка (x, y) снова свободна. */
+    public record HarvestResult(String gardenKey, int x, int y, String itemKey, int quantity) {
+    }
+
     /** Прополотые клетки домашнего сада: на них заросшая грядка уже стала обычной. */
     @Transactional(readOnly = true)
     public List<Cell> weeded(long playerId) {

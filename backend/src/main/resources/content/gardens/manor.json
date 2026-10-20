@@ -276,6 +276,15 @@
               "next": null
             }
           }
+        },
+        "shurshik_gift": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Редис! Хрусть! Ой, простите, я не удержался. Хрусть. Спасибо!",
+              "next": null
+            }
+          }
         }
       },
       "errand": {
@@ -302,6 +311,12 @@
         "waiting": "shurshik_wait",
         "thanks": "shurshik_thanks",
         "leaves": false
+      },
+      "gifts": {
+        "loves": [
+          "produce_radish"
+        ],
+        "talk": "shurshik_gift"
       }
     },
     {
@@ -343,6 +358,15 @@
               "next": null
             }
           }
+        },
+        "liza_gift": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Ирисы! Мои любимые! Я их засушу между страницами — и зимой будет лето.",
+              "next": null
+            }
+          }
         }
       },
       "appearance": {
@@ -354,7 +378,14 @@
         "accessory": "flower",
         "bag": "tote"
       },
-      "appearsAfter": "liza_irises"
+      "appearsAfter": "liza_irises",
+      "gifts": {
+        "loves": [
+          "produce_iris",
+          "produce_daisy"
+        ],
+        "talk": "liza_gift"
+      }
     },
     {
       "key": "nika-home",
@@ -385,6 +416,15 @@
               "next": null
             }
           }
+        },
+        "nika_gift": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Венок! Я надену его и буду качаться высоко-высоко, чтобы все видели!",
+              "next": null
+            }
+          }
         }
       },
       "appearance": {
@@ -396,7 +436,13 @@
         "accessory": "leaf_clip",
         "bag": "none"
       },
-      "appearsAfter": "nika_daisies"
+      "appearsAfter": "nika_daisies",
+      "gifts": {
+        "loves": [
+          "produce_daisy"
+        ],
+        "talk": "nika_gift"
+      }
     }
   ]
 }

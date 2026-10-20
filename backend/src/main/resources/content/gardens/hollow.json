@@ -200,6 +200,15 @@
               "next": null
             }
           }
+        },
+        "mokh_gift": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Ромашки… Положи рядом, на мох. Я буду их нюхать и не двигаться. Это мой любимый вид отдыха.",
+              "next": null
+            }
+          }
         }
       },
       "errand": {
@@ -220,6 +229,12 @@
         "waiting": "mokh_wait",
         "thanks": "mokh_thanks",
         "leaves": false
+      },
+      "gifts": {
+        "loves": [
+          "produce_chamomile"
+        ],
+        "talk": "mokh_gift"
       }
     }
   ],

@@ -20,6 +20,13 @@ public class PlantSpecies {
     @Column(name = "stage_minutes", nullable = false)
     private int[] stageMinutes;
 
+    /** Что даёт растение, когда его собрали; null — собирать нечего. */
+    @Column(name = "produce_key")
+    private String produceKey;
+
+    @Column(name = "produce_quantity", nullable = false)
+    private int produceQuantity;
+
     protected PlantSpecies() {
     }
 
@@ -29,6 +36,14 @@ public class PlantSpecies {
 
     public String getName() {
         return name;
+    }
+
+    public String getProduceKey() {
+        return produceKey;
+    }
+
+    public int getProduceQuantity() {
+        return produceQuantity;
     }
 
     public int[] getStageMinutes() {

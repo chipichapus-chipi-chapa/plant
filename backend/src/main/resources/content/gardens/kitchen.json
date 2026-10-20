@@ -373,6 +373,15 @@
               "next": null
             }
           }
+        },
+        "myata_gift": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Мррр, как пахнет! Поставлю в кувшин на подоконник — пусть весь дом знает, что у нас гости бывают.",
+              "next": null
+            }
+          }
         }
       },
       "errand": {
@@ -399,6 +408,13 @@
       },
       "secrets": {
         "accessory:headphones": "myata_headphones"
+      },
+      "gifts": {
+        "loves": [
+          "produce_chamomile",
+          "produce_lily"
+        ],
+        "talk": "myata_gift"
       }
     },
     {
@@ -526,6 +542,19 @@
               "next": null
             }
           }
+        },
+        "agata_gift": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Роза… с моего старого куста? Ты её вырастил(а)?",
+              "next": "b"
+            },
+            "b": {
+              "text": "Ох, дай-ка я присяду. Это лучший подарок за много лет.",
+              "next": null
+            }
+          }
         }
       },
       "appearance": {
@@ -555,6 +584,12 @@
         "waiting": "agata_hearth_wait",
         "thanks": "agata_hearth_thanks",
         "leaves": false
+      },
+      "gifts": {
+        "loves": [
+          "produce_rose"
+        ],
+        "talk": "agata_gift"
       }
     },
     {
@@ -590,6 +625,15 @@
               "next": null
             }
           }
+        },
+        "timosha_gift": {
+          "start": "a",
+          "nodes": {
+            "a": {
+              "text": "Семечки! Я буду кормить ими птиц. И себя. Птиц больше. Ну, поровну!",
+              "next": null
+            }
+          }
         }
       },
       "appearance": {
@@ -601,7 +645,13 @@
         "accessory": "beanie",
         "bag": "backpack"
       },
-      "appearsAfter": "agata_roses"
+      "appearsAfter": "agata_roses",
+      "gifts": {
+        "loves": [
+          "produce_sunflower"
+        ],
+        "talk": "timosha_gift"
+      }
     }
   ],
   "bread": {

@@ -82,7 +82,25 @@ INSERT INTO item_def (key, kind, name, description, price, species_key, crystal_
     ('seed_daisy', 'SEED', 'Пакетик маргариток',
         'Ника собирала их сама. Маленькие, но их много — любят, когда на них смотрят.', 3, 'daisy', NULL, 'liza_irises'),
     ('seed_moonflower', 'SEED', 'Семена лунного цветка',
-        'От совы Ухты с Лунной поляны. Сажайте там, где смотрите перед сном, — тогда цветок точно проснётся и будет светиться.', 5, 'moonflower', NULL, 'owl_moonstone')
+        'От совы Ухты с Лунной поляны. Сажайте там, где смотрите перед сном, — тогда цветок точно проснётся и будет светиться.', 5, 'moonflower', NULL, 'owl_moonstone'),
+
+    -- урожай: собирают со взрослых растений и дарят жителям
+    ('produce_radish',     'PRODUCE', 'Пучок редиса',
+        'Хрустящий и чуть острый. Мыши уверены, что редис — это просто очень смелая морковка.', NULL, NULL, NULL, NULL),
+    ('produce_chamomile',  'PRODUCE', 'Букетик ромашек',
+        'Если заварить — получится чай, после которого хорошо спится. Если подарить — получится улыбка.', NULL, NULL, NULL, NULL),
+    ('produce_sunflower',  'PRODUCE', 'Корзинка семечек',
+        'Полосатые, тёплые от солнца. Бобры за них готовы построить ещё одну плотину.', NULL, NULL, NULL, NULL),
+    ('produce_lily',       'PRODUCE', 'Розовая лилия',
+        'Пахнет так, что сад на минутку замолкает.', NULL, NULL, NULL, NULL),
+    ('produce_iris',       'PRODUCE', 'Синий ирис',
+        'Цвета вечернего неба над озером.', NULL, NULL, NULL, NULL),
+    ('produce_rose',       'PRODUCE', 'Роза',
+        'Колючая и очень красивая — как многие, кто долго ждал.', NULL, NULL, NULL, NULL),
+    ('produce_daisy',      'PRODUCE', 'Венок из маргариток',
+        'Ника научила плести: три цветка, перекрестить, ещё три.', NULL, NULL, NULL, NULL),
+    ('produce_moonflower', 'PRODUCE', 'Лунный цветок',
+        'Светится в ладонях голубым. Днём засыпает, но не вянет.', NULL, NULL, NULL, NULL)
 ON CONFLICT (key) DO UPDATE SET
     kind = EXCLUDED.kind,
     name = EXCLUDED.name,
@@ -91,6 +109,13 @@ ON CONFLICT (key) DO UPDATE SET
     species_key = EXCLUDED.species_key,
     crystal_category = EXCLUDED.crystal_category,
     unlock_errand = EXCLUDED.unlock_errand;
+
+-- что даёт каждое растение, когда его собрали
+UPDATE plant_species p SET produce_key = v.produce_key, produce_quantity = v.quantity
+FROM (VALUES ('radish', 'produce_radish', 2), ('chamomile', 'produce_chamomile', 1), ('sunflower', 'produce_sunflower', 1),
+             ('lily', 'produce_lily', 1), ('iris', 'produce_iris', 1), ('rose', 'produce_rose', 1),
+             ('daisy', 'produce_daisy', 1), ('moonflower', 'produce_moonflower', 1)) AS v (species, produce_key, quantity)
+WHERE p.key = v.species;
 
 -- Магические рецепты -----------------------------------------------------------
 -- Ингредиенты пересоздаются целиком: на них не ссылаются данные игроков.
